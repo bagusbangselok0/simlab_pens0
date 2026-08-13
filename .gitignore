@@ -1,0 +1,59 @@
+# Environment & Local Configuration
+.env
+.env.backup
+.env.production
+.env.docker
+.phpactor.json
+.phpunit.result.cache
+Homestead.json
+Homestead.yaml
+
+# Dependencies
+/node_modules
+/vendor
+
+# Storage & Logs
+/storage/*.key
+/storage/app/*
+!/storage/app/.gitignore
+/storage/framework/cache/*
+/storage/framework/sessions/*
+/storage/framework/views/*
+/storage/logs/*
+/storage/pail
+*.log
+
+# Public Uploads & Build Output
+/public/build
+/public/hot
+/public/storage
+/public/images/signatures/*
+!/public/images/signatures/.gitkeep
+!/public/images/signatures/default.png
+/public/images/photo_profile/*
+!/public/images/photo_profile/.gitkeep
+!/public/images/photo_profile/default.png
+
+# IDEs & System Files
+/.fleet
+/.idea
+/.nova
+/.phpunit.cache
+/.vscode
+/.zed
+/auth.json
+.DS_Store
+Thumbs.db
+*:Zone.Identifier
+Zone.Identifier
+
+# Temporary & Scratch Files
+temp_impl_plan/
+scratch_*.php
+test_*.php
+implementation_plan_*.md
+GEMINI.md
+GEMINI.MD
+
+# Docker Local Data
+docker/mysql/data/
