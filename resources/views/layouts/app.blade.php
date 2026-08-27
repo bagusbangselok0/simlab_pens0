@@ -230,8 +230,32 @@
             });
         });
     </script>
-    {{-- Push Notification — Service Worker & Subscribe --}}
-    @if(config('services.vapid.public_key'))
+    {{-- Push Notification & Browser Recommendation Prompt --}}
+    <!-- Floating Notification Recommendation Card -->
+    <div id="notificationRecommendationPrompt" class="card shadow-lg border-0 border-start border-4 border-primary position-fixed d-none"
+        style="bottom: 24px; right: 24px; z-index: 9999; max-width: 380px; border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.18) !important; transition: all 0.3s ease;">
+        <div class="card-body p-3">
+            <div class="d-flex align-items-start gap-3">
+                <div class="rounded-circle d-flex align-items-center justify-content-center bg-primary text-white flex-shrink-0" style="width: 44px; height: 44px;">
+                    <i class="bi bi-bell-fill fs-5"></i>
+                </div>
+                <div class="flex-grow-1">
+                    <h6 class="mb-1 fw-bold text-dark">Aktifkan Notifikasi Browser</h6>
+                    <p class="mb-2 small text-muted">Dapatkan pembaruan langsung terkait status persetujuan peminjaman lab & presensi harian di browser Anda.</p>
+                    <div class="d-flex gap-2">
+                        <button id="btnAllowNotificationNow" class="btn btn-primary btn-sm px-3 fw-semibold">
+                            <i class="bi bi-bell me-1"></i> Izinkan
+                        </button>
+                        <button id="btnDismissNotificationPrompt" class="btn btn-light btn-sm text-muted">
+                            Nanti Saja
+                        </button>
+                    </div>
+                </div>
+                <button type="button" class="btn-close ms-1 flex-shrink-0" style="font-size: 0.7rem;" id="btnCloseNotificationPrompt"></button>
+            </div>
+        </div>
+    </div>
+
     <script>
     (function () {
         const VAPID_PUBLIC_KEY = '{{ config('services.vapid.public_key') }}';
@@ -239,9 +263,13 @@
         const UNSUBSCRIBE_URL  = '{{ route('notifications.push.unsubscribe') }}';
         const CSRF_TOKEN       = '{{ csrf_token() }}';
 
-        const btn     = document.getElementById('pushToggleBtn');
-        const icon    = document.getElementById('pushToggleIcon');
-        const label   = document.getElementById('pushToggleLabel');
+        const btnToggle   = document.getElementById('pushToggleBtn');
+        const iconToggle  = document.getElementById('pushToggleIcon');
+        const labelToggle = document.getElementById('pushToggleLabel');
+        const promptCard  = document.getElementById('notificationRecommendationPrompt');
+        const btnAllow    = document.getElementById('btnAllowNotificationNow');
+        const btnDismiss  = document.getElementById('btnDismissNotificationPrompt');
+        const btnClose    = document.getElementById('btnCloseNotificationPrompt');
 
         // ─── Helpers ──────────────────────────────────────────────────────────
         function urlBase64ToUint8Array(base64String) {
@@ -252,17 +280,42 @@
         }
 
         function setButtonActive(active) {
+            if (!btnToggle) return;
             if (active) {
-                icon.className  = 'bi bi-bell-fill text-primary';
-                label.textContent = 'Push ON';
-                btn.style.borderColor = '#0d6efd';
-                btn.style.color       = '#0d6efd';
+                iconToggle.className  = 'bi bi-bell-fill text-primary';
+                labelToggle.textContent = 'Push ON';
+                btnToggle.style.borderColor = '#0d6efd';
+                btnToggle.style.color       = '#0d6efd';
             } else {
-                icon.className  = 'bi bi-bell-slash';
-                label.textContent = 'Push';
-                btn.style.borderColor = '#ccc';
-                btn.style.color       = '';
+                iconToggle.className  = 'bi bi-bell-slash';
+                labelToggle.textContent = 'Push';
+                btnToggle.style.borderColor = '#ccc';
+                btnToggle.style.color       = '';
             }
+        }
+
+        function showToast(text, bg) {
+            if (typeof Toastify !== 'undefined') {
+                Toastify({
+                    text: text,
+                    duration: 3500,
+                    gravity: "top",
+                    position: "right",
+                    style: { background: bg }
+                }).showToast();
+            }
+        }
+
+        function hidePrompt() {
+            if (promptCard) {
+                promptCard.classList.add('d-none');
+            }
+        }
+
+        function dismissPromptFor24Hours() {
+            hidePrompt();
+            const expireTime = Date.now() + (24 * 60 * 60 * 1000); // 24 jam
+            localStorage.setItem('notif_prompt_dismissed_until', expireTime);
         }
 
         async function postJson(url, data) {
@@ -274,25 +327,43 @@
             return res.json();
         }
 
-        // ─── Subscribe ────────────────────────────────────────────────────────
+        // ─── Subscribe Web Push ───────────────────────────────────────────────
         async function subscribe(reg) {
-            const sub = await reg.pushManager.subscribe({
-                userVisibleOnly:      true,
-                applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
-            });
+            try {
+                if (VAPID_PUBLIC_KEY && VAPID_PUBLIC_KEY.length > 0) {
+                    const sub = await reg.pushManager.subscribe({
+                        userVisibleOnly:      true,
+                        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+                    });
 
-            const json = sub.toJSON();
-            await postJson(SUBSCRIBE_URL, {
-                endpoint:        json.endpoint,
-                keys:            json.keys,
-                contentEncoding: (PushManager.supportedContentEncodings || ['aesgcm'])[0],
-            });
+                    const json = sub.toJSON();
+                    await postJson(SUBSCRIBE_URL, {
+                        endpoint:        json.endpoint,
+                        keys:            json.keys,
+                        contentEncoding: (PushManager.supportedContentEncodings || ['aesgcm'])[0],
+                    });
+                }
 
-            setButtonActive(true);
-            showToast('Notifikasi push diaktifkan!', '#0d6efd');
+                setButtonActive(true);
+                hidePrompt();
+                showToast('Notifikasi browser berhasil diaktifkan!', 'linear-gradient(to right, #00b09b, #96c93d)');
+
+                // Test desktop notification feedback
+                if (Notification.permission === 'granted') {
+                    new Notification('SIMLAB — Notifikasi Aktif', {
+                        body: 'Anda akan menerima pemberitahuan otomatis seputar peminjaman dan presensi lab.',
+                        icon: '/images/logo/SIMLAB_logo1.png'
+                    });
+                }
+            } catch (err) {
+                console.error('Subscription error:', err);
+                showToast('Notifikasi diaktifkan (mode standar browser).', '#0d6efd');
+                setButtonActive(true);
+                hidePrompt();
+            }
         }
 
-        // ─── Unsubscribe ──────────────────────────────────────────────────────
+        // ─── Unsubscribe Web Push ─────────────────────────────────────────────
         async function unsubscribe(sub) {
             const endpoint = sub.endpoint;
             await sub.unsubscribe();
@@ -301,64 +372,115 @@
             showToast('Notifikasi push dinonaktifkan.', '#6c757d');
         }
 
-        // ─── Toast helper ─────────────────────────────────────────────────────
-        function showToast(text, bg) {
-            if (typeof Toastify !== 'undefined') {
-                Toastify({ text, duration: 3000, gravity: 'top', position: 'right',
-                    style: { background: bg } }).showToast();
+        // ─── Request Permission & Activate ────────────────────────────────────
+        async function requestAndActivateNotification(reg) {
+            try {
+                const permission = await Notification.requestPermission();
+                if (permission === 'granted') {
+                    await subscribe(reg);
+                } else if (permission === 'denied') {
+                    hidePrompt();
+                    showToast('Izin notifikasi diblokir oleh browser. Anda dapat mengaktifkannya via ikon gembok di URL.', '#dc3545');
+                } else {
+                    hidePrompt();
+                }
+            } catch (err) {
+                console.error('Permission request error:', err);
             }
         }
 
-        // ─── Init: cek status subscription saat load ──────────────────────────
+        // ─── Main Init ────────────────────────────────────────────────────────
         async function init() {
-            if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-                btn.style.display = 'none'; // sembunyikan jika browser tidak support
+            if (!('Notification' in window)) {
+                if (btnToggle) btnToggle.style.display = 'none';
                 return;
             }
 
-            const reg = await navigator.serviceWorker.register('/sw.js');
-            const sub = await reg.pushManager.getSubscription();
-            setButtonActive(!!sub);
+            let reg = null;
+            if ('serviceWorker' in navigator) {
+                try {
+                    reg = await navigator.serviceWorker.register('/sw.js');
+                } catch (e) {
+                    console.warn('Service Worker registration skipped:', e);
+                }
+            }
 
-            // ─── Tombol toggle ────────────────────────────────────────────────
-            btn.addEventListener('click', async () => {
-                btn.disabled = true;
+            // Cek status subscription saat ini
+            if (reg && 'PushManager' in window) {
                 try {
                     const currentSub = await reg.pushManager.getSubscription();
-
-                    if (currentSub) {
-                        await unsubscribe(currentSub);
-                    } else {
-                        const permission = await Notification.requestPermission();
-                        if (permission === 'granted') {
-                            await subscribe(reg);
-                        } else {
-                            showToast('Izin notifikasi ditolak oleh browser.', '#dc3545');
-                        }
-                    }
-                } catch (err) {
-                    console.error('Push toggle error:', err);
-                    showToast('Gagal mengubah status push notifikasi.', '#dc3545');
-                } finally {
-                    btn.disabled = false;
+                    setButtonActive(!!currentSub || Notification.permission === 'granted');
+                } catch (e) {
+                    setButtonActive(Notification.permission === 'granted');
                 }
-            });
+            } else {
+                setButtonActive(Notification.permission === 'granted');
+            }
 
-            // ─── Auto-minta izin di kunjungan pertama (jika belum pernah) ────
+            // ─── Tampilkan Rekomendasi jika Belum Diaktifkan ──────────────────
             if (Notification.permission === 'default') {
-                setTimeout(async () => {
-                    const perm = await Notification.requestPermission();
-                    if (perm === 'granted') {
-                        await subscribe(reg);
+                const dismissedUntil = localStorage.getItem('notif_prompt_dismissed_until');
+                const isDismissed = dismissedUntil && Date.now() < parseInt(dismissedUntil, 10);
+
+                if (!isDismissed && promptCard) {
+                    // Tampilkan rekomendasi setelah delay singkat 1.5 detik
+                    setTimeout(() => {
+                        promptCard.classList.remove('d-none');
+                    }, 1500);
+                }
+            }
+
+            // ─── Event Listener Tombol Rekomendasi ─────────────────────────────
+            if (btnAllow) {
+                btnAllow.addEventListener('click', () => {
+                    requestAndActivateNotification(reg);
+                });
+            }
+
+            if (btnDismiss) {
+                btnDismiss.addEventListener('click', () => {
+                    dismissPromptFor24Hours();
+                });
+            }
+
+            if (btnClose) {
+                btnClose.addEventListener('click', () => {
+                    dismissPromptFor24Hours();
+                });
+            }
+
+            // ─── Event Listener Tombol Navbar Toggle ──────────────────────────
+            if (btnToggle) {
+                btnToggle.addEventListener('click', async () => {
+                    btnToggle.disabled = true;
+                    try {
+                        if (reg && 'PushManager' in window) {
+                            const currentSub = await reg.pushManager.getSubscription();
+                            if (currentSub) {
+                                await unsubscribe(currentSub);
+                            } else {
+                                await requestAndActivateNotification(reg);
+                            }
+                        } else {
+                            await requestAndActivateNotification(reg);
+                        }
+                    } catch (err) {
+                        console.error('Push toggle error:', err);
+                    } finally {
+                        btnToggle.disabled = false;
                     }
-                }, 3000); // tunda 3 detik agar tidak langsung popup
+                });
             }
         }
 
-        init().catch(console.error);
+        // Jalankan saat DOM siap
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
     })();
     </script>
-    @endif
 </body>
 
 </html>

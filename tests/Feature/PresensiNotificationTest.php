@@ -49,10 +49,22 @@ class PresensiNotificationTest extends TestCase
             'lokasi' => 'Lantai 1',
         ]);
 
+        $roleIdPlp = DB::table('roles')->insertGetId([
+            'nama_role' => 'PLP',
+            'slug' => 'plp',
+        ]);
+        $plp = User::create([
+            'role_id' => $roleIdPlp,
+            'nama_asli' => 'PLP User',
+            'email' => 'plp_notif@example.com',
+            'password' => bcrypt('password'),
+            'is_verified' => true,
+            'is_active' => true,
+        ]);
         $managerId = DB::table('lab_managers')->insertGetId([
             'lab_id' => $labId,
-            'plp_id' => null,
-            'kalab_id' => null,
+            'plp_id' => $plp->id,
+            'kalab_id' => $plp->id,
         ]);
 
         return [
@@ -82,6 +94,7 @@ class PresensiNotificationTest extends TestCase
 
         $this->actingAs($data['mahasiswa']);
 
+        Carbon::setTestNow(Carbon::today()->setTime(10, 0, 0));
         $response = $this->post(route('presensi.store'), [
             'peminjaman_id' => $peminjaman->id,
             'tipe_presensi' => 'masuk',

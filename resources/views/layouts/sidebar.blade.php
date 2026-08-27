@@ -130,6 +130,28 @@
                         </a>
                     </li>
                 @endif
+                {{-- Modul Inventaris --}}
+                @if (Auth::check() && in_array(Auth::user()->role_id, [1, 2, 3]))
+                    <li class="sidebar-item has-sub @if (request()->routeIs('inventaris.*') || request()->routeIs('inventaris-ruangan.*')) active @endif">
+                        <a href="#" class="sidebar-link">
+                            <i class="bi bi-box-seam-fill"></i>
+                            <span>Inventaris Lab</span>
+                        </a>
+
+                        <ul class="submenu">
+                            @if (in_array(Auth::user()->role_id, [1, 2]))
+                                <li class="submenu-item @if (request()->routeIs('inventaris.*')) active @endif">
+                                    <a href="{{ route('inventaris.index') }}" class="submenu-link">Master Inventaris</a>
+                                </li>
+                            @endif
+
+                            <li class="submenu-item @if (request()->routeIs('inventaris-ruangan.*')) active @endif">
+                                <a href="{{ route('inventaris-ruangan.index') }}" class="submenu-link">Daftar Inventaris (DIR)</a>
+                            </li>
+                        </ul>
+                    </li>
+                @endif
+
 
                 {{-- Approval --}}
                 @if (Auth::check() && in_array(Auth::user()->role_id, [1, 2, 3]))

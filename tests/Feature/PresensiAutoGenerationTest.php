@@ -182,6 +182,7 @@ class PresensiAutoGenerationTest extends TestCase
         $this->actingAs($data['mahasiswa']);
 
         // Post check-in for today
+        Carbon::setTestNow(Carbon::today()->setTime(10, 0, 0));
         $response = $this->post(route('presensi.store'), [
             'peminjaman_id' => $peminjaman->id,
             'tipe_presensi' => 'masuk',

@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\ApprovalController;
+use App\Http\Controllers\InventarisBarangController;
+use App\Http\Controllers\InventarisRuanganController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\NotificationController;
@@ -144,4 +146,30 @@ Route::middleware('auth')->group(function () {
             // Tambahkan route lain untuk CRUD Lab Manager jika diperlukan
         });
     });
+
+    // ---------------------------------------------------------
+    
+    // ---------------------------------------------------------
+    // ROLE: PLP & ADMIN (Master Inventaris)
+    // ---------------------------------------------------------
+    Route::middleware('role:plp,admin')->group(function () {
+        Route::get('/inventaris', [InventarisBarangController::class, 'index'])->name('inventaris.index');
+        Route::post('/inventaris', [InventarisBarangController::class, 'store'])->name('inventaris.store');
+        Route::post('/inventaris/import', [InventarisBarangController::class, 'import'])->name('inventaris.import');
+        Route::get('/inventaris/template', [InventarisBarangController::class, 'downloadTemplate'])->name('inventaris.template');
+        Route::put('/inventaris/{id}', [InventarisBarangController::class, 'update'])->name('inventaris.update');
+        Route::delete('/inventaris/{id}', [InventarisBarangController::class, 'destroy'])->name('inventaris.destroy');
+        Route::post('/inventaris/{id}/assign-ruangan', [InventarisBarangController::class, 'assignToRuangan'])->name('inventaris.assign');
+    });
+
+    // ROLE: PLP, DOSEN (KALAB), ADMIN (Inventaris Ruangan / DIR)
+    // ---------------------------------------------------------
+    Route::middleware('role:plp,dosen,admin')->group(function () {
+        Route::get('/inventaris-ruangan', [InventarisRuanganController::class, 'index'])->name('inventaris-ruangan.index');
+        Route::post('/inventaris-ruangan', [InventarisRuanganController::class, 'store'])->name('inventaris-ruangan.store');
+        Route::put('/inventaris-ruangan/{id}', [InventarisRuanganController::class, 'update'])->name('inventaris-ruangan.update');
+        Route::delete('/inventaris-ruangan/{id}', [InventarisRuanganController::class, 'destroy'])->name('inventaris-ruangan.destroy');
+        Route::get('/inventaris-ruangan/export-pdf/{lab_id}', [InventarisRuanganController::class, 'exportPdf'])->name('inventaris-ruangan.export-pdf');
+    });
+
 });

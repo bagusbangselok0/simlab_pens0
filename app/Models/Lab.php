@@ -15,12 +15,20 @@ class Lab extends Model
     ];
 
     // Relasi ke PeminjamanLab
-    public function peminjamanLabs() {
+    public function peminjamanLabs()
+    {
         return $this->hasMany(PeminjamanLab::class);
     }
 
     // Relasi ke LabManager
-    public function labManager() {
+    public function labManager()
+    {
         return $this->hasOne(LabManager::class);
+    }
+
+    // Relasi ke InventarisRuangan
+    public function inventarisRuangans()
+    {
+        return $this->hasMany(InventarisRuangan::class);
     }
 }
