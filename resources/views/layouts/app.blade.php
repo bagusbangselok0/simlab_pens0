@@ -131,6 +131,7 @@
 
     @include('layouts.scripts')
     @yield('scripts')
+    @stack('scripts')
 
     {{-- Notification AJAX Script --}}
     <script>

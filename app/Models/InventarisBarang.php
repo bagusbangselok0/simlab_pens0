@@ -42,8 +42,36 @@ class InventarisBarang extends Model
         return count($parts) > 0 ? implode(' - ', $parts) : '-';
     }
 
+    public function getAssignedDirAttribute(): ?InventarisRuangan
+    {
+        if ($this->inventarisRuangan) {
+            return $this->inventarisRuangan;
+        }
+
+        $nup = trim((string) $this->nup);
+        if ($nup === '') {
+            return null;
+        }
+
+        $identity = $this->merk_tipe !== '-' ? $this->merk_tipe : ($this->spesifikasi ?? null);
+
+        return InventarisRuangan::where('kode_barang', $this->kode_barang)
+            ->where('nama_barang', $this->nama_barang)
+            ->where('spesifikasi_merk_tipe', $identity)
+            ->where('tahun_perolehan', $this->tgl_perolehan?->year)
+            ->where(function ($query) use ($nup) {
+                $query->where('nup', $nup)
+                    ->orWhere('nup', 'like', $nup . ',%')
+                    ->orWhere('nup', 'like', '%, ' . $nup)
+                    ->orWhere('nup', 'like', '%,' . $nup . ',%')
+                    ->orWhere('nup', 'like', '%,' . $nup)
+                    ->orWhere('nup', 'like', $nup . '%');
+            })
+            ->first();
+    }
+
     public function getIsAssignedAttribute(): bool
     {
-        return $this->inventarisRuangan !== null;
+        return $this->assigned_dir !== null;
     }
 }

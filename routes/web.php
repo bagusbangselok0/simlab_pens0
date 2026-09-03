@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ApprovalController;
+use App\Http\Controllers\SignatureVerificationController;
 use App\Http\Controllers\InventarisBarangController;
 use App\Http\Controllers\InventarisRuanganController;
 use App\Http\Controllers\DashboardController;
@@ -115,6 +116,14 @@ Route::middleware('auth')->group(function () {
     // ROLE: ADMIN (Manajemen Master Data)
     // ---------------------------------------------------------
     Route::middleware('role:admin')->group(function () {
+
+        // Verifikasi Tanda Tangan Digital
+        Route::prefix('admin/verifikasi-ttd')->group(function () {
+            Route::get('/', [SignatureVerificationController::class, 'index'])->name('admin.signatures.index');
+            Route::post('/{id}/approve', [SignatureVerificationController::class, 'approve'])->name('admin.signatures.approve');
+            Route::post('/{id}/reject', [SignatureVerificationController::class, 'reject'])->name('admin.signatures.reject');
+        });
+
         // Manajemen Users
         Route::prefix('users')->group(function () {
             Route::get('/', [UserController::class, 'index'])->name('users.index');
@@ -148,7 +157,7 @@ Route::middleware('auth')->group(function () {
     });
 
     // ---------------------------------------------------------
-    
+
     // ---------------------------------------------------------
     // ROLE: PLP & ADMIN (Master Inventaris)
     // ---------------------------------------------------------
@@ -171,5 +180,4 @@ Route::middleware('auth')->group(function () {
         Route::delete('/inventaris-ruangan/{id}', [InventarisRuanganController::class, 'destroy'])->name('inventaris-ruangan.destroy');
         Route::get('/inventaris-ruangan/export-pdf/{lab_id}', [InventarisRuanganController::class, 'exportPdf'])->name('inventaris-ruangan.export-pdf');
     });
-
 });

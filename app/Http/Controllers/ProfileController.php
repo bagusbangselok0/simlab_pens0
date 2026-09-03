@@ -129,14 +129,20 @@ class ProfileController extends Controller
             // Simpan ke public/storage/signatures/
             $file->move($signaturePath, $filename);
 
-            // Simpan hanya nama file ke database
+            // Simpan nama file ke database & set status pending verifikasi
             $user->signature_path = $filename;
+            $user->signature_status = 'pending';
+            $user->signature_rejection_note = null;
+            $user->signature_verified_at = null;
+            $user->signature_verified_by = null;
             $user->save();
 
             return response()->json([
                 'success' => true,
-                'message' => 'Tanda tangan berhasil diunggah',
-                'signature_url' => asset('storage/signatures/' . $filename)
+                'message' => 'Tanda tangan berhasil diunggah dan sedang menunggu persetujuan Admin.',
+                'signature_url' => asset('storage/signatures/' . $filename),
+                'signature_status' => 'pending',
+                'signature_status_label' => 'Menunggu Persetujuan Admin'
             ]);
         }
 

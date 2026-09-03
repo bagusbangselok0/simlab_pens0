@@ -46,20 +46,34 @@ class InventarisBarangController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('nama_barang', 'like', "%{$search}%")
-                  ->orWhere('kode_barang', 'like', "%{$search}%")
-                  ->orWhere('nup', 'like', "%{$search}%")
-                  ->orWhere('merk', 'like', "%{$search}%")
-                  ->orWhere('tipe', 'like', "%{$search}%");
+                    ->orWhere('kode_barang', 'like', "%{$search}%")
+                    ->orWhere('nup', 'like', "%{$search}%")
+                    ->orWhere('merk', 'like', "%{$search}%")
+                    ->orWhere('tipe', 'like', "%{$search}%");
             });
         }
 
-        $items = $query->orderByDesc('created_at')->paginate(25)->withQueryString();
+        foreach (['kode_barang', 'nup', 'nama_barang', 'merk', 'tipe'] as $column) {
+            if ($request->filled('filter_' . $column)) {
+                $query->where($column, 'like', '%' . $request->input('filter_' . $column) . '%');
+            }
+        }
+
+        foreach (['tgl_buku_pertama', 'tgl_perolehan'] as $column) {
+            if ($request->filled('filter_' . $column)) {
+                $query->whereDate($column, $request->input('filter_' . $column));
+            }
+        }
+
+        $perPage = min(max((int) $request->input('per_page', 25), 10), 100);
+        $items = $query->orderByDesc('created_at')->paginate($perPage)->withQueryString();
 
         // Ringkasan Statistik
+        $masterItems = InventarisBarang::all();
         $stats = [
-            'total_item' => InventarisBarang::count(),
-            'unassigned' => InventarisBarang::doesntHave('inventarisRuangan')->count(),
-            'assigned' => InventarisBarang::has('inventarisRuangan')->count(),
+            'total_item' => $masterItems->count(),
+            'unassigned' => $masterItems->filter(fn ($item) => $item->assigned_dir === null)->count(),
+            'assigned' => $masterItems->filter(fn ($item) => $item->assigned_dir !== null)->count(),
         ];
 
         $title = 'Master Data Inventaris';
@@ -143,22 +157,80 @@ class InventarisBarangController extends Controller
     {
         $barang = InventarisBarang::findOrFail($id);
 
-        if ($barang->inventarisRuangan) {
-            return redirect()->route('inventaris.index')
-                ->with('error', 'Barang ini sudah ditempatkan di ruangan ' . $barang->inventarisRuangan->lab->nama_lab);
-        }
-
         $validated = $request->validate([
             'lab_id' => 'required|exists:labs,id',
-            'jumlah' => 'required|integer|min:1',
+            'jumlah' => 'nullable|integer|min:1',
             'satuan' => 'required|string|max:20',
             'kondisi' => 'required|in:baik,rusak_ringan,rusak_berat',
             'is_bisa_dipinjam' => 'nullable|boolean',
             'keterangan' => 'nullable|string',
         ]);
 
+        $validated['jumlah'] = $validated['jumlah'] ?? 1;
+
         $tahunPerolehan = $barang->tgl_perolehan ? (int) date('Y', strtotime($barang->tgl_perolehan)) : null;
         $spesifikasi = $barang->merk_tipe != '-' ? $barang->merk_tipe : ($barang->spesifikasi ?? null);
+        $nupList = $this->normalizeNupList((string) $barang->nup);
+
+        $existingDirItem = InventarisRuangan::where('lab_id', $validated['lab_id'])
+            ->where('kode_barang', $barang->kode_barang)
+            ->where('nama_barang', $barang->nama_barang)
+            ->where('spesifikasi_merk_tipe', $spesifikasi)
+            ->where('tahun_perolehan', $tahunPerolehan)
+            ->where('kondisi', $validated['kondisi'])
+            ->first();
+
+        if ($existingDirItem) {
+            $existingNups = $this->normalizeNupList((string) $existingDirItem->nup);
+            $mergedNups = array_values(array_unique(array_merge($existingNups, $nupList)));
+
+            $existingDirItem->update([
+                'inventaris_barang_id' => $barang->id,
+                'kode_barang' => $barang->kode_barang,
+                'nup' => implode(', ', $mergedNups),
+                'nama_barang' => $barang->nama_barang,
+                'spesifikasi_merk_tipe' => $spesifikasi,
+                'tahun_perolehan' => $tahunPerolehan,
+                'jumlah' => count($mergedNups),
+                'satuan' => $validated['satuan'],
+                'kondisi' => $validated['kondisi'],
+                'is_bisa_dipinjam' => $request->has('is_bisa_dipinjam'),
+                'keterangan' => $validated['keterangan'] ?? $existingDirItem->keterangan,
+            ]);
+
+            return redirect()->route('inventaris.index')
+                ->with('success', 'NUP barang berhasil digabungkan ke data DIR yang sudah ada.');
+        }
+
+        $alreadyAssigned = $barang->inventarisRuangan;
+        if ($alreadyAssigned && (int) $alreadyAssigned->lab_id !== (int) $validated['lab_id']) {
+            return redirect()->route('inventaris.index')
+                ->with('error', 'Barang ini sudah ditempatkan di ruangan ' . $alreadyAssigned->lab->nama_lab);
+        }
+
+        if ($alreadyAssigned && (int) $alreadyAssigned->lab_id === (int) $validated['lab_id']) {
+            $mergedNups = array_values(array_unique(array_merge(
+                $this->normalizeNupList((string) $alreadyAssigned->nup),
+                $nupList
+            )));
+
+            $alreadyAssigned->update([
+                'inventaris_barang_id' => $barang->id,
+                'kode_barang' => $barang->kode_barang,
+                'nup' => implode(', ', $mergedNups),
+                'nama_barang' => $barang->nama_barang,
+                'spesifikasi_merk_tipe' => $spesifikasi,
+                'tahun_perolehan' => $tahunPerolehan,
+                'jumlah' => count($mergedNups),
+                'satuan' => $validated['satuan'],
+                'kondisi' => $validated['kondisi'],
+                'is_bisa_dipinjam' => $request->has('is_bisa_dipinjam'),
+                'keterangan' => $validated['keterangan'] ?? $alreadyAssigned->keterangan,
+            ]);
+
+            return redirect()->route('inventaris.index')
+                ->with('success', 'NUP barang berhasil diperbarui pada ruangan yang dipilih.');
+        }
 
         InventarisRuangan::create([
             'inventaris_barang_id' => $barang->id,
@@ -231,22 +303,22 @@ class InventarisBarangController extends Controller
         ];
 
         foreach ($rows as $index => $row) {
-            $rowLower = array_map(fn($v) => strtolower(trim((string)$v)), $row);
-            
+            $rowLower = array_map(fn($v) => $this->normalizeHeaderName($v), $row);
+
             foreach ($rowLower as $colIdx => $colName) {
-                if (str_contains($colName, 'kode')) {
+                if ($colName === 'kode' || str_contains($colName, 'kode')) {
                     $colMap['kode_barang'] = $colIdx;
                 } elseif ($colName === 'nup' || str_contains($colName, 'nup')) {
                     $colMap['nup'] = $colIdx;
-                } elseif (str_contains($colName, 'nama')) {
+                } elseif ($colName === 'nama' || str_contains($colName, 'nama')) {
                     $colMap['nama_barang'] = $colIdx;
                 } elseif ($colName === 'merk' || str_contains($colName, 'merk')) {
                     $colMap['merk'] = $colIdx;
                 } elseif ($colName === 'tipe' || str_contains($colName, 'tipe')) {
                     $colMap['tipe'] = $colIdx;
-                } elseif (str_contains($colName, 'buku')) {
+                } elseif (str_contains($colName, 'tanggal') && str_contains($colName, 'buku')) {
                     $colMap['tgl_buku_pertama'] = $colIdx;
-                } elseif (str_contains($colName, 'perolehan')) {
+                } elseif (str_contains($colName, 'tanggal') && str_contains($colName, 'perolehan')) {
                     $colMap['tgl_perolehan'] = $colIdx;
                 }
             }
@@ -279,7 +351,7 @@ class InventarisBarangController extends Controller
             $row = $rows[$i];
 
             $namaBarang = isset($colMap['nama_barang'], $row[$colMap['nama_barang']]) ? trim((string)$row[$colMap['nama_barang']]) : '';
-            
+
             // Lewati baris kosong
             if (empty($namaBarang)) {
                 continue;
@@ -289,7 +361,7 @@ class InventarisBarangController extends Controller
             $nup = isset($colMap['nup'], $row[$colMap['nup']]) ? trim((string)$row[$colMap['nup']]) : null;
             $merk = isset($colMap['merk'], $row[$colMap['merk']]) ? trim((string)$row[$colMap['merk']]) : null;
             $tipe = isset($colMap['tipe'], $row[$colMap['tipe']]) ? trim((string)$row[$colMap['tipe']]) : null;
-            
+
             $rawTglBuku = isset($colMap['tgl_buku_pertama'], $row[$colMap['tgl_buku_pertama']]) ? trim((string)$row[$colMap['tgl_buku_pertama']]) : null;
             $rawTglPerolehan = isset($colMap['tgl_perolehan'], $row[$colMap['tgl_perolehan']]) ? trim((string)$row[$colMap['tgl_perolehan']]) : null;
 
@@ -333,23 +405,57 @@ class InventarisBarangController extends Controller
      */
     public function downloadTemplate()
     {
+        $filename = 'template_master_inventaris.csv';
         $headers = [
-            'Content-Type' => 'text/csv',
-            'Content-Disposition' => 'attachment; filename="template_master_inventaris.csv"',
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+            'Cache-Control' => 'no-store, no-cache, must-revalidate',
+            'Pragma' => 'no-cache',
+            'Expires' => '0',
         ];
 
         $callback = function () {
             $file = fopen('php://output', 'w');
-            // Header baris 1
-            fputcsv($file, ['Kode Barang', 'NUP', 'Nama Barang', 'Merk', 'Tipe', 'Tanggal Buku Pertama', 'Tanggal Perolehan']);
-            // Contoh baris data
-            fputcsv($file, ['2010104002', '1', 'Tanah Bangunan Pendidikan Dan Latihan', '', '', '2021-12-31', '2004-03-03']);
-            fputcsv($file, ['3030101033', '1', 'Mesin Laser Cutting', 'CUTTING STICKER JINKA PRO 1351', 'CUTTING STICKER JINKA PRO 1351', '2021-12-31', '2018-05-21']);
-            fputcsv($file, ['3030205014', '1', 'Crimping Tools', 'DIGILINK', 'DIGILINK', '2021-12-31', '2012-12-12']);
+            if ($file === false) {
+                return;
+            }
+
+            // Tambahkan BOM agar Excel mengenali file UTF-8 dengan benar.
+            fwrite($file, "\xEF\xBB\xBF");
+
+            $header = ['Kode Barang', 'NUP', 'Nama Barang', 'Merk', 'Tipe', 'Tanggal Buku Pertama', 'Tanggal Perolehan'];
+            fputcsv($file, $header, ';', '"', '\\');
+
+            $examples = [
+                ['2010104002', '1', 'Tanah Bangunan Pendidikan Dan Latihan', '', '', '2021-12-31', '2004-03-03'],
+                ['3030101033', '1', 'Mesin Laser Cutting', 'CUTTING STICKER JINKA PRO 1351', 'CUTTING STICKER JINKA PRO 1351', '2021-12-31', '2018-05-21'],
+                ['3030205014', '1', 'Crimping Tools', 'DIGILINK', 'DIGILINK', '2021-12-31', '2012-12-12'],
+            ];
+
+            foreach ($examples as $row) {
+                fputcsv($file, $row, ';', '"', '\\');
+            }
+
             fclose($file);
         };
 
         return response()->stream($callback, 200, $headers);
+    }
+
+    /**
+     * Normalisasi nama header file agar cocok dengan template Excel yang ditampilkan user.
+     */
+    private function normalizeHeaderName(mixed $value): string
+    {
+        if ($value === null) {
+            return '';
+        }
+
+        $normalized = trim((string) $value);
+        $normalized = preg_replace('/[^\pL\pN]+/u', ' ', $normalized);
+        $normalized = strtolower(trim((string) $normalized));
+
+        return $normalized;
     }
 
     /**
@@ -375,5 +481,16 @@ class InventarisBarangController extends Controller
         } catch (\Exception $e) {
             return null;
         }
+    }
+
+    private function normalizeNupList(?string $nup): array
+    {
+        if (empty($nup)) {
+            return [];
+        }
+
+        return array_values(array_unique(array_filter(array_map(function ($value) {
+            return trim((string) $value);
+        }, preg_split('/\s*,\s*/', $nup, -1, PREG_SPLIT_NO_EMPTY)), fn ($value) => $value !== '')));
     }
 }

@@ -121,10 +121,18 @@ class ApprovalController extends Controller
         $user = Auth::user();
         $jabatanId = $user->jabatan_id;
 
-        if ($user->signature_path == null) {
+        if ($user->signature_path == null || $user->signature_status !== 'approved') {
+            if ($user->signature_status === 'pending') {
+                $msg = 'Tanda tangan digital Anda masih menunggu persetujuan Admin. Anda belum dapat menyetujui peminjaman.';
+            } elseif ($user->signature_status === 'rejected') {
+                $msg = 'Tanda tangan digital Anda ditolak oleh Admin. Silakan upload ulang tanda tangan di halaman profil.';
+            } else {
+                $msg = 'Anda belum memiliki tanda tangan digital yang disetujui Admin. Silakan upload tanda tangan terlebih dahulu pada halaman profil.';
+            }
+
             return response()->json([
                 'success' => false,
-                'message' => 'Anda belum upload tanda tangan. Silahkan upload tanda tangan terlebih dahulu pada halaman profile.'
+                'message' => $msg
             ], 422);
         }
 

@@ -3,6 +3,24 @@
 @section('title', 'Master Data Inventaris')
 
 @section('content')
+<style>
+    .inventory-toolbar { display: flex; flex-wrap: wrap; gap: .5rem; justify-content: flex-end; }
+    .inventory-toolbar .btn { margin: 0 !important; }
+    .inventory-table { min-width: 980px; }
+    @media (max-width: 575.98px) {
+        .inventory-toolbar { justify-content: stretch; }
+        .inventory-toolbar .btn { flex: 1 1 100%; }
+        .inventory-filter .input-group { flex-wrap: wrap; }
+        .inventory-filter .input-group > * { width: 100%; border-radius: .375rem !important; }
+        .inventory-filter .input-group > * + * { margin-top: .5rem; }
+        .inventory-card-body { padding: 1rem .75rem !important; }
+        .inventory-modal-dialog { margin: .5rem; }
+        .inventory-modal-dialog .modal-footer { flex-direction: column-reverse; align-items: stretch; gap: .5rem; }
+        .inventory-modal-dialog .modal-footer .btn,
+        .inventory-modal-dialog .modal-footer > div { width: 100%; }
+        .inventory-modal-dialog .modal-footer > div { display: flex; flex-direction: column-reverse; gap: .5rem; }
+    }
+</style>
 <div class="page-heading">
     <div class="page-title mb-3">
         <div class="row align-items-center">
@@ -10,7 +28,7 @@
                 <h3>Master Data Inventaris</h3>
                 <p class="text-subtitle text-muted">Katalog aset & inventaris yang belum atau sudah ditempatkan ke ruangan (DIR)</p>
             </div>
-            <div class="col-12 col-md-6 order-md-2 order-first text-md-end mb-3 mb-md-0">
+            <div class="col-12 col-md-6 order-md-2 order-first text-md-end mb-3 mb-md-0 inventory-toolbar">
                 <a href="{{ route('inventaris.template') }}" class="btn btn-outline-secondary me-2">
                     <i class="bi bi-download me-1"></i> Template Excel
                 </a>
@@ -94,7 +112,7 @@
 
     <!-- Filter & Pencarian -->
     <div class="card mb-4">
-        <div class="card-body">
+        <div class="card-body inventory-filter">
             <form action="{{ route('inventaris.index') }}" method="GET" class="row g-3 align-items-end">
                 <div class="col-md-4">
                     <label class="form-label fw-bold">Status Penempatan</label>
@@ -109,9 +127,22 @@
                     <div class="input-group">
                         <input type="text" name="search" class="form-control" placeholder="Cari nama barang, kode barang, NUP, merk, tipe..." value="{{ request('search') }}">
                         <button class="btn btn-outline-primary" type="submit"><i class="bi bi-search"></i> Cari</button>
-                        @if(request('search') || request('status'))
+                        @if(request()->except('page'))
                             <a href="{{ route('inventaris.index') }}" class="btn btn-outline-secondary">Reset</a>
                         @endif
+                    </div>
+                </div>
+                <div class="col-12">
+                    <div class="row g-2 pt-2 border-top">
+                        <div class="col-6 col-md-2"><input type="text" name="filter_kode_barang" class="form-control form-control-sm" placeholder="Filter kode" value="{{ request('filter_kode_barang') }}"></div>
+                        <div class="col-6 col-md-1"><input type="text" name="filter_nup" class="form-control form-control-sm" placeholder="Filter NUP" value="{{ request('filter_nup') }}"></div>
+                        <div class="col-12 col-md-3"><input type="text" name="filter_nama_barang" class="form-control form-control-sm" placeholder="Filter nama barang" value="{{ request('filter_nama_barang') }}"></div>
+                        <div class="col-6 col-md-2"><input type="text" name="filter_merk" class="form-control form-control-sm" placeholder="Filter merk" value="{{ request('filter_merk') }}"></div>
+                        <div class="col-6 col-md-2"><input type="text" name="filter_tipe" class="form-control form-control-sm" placeholder="Filter tipe" value="{{ request('filter_tipe') }}"></div>
+                        <div class="col-6 col-md-1"><input type="date" name="filter_tgl_buku_pertama" class="form-control form-control-sm" title="Filter tanggal buku" value="{{ request('filter_tgl_buku_pertama') }}"></div>
+                        <div class="col-6 col-md-1"><input type="date" name="filter_tgl_perolehan" class="form-control form-control-sm" title="Filter tanggal perolehan" value="{{ request('filter_tgl_perolehan') }}"></div>
+                        <div class="col-12 col-md-2"><select name="per_page" class="form-select form-select-sm" onchange="this.form.submit()"><option value="10" {{ request('per_page', 25) == 10 ? 'selected' : '' }}>10 baris</option><option value="25" {{ request('per_page', 25) == 25 ? 'selected' : '' }}>25 baris</option><option value="50" {{ request('per_page', 25) == 50 ? 'selected' : '' }}>50 baris</option><option value="100" {{ request('per_page', 25) == 100 ? 'selected' : '' }}>100 baris</option></select></div>
+                        <div class="col-12 d-flex flex-wrap gap-2"><button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-funnel me-1"></i> Terapkan Filter Kolom</button>@if(request()->except('page'))<a href="{{ route('inventaris.index') }}" class="btn btn-sm btn-outline-secondary">Reset Semua Filter</a>@endif</div>
                     </div>
                 </div>
             </form>
@@ -122,7 +153,7 @@
     <div class="card">
         <div class="card-body">
             <div class="table-responsive">
-                <table class="table table-hover table-striped align-middle">
+                <table class="table table-hover table-striped align-middle inventory-table">
                     <thead class="table-dark">
                         <tr>
                             <th style="width: 50px;">NO</th>
@@ -153,11 +184,11 @@
                                 <td class="text-center">{{ $item->tgl_buku_pertama ? $item->tgl_buku_pertama->format('d/m/Y') : '-' }}</td>
                                 <td class="text-center">{{ $item->tgl_perolehan ? $item->tgl_perolehan->format('d/m/Y') : '-' }}</td>
                                 <td class="text-center">
-                                    @if($item->inventarisRuangan)
+                                    @if($item->assigned_dir)
                                         <span class="badge bg-success">
-                                            <i class="bi bi-check-circle me-1"></i> {{ $item->inventarisRuangan->lab->nama_lab ?? 'DIR' }}
+                                            <i class="bi bi-check-circle me-1"></i> {{ $item->assigned_dir->lab->nama_lab ?? 'DIR' }}
                                         </span>
-                                        <br><small class="text-muted">({{ $item->inventarisRuangan->jumlah }} {{ $item->inventarisRuangan->satuan }} - {{ $item->inventarisRuangan->kondisi_label }})</small>
+                                        <br><small class="text-muted">({{ $item->assigned_dir->kondisi_label }})</small>
                                     @else
                                         <span class="badge bg-warning text-dark">
                                             <i class="bi bi-clock-history me-1"></i> Belum Masuk DIR
@@ -165,7 +196,7 @@
                                     @endif
                                 </td>
                                 <td class="text-center">
-                                    @if(!$item->inventarisRuangan)
+                                    @if(!$item->assigned_dir)
                                         <button type="button" class="btn btn-sm btn-success me-1" data-bs-toggle="modal" data-bs-target="#modalAssign{{ $item->id }}" title="Tempatkan ke Ruangan (DIR)">
                                             <i class="bi bi-door-open-fill"></i>
                                         </button>
@@ -186,7 +217,7 @@
                             <!-- Modal Assign ke Ruangan -->
                             @if(!$item->inventarisRuangan)
                                 <div class="modal fade" id="modalAssign{{ $item->id }}" tabindex="-1" aria-hidden="true">
-                                    <div class="modal-dialog">
+                                    <div class="modal-dialog inventory-modal-dialog">
                                         <div class="modal-content">
                                             <form action="{{ route('inventaris.assign', $item->id) }}" method="POST">
                                                 @csrf
@@ -208,15 +239,10 @@
                                                             @endforeach
                                                         </select>
                                                     </div>
-                                                    <div class="row g-2 mb-3">
-                                                        <div class="col-6">
-                                                            <label class="form-label fw-bold">Jumlah <span class="text-danger">*</span></label>
-                                                            <input type="number" name="jumlah" class="form-control" value="1" min="1" required>
-                                                        </div>
-                                                        <div class="col-6">
-                                                            <label class="form-label fw-bold">Satuan <span class="text-danger">*</span></label>
-                                                            <input type="text" name="satuan" class="form-control" value="Unit" required>
-                                                        </div>
+                                                    <input type="hidden" name="jumlah" value="1">
+                                                    <div class="mb-3">
+                                                        <label class="form-label fw-bold">Satuan <span class="text-danger">*</span></label>
+                                                        <input type="text" name="satuan" class="form-control" value="Unit" required>
                                                     </div>
                                                     <div class="mb-3">
                                                         <label class="form-label fw-bold">Kondisi Awal <span class="text-danger">*</span></label>
@@ -247,7 +273,7 @@
 
                             <!-- Modal Edit Master -->
                             <div class="modal fade" id="modalEditMaster{{ $item->id }}" tabindex="-1" aria-hidden="true">
-                                <div class="modal-dialog modal-lg">
+                                    <div class="modal-dialog modal-lg inventory-modal-dialog">
                                     <div class="modal-content">
                                         <form action="{{ route('inventaris.update', $item->id) }}" method="POST">
                                             @csrf
@@ -316,7 +342,8 @@
                 </table>
             </div>
 
-            <div class="d-flex justify-content-end mt-3">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-3">
+                <small class="text-muted">Menampilkan {{ $items->firstItem() ?? 0 }}-{{ $items->lastItem() ?? 0 }} dari {{ $items->total() }} data</small>
                 {{ $items->links() }}
             </div>
         </div>
@@ -324,7 +351,7 @@
 
     <!-- Modal Tambah Master -->
     <div class="modal fade" id="modalTambahMaster" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
+        <div class="modal-dialog modal-lg inventory-modal-dialog">
             <div class="modal-content">
                 <form action="{{ route('inventaris.store') }}" method="POST">
                     @csrf
@@ -385,7 +412,7 @@
 
     <!-- Modal Import Excel -->
     <div class="modal fade" id="modalImportExcel" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog">
+        <div class="modal-dialog inventory-modal-dialog">
             <div class="modal-content">
                 <form action="{{ route('inventaris.import') }}" method="POST" enctype="multipart/form-data">
                     @csrf

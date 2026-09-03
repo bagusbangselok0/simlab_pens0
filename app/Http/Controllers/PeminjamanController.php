@@ -298,11 +298,20 @@ class PeminjamanController extends Controller
             ], 422);
         }
 
-        // cek apakah mahasiswa sudah upload signature_path
-        if (Auth::user()->signature_path == null) {
+        // Cek apakah mahasiswa sudah memiliki tanda tangan yang disetujui Admin
+        $userAuth = Auth::user();
+        if ($userAuth->signature_path == null || $userAuth->signature_status !== 'approved') {
+            if ($userAuth->signature_status === 'pending') {
+                $msg = 'Tanda tangan digital Anda masih menunggu persetujuan Admin. Silakan tunggu verifikasi sebelum mengajukan peminjaman.';
+            } elseif ($userAuth->signature_status === 'rejected') {
+                $msg = 'Tanda tangan digital Anda ditolak oleh Admin. Silakan upload ulang tanda tangan sesuai petunjuk di halaman profil.';
+            } else {
+                $msg = 'Anda belum memiliki tanda tangan digital yang disetujui Admin. Silakan upload tanda tangan terlebih dahulu di menu profil.';
+            }
+
             return response()->json([
                 'success' => false,
-                'message' => 'Anda belum upload ttd. Silahkan upload ttd terlebih dahulu di menu profile.',
+                'message' => $msg,
             ], 422);
         }
 

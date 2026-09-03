@@ -86,6 +86,10 @@
                             <li class="submenu-item">
                                 <a href="{{ route('lab_manager.index') }}" class="submenu-link">Penanggung Jawab Lab</a>
                             </li>
+
+                            <li class="submenu-item @if (request()->routeIs('admin.signatures.*')) active @endif">
+                                <a href="{{ route('admin.signatures.index') }}" class="submenu-link">Verifikasi TTD</a>
+                            </li>
                         </ul>
                     </li>
                 @endif

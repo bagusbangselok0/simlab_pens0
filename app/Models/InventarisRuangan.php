@@ -43,7 +43,7 @@ class InventarisRuangan extends Model
 
     public function inventarisBarang()
     {
-        return $this->belongsTo(InventarisBarang::class, 'inventaris_barang_id');
+        return $this->belongsTo(inventarisBarang::class, 'inventaris_barang_id');
     }
 
     public function getKondisiLabelAttribute(): string
