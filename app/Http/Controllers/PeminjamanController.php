@@ -198,10 +198,56 @@ class PeminjamanController extends Controller
             ->where('mahasiswa_id', Auth::id())
             ->firstOrFail();
 
+        // 1. Render HTML ke PDF biasa via DomPDF
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pages.peminjaman.cetak', compact('peminjaman'));
+        $pdfContent = $pdf->output();
+
+        // 2. Convert PDF ke image menggunakan Imagick (flatten)
+        $imagick = new \Imagick();
+        $imagick->setResolution(200, 200); // 200 DPI untuk kualitas cetak yang baik
+        $imagick->readImageBlob($pdfContent);
+
+        $pageImages = [];
+        $pageCount = $imagick->getNumberImages();
+
+        for ($i = 0; $i < $pageCount; $i++) {
+            $imagick->setIteratorIndex($i);
+            $img = clone $imagick;
+            $img->setImageFormat('png');
+            $img->setImageAlphaChannel(\Imagick::ALPHACHANNEL_REMOVE);
+            $img->setImageBackgroundColor('white');
+            $img = $img->mergeImageLayers(\Imagick::LAYERMETHOD_FLATTEN);
+            $pageImages[] = $img->getImageBlob();
+            $img->clear();
+            $img->destroy();
+        }
+
+        $imagick->clear();
+        $imagick->destroy();
+
+        // 3. Buat PDF baru yang isinya hanya gambar (flat/tidak bisa select teks)
+        $htmlPages = '<html><head><style>';
+        $htmlPages .= '@page { margin: 0; } ';
+        $htmlPages .= 'body { margin: 0; padding: 0; } ';
+        $htmlPages .= '.page { width: 100%; page-break-after: always; } ';
+        $htmlPages .= '.page:last-child { page-break-after: auto; } ';
+        $htmlPages .= 'img { width: 100%; height: auto; display: block; }';
+        $htmlPages .= '</style></head><body>';
+
+        foreach ($pageImages as $imageBlob) {
+            $base64 = base64_encode($imageBlob);
+            $htmlPages .= '<div class="page">';
+            $htmlPages .= '<img src="data:image/png;base64,' . $base64 . '">';
+            $htmlPages .= '</div>';
+        }
+
+        $htmlPages .= '</body></html>';
+
+        $flatPdfObj = \Barryvdh\DomPDF\Facade\Pdf::loadHTML($htmlPages)
+            ->setPaper('a4', 'portrait');
 
         $nama_file = 'Peminjaman_Lab_' . str_replace(' ', '_', $peminjaman->lab->nama_lab) . '_' . date('YmdHis') . '.pdf';
-        return $pdf->stream($nama_file);
+        return $flatPdfObj->stream($nama_file);
     }
 
     public function cancel($id)

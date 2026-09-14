@@ -11,26 +11,26 @@
 
 Melalui aplikasi ini, **mahasiswa** dapat dengan mudah mengajukan permohonan peminjaman ruangan dan alat laboratorium dari mana saja. **Dosen dan Admin** memiliki akses ke dashboard khusus untuk memantau presensi (kehadiran) di laboratorium, meninjau dan menyetujui permohonan peminjaman, serta mengelola inventaris. 
 
-Aplikasi ini juga dilengkapi dengan fitur modern untuk mempermudah birokrasi, seperti unggah **tanda tangan digital (Digital Signature)** secara instan tanpa memuat ulang halaman (via AJAX), **pembatalan otomatis (Auto-Cancel)** untuk permohonan yang tidak ditindaklanjuti selama 24 jam, manajemen profil pengguna, dan kemampuan untuk mencetak bukti peminjaman atau laporan dalam format **PDF**. Secara keseluruhan, Simlab bertujuan untuk menciptakan lingkungan laboratorium yang tertib, terdata dengan baik, dan mudah dikelola.
+Aplikasi ini juga dilengkapi dengan fitur modern untuk mempermudah birokrasi, seperti unggah **tanda tangan digital (Digital Signature)** secara instan tanpa memuat ulang halaman (via AJAX), **pembatalan otomatis (Auto-Cancel)** untuk permohonan yang tidak ditindaklanjuti selama 24 jam, manajemen profil pengguna, dan kemampuan untuk mencetak bukti peminjaman dalam format **Flattened PDF** (dokumen yang dikunci sebagai citra utuh sehingga tanda tangan dan isi surat tidak bisa disalin/disalahgunakan). Secara keseluruhan, Simlab bertujuan untuk menciptakan lingkungan laboratorium yang tertib, terdata dengan baik, dan mudah dikelola.
 
 ## 🚀 Key Features
 
 - **Role-Based Access Control:** Dedicated, distinct dashboards for Admin, Lecturer (Dosen), and Students (Mahasiswa).
 - **Peminjaman Lab (Lab Loans):** Streamlined requesting and management of laboratory rooms and equipment. Includes an automated system that cancels pending requests after 24 hours of inactivity if not approved.
+- **Flattened & Secure PDF Export:** Surat peminjaman lab dicetak dalam format PDF yang di-flatten (dikonversi menjadi gambar utuh beresolusi 200 DPI via `Imagick` & `Ghostscript`). Seluruh teks dan file tanda tangan digital terkunci, tidak dapat diseleksi, disalin (*copy-paste*), atau diekstrak demi keamanan dokumen dan tanda tangan pejabat terkait.
 - **Browser Push Notifications:** Real-time native OS/device notifications via standard Web Push API (built-in browser API), working in the background even when the app tab is closed (FCM/Firebase-free).
 - **WhatsApp Notification Integration:** Built-in channel using Fonnte API (optional, can be turned on/off).
-- **PDF Reporting:** Export detailed lab loan records directly to PDF format using `dompdf`.
 - **Presensi & Monitoring:** Real-time tracking and monitoring of laboratory attendance.
 - **User & Profile Management:** Advanced profile management including seamless, AJAX-powered signature file uploads (without page reloads).
 - **Admin-Assisted Password Reset:** A secure manual password recovery workflow where admins generate one-time reset links from the dashboard (designed to be shared via WhatsApp).
 - **Modern UI/UX:** Features a professional, glassmorphism-styled custom loading screen utilizing pure CSS/JS and custom SVGs for maximum performance without heavy animation libraries.
-- **Containerized Environment:** Fully configured with Docker (`Dockerfile` and `docker-compose.yml`) for consistent local development and deployment.
+- **Containerized Environment:** Fully configured with Docker (`Dockerfile` and `docker-compose.yml`) containing all required extensions (`gd`, `imagick`, `ghostscript`) for consistent local development and deployment.
 
 ## 🛠️ Technology Stack
 
 - **Backend:** Laravel 12 (PHP 8.2+), `minishlink/web-push`
 - **Frontend:** Service Worker (for Web Push), Blade Templates, Vanilla CSS/JS, AJAX, Select2
-- **PDF Generation:** `barryvdh/laravel-dompdf`
+- **PDF Generation & Security:** `barryvdh/laravel-dompdf`, `ext-imagick`, `ghostscript`
 - **Data Display:** `yajra/laravel-datatables-oracle`
 - **Development Environment:** Docker & Docker Compose / Local Server (XAMPP/Laragon)
 
@@ -51,7 +51,7 @@ Simlab is pre-configured to run easily with Docker. Follow these steps to spin u
    ```
 
 3. **Spin up the containers:**
-   Build and start the application, web server, and database containers.
+   Build and start the application, web server, and database containers (all dependencies including Imagick and Ghostscript are built automatically).
    ```bash
    docker-compose up -d --build
    ```
@@ -74,18 +74,27 @@ Simlab is pre-configured to run easily with Docker. Follow these steps to spin u
 
 ---
 
-## 💻 Installation (Non-Docker / XAMPP)
+## 💻 Installation (Non-Docker / XAMPP / Local)
 
-Jika Anda tidak menggunakan Docker dan ingin menjalankan aplikasi menggunakan lokal server seperti **XAMPP**:
+Jika Anda tidak menggunakan Docker dan ingin menjalankan aplikasi menggunakan server lokal seperti **XAMPP / Laragon / Native PHP**:
 
 1. **Persiapan Database & PHP Extension:**
-   - Buka file `php.ini` di panel XAMPP Anda.
-   - Pastikan extension **curl** dan **gmp** sudah diaktifkan (hapus tanda titik koma `;` jika masih dikomen):
+   - Buka file `php.ini` Anda.
+   - Pastikan extension berikut sudah aktif (hapus tanda titik koma `;` jika masih dikomen):
      ```ini
      extension=curl
      extension=gmp
+     extension=gd
+     extension=imagick
      ```
-   - Restart apache & MySQL di control panel XAMPP.
+   - **Penting untuk Fitur Cetak PDF (Flatten):**
+     - Pastikan **ImageMagick** dan **Ghostscript** terpasang di sistem operasi Anda.
+     - Di Ubuntu/Debian:
+       ```bash
+       sudo apt-get install -y php-imagick ghostscript
+       ```
+     - Di Windows (XAMPP): Unduh extension php_imagick DLL dan install Ghostscript for Windows.
+   - Restart web server (Apache/Nginx).
    - Buat database baru bernama `simlab` di phpMyAdmin Anda (`http://localhost/phpmyadmin`).
 
 2. **Clone & Setup Environment:**
@@ -94,7 +103,7 @@ Jika Anda tidak menggunakan Docker dan ingin menjalankan aplikasi menggunakan lo
    cd simlab
    cp .env.example .env
    ```
-   Buka file `.env` baru Anda, dan sesuaikan data database jika diperlukan (secara default XAMPP tidak memiliki password):
+   Buka file `.env` baru Anda, dan sesuaikan data database jika diperlukan:
    ```env
    DB_CONNECTION=mysql
    DB_HOST=127.0.0.1
@@ -244,6 +253,7 @@ php artisan schedule:work
 
 ## 🔧 Core Workflows Overview
 
+- **Signature Security & Flat PDF:** Dokumen surat peminjaman lab yang dicetak dikonversi menjadi citra utuh yang terproteksi (*flattened*). Hal ini mencegah duplikasi, ekstraksi gambar tanda tangan secara terpisah, atau modifikasi isi surat oleh pihak yang tidak bertanggung jawab.
 - **Signature Management:** Digital signatures are handled via an AJAX controller (`ProfileController`). Uploading a new signature safely removes the old file from local storage and updates the database reference seamlessly.
 - **Password Reset Protocol:** To enhance security, automated email resets are disabled. Users must request a reset from an Administrator, who will generate a secure, one-time link from the Admin Dashboard.
 - **Automated Request Expiration:** Lab loan requests that remain in a "pending" state for over 24 hours are automatically flagged and canceled by the system to free up requested resources.

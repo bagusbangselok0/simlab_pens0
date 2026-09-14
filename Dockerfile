@@ -1,6 +1,6 @@
 FROM php:8.2-fpm
 
-# Set working directory
+# Set working directory - 
 WORKDIR /var/www
 
 # Install system dependencies
@@ -20,6 +20,8 @@ RUN apt-get update && apt-get install -y \
     unzip \
     nodejs \
     npm \
+    ghostscript \
+    libmagickwand-dev \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -37,6 +39,13 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
         xml \
         opcache \
         curl
+
+# Install Imagick PHP extension
+RUN pecl install imagick \
+    && docker-php-ext-enable imagick
+
+# Allow ImageMagick to process PDF files (disabled by default in policy.xml)
+RUN find /etc -name "policy.xml" -exec sed -i '/pattern="PDF"/d' {} + || true
 
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
