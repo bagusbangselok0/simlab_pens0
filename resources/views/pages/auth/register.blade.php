@@ -54,6 +54,9 @@
                             <div class="form-control-icon">
                                 <i class="bi bi-person"></i>
                             </div>
+                            <label for="nama_asli" class="text-muted">Format nama harus sesuai kapitalisasi di Kartu
+                                Mahasiswa. <br>
+                                Contoh: Budi Setiawan, bukan budi setiawan.</label>
                             <div class="invalid-feedback nama_asli-error"></div>
                         </div>
 
@@ -67,7 +70,7 @@
                         </div>
 
                         <div class="form-group position-relative has-icon-left mb-4">
-                            <input type="email" class="form-control form-control-xl" placeholder="Email"
+                            <input type="email" class="form-control form-control-xl" placeholder="Email PENS"
                                 name="email" id="email" value="{{ old('email') }}">
                             <div class="form-control-icon">
                                 <i class="bi bi-envelope"></i>
@@ -91,6 +94,7 @@
                             <div class="form-control-icon">
                                 <i class="bi bi-shield-lock"></i>
                             </div>
+                            <label for="password">Minimal 8 karakter</label>
                             <div class="invalid-feedback password-error"></div>
                         </div>
 

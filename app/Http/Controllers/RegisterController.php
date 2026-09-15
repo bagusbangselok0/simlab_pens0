@@ -35,7 +35,7 @@ class RegisterController extends Controller
             'email.unique'       => 'Email sudah terdaftar.',
             'prodi_id.required'  => 'Program studi harus dipilih.',
             'password.required'  => 'Password harus diisi.',
-            'password.min'       => 'Password minimal 6 karakter.',
+            'password.min'       => 'Password minimal 8 karakter.',
             'password.confirmed' => 'Konfirmasi password tidak cocok.',
         ];
 
@@ -44,7 +44,7 @@ class RegisterController extends Controller
             'nrp'       => 'required|string|max:10|min:10|unique:users,nrp',
             'email'     => 'required|string|email|max:255|unique:users,email',
             'prodi_id'  => 'required|exists:prodi,id',
-            'password'  => 'required|string|min:6|confirmed',
+            'password'  => 'required|string|min:8|confirmed',
         ], $messages);
 
         if ($validator->fails()) {
