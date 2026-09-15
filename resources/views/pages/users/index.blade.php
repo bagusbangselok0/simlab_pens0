@@ -269,7 +269,7 @@
             } else if (slug === 'dosen' || slug === 'plp') {
                 $('.nip-field, .gelar-field, .prodi-field, .jabatan-field').show();
             } else if (slug === 'satpam') {
-                $('.nip-field, .jabatan-field').show();
+                $('.jabatan-field').show();
             }
         });
 
@@ -343,7 +343,7 @@
             } else if (slug === 'dosen' || slug === 'plp') {
                 $('.edit-nip-field, .edit-gelar-field, .edit-prodi-field, .edit-jabatan-field').show();
             } else if (slug === 'satpam') {
-                $('.edit-nip-field, .edit-jabatan-field').show();
+                $('.edit-jabatan-field').show();
             }
         });
 

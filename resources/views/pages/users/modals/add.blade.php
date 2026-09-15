@@ -37,13 +37,13 @@
 
                         <div class="col-md-12 mb-3">
                             <label for="password" class="form-label">Password <span class="text-danger">*</span></label>
-                            <input type="password" name="password" id="password" class="form-control" placeholder="Minimal 6 karakter">
+                            <input type="password" name="password" id="password" class="form-control" placeholder="Minimal 8 karakter">
                             <span class="text-danger error-text password_error"></span>
                         </div>
 
                         <!-- Role Specific Fields -->
                         
-                        <!-- NIP (For Dosen, PLP, Satpam) -->
+                        <!-- NIP (For Dosen, PLP) -->
                         <div class="col-md-6 mb-3 field-group nip-field" style="display: none;">
                             <label for="nip" class="form-label">NIP <span class="text-danger">*</span></label>
                             <input type="text" name="nip" id="nip" class="form-control" placeholder="Masukkan NIP">

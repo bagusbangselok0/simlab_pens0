@@ -39,7 +39,7 @@
 
                         <!-- Role Specific Fields -->
                         
-                        <!-- NIP (For Dosen, PLP, Satpam) -->
+                        <!-- NIP (For Dosen, PLP) -->
                         <div class="col-md-6 mb-3 edit-field-group edit-nip-field" style="display: none;">
                             <label for="edit_nip" class="form-label">NIP <span class="text-danger">*</span></label>
                             <input type="text" name="nip" id="edit_nip" class="form-control">

@@ -115,7 +115,7 @@ class UserController extends Controller
         $rules = [
             'nama_asli' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
-            'password' => 'required|min:6',
+            'password' => 'required|string|min:8',
             'role_id' => 'required|exists:roles,id',
         ];
 
@@ -123,16 +123,12 @@ class UserController extends Controller
         if ($role_id == 5) { // Mahasiswa
             $rules['nrp'] = 'required|string|max:20|unique:users,nrp';
             $rules['prodi_id'] = 'required|exists:prodi,id';
-        } elseif (in_array($role_id, [2, 3, 4])) { // Dosen, PLP, Satpam (need NIP)
+        } elseif (in_array($role_id, [2, 3])) { // Dosen, PLP (need NIP, Prodi, Gelar, Jabatan)
             $rules['nip'] = 'required|string|max:20|unique:users,nip';
-
-            if (in_array($role_id, [2, 3])) { // Dosen, PLP (need Prodi, Gelar, Jabatan)
-                $rules['prodi_id'] = 'required|exists:prodi,id';
-                $rules['jabatan_id'] = 'required|exists:jabatans,id';
-            }
-            if ($role_id == 4) { // Satpam (need Jabatan)
-                $rules['jabatan_id'] = 'required|exists:jabatans,id';
-            }
+            $rules['prodi_id'] = 'required|exists:prodi,id';
+            $rules['jabatan_id'] = 'required|exists:jabatans,id';
+        } elseif ($role_id == 4) { // Satpam (need Jabatan, no NIP)
+            $rules['jabatan_id'] = 'required|exists:jabatans,id';
         }
 
         $messages = [
@@ -141,7 +137,7 @@ class UserController extends Controller
             'email.email' => 'Format email tidak valid.',
             'email.unique' => 'Email sudah terdaftar.',
             'password.required' => 'Password wajib diisi.',
-            'password.min' => 'Password minimal 6 karakter.',
+            'password.min' => 'Password minimal 8 karakter.',
             'role_id.required' => 'Role wajib dipilih.',
             'role_id.exists' => 'Role tidak valid.',
             'nip.required' => 'NIP wajib diisi.',
@@ -181,6 +177,7 @@ class UserController extends Controller
                 $userData['gelar_belakang'] = null;
                 $userData['jabatan_id'] = null;
             } elseif ($role_id == 4) { // Satpam
+                $userData['nip'] = null;
                 $userData['nrp'] = null;
                 $userData['gelar_depan'] = null;
                 $userData['gelar_belakang'] = null;
@@ -254,16 +251,12 @@ class UserController extends Controller
         if ($role_id == 5) { // Mahasiswa
             $rules['nrp'] = 'required|string|max:20|unique:users,nrp,' . $id;
             $rules['prodi_id'] = 'required|exists:prodi,id';
-        } elseif (in_array($role_id, [2, 3, 4])) { // Dosen, PLP, Satpam (need NIP)
+        } elseif (in_array($role_id, [2, 3])) { // Dosen, PLP (need NIP, Prodi, Gelar, Jabatan)
             $rules['nip'] = 'required|string|max:20|unique:users,nip,' . $id;
-
-            if (in_array($role_id, [2, 3])) { // Dosen, PLP (need Prodi, Gelar, Jabatan)
-                $rules['prodi_id'] = 'required|exists:prodi,id';
-                $rules['jabatan_id'] = 'required|exists:jabatans,id';
-            }
-            if ($role_id == 4) { // Satpam (need Jabatan)
-                $rules['jabatan_id'] = 'required|exists:jabatans,id';
-            }
+            $rules['prodi_id'] = 'required|exists:prodi,id';
+            $rules['jabatan_id'] = 'required|exists:jabatans,id';
+        } elseif ($role_id == 4) { // Satpam (need Jabatan, no NIP)
+            $rules['jabatan_id'] = 'required|exists:jabatans,id';
         }
 
         $messages = [
@@ -310,6 +303,7 @@ class UserController extends Controller
                 $userData['gelar_belakang'] = null;
                 $userData['jabatan_id'] = null;
             } elseif ($role_id == 4) { // Satpam
+                $userData['nip'] = null;
                 $userData['nrp'] = null;
                 $userData['gelar_depan'] = null;
                 $userData['gelar_belakang'] = null;
