@@ -18,7 +18,7 @@
             position: absolute;
             border-radius: 50%;
             pointer-events: none;
-            background: radial-gradient(circle, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0) 70%);
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0) 70%);
         }
 
         .dashboard-hero::before {
@@ -40,16 +40,16 @@
             align-items: center;
             padding: 0.45rem 0.85rem;
             border-radius: 999px;
-            background: rgba(255,255,255,0.18);
+            background: rgba(255, 255, 255, 0.18);
             backdrop-filter: blur(8px);
             color: #ffffff;
             font-size: 0.82rem;
             font-weight: 600;
-            border: 1px solid rgba(255,255,255,0.22);
+            border: 1px solid rgba(255, 255, 255, 0.22);
         }
 
         .dashboard-chip-soft {
-            background: rgba(255,255,255,0.14);
+            background: rgba(255, 255, 255, 0.14);
         }
 
         .highlight-pending-card {
@@ -78,9 +78,11 @@
             0% {
                 box-shadow: 0 0 0 0 rgba(255, 159, 67, 0.4);
             }
+
             70% {
                 box-shadow: 0 0 0 10px rgba(255, 159, 67, 0);
             }
+
             100% {
                 box-shadow: 0 0 0 0 rgba(255, 159, 67, 0);
             }
@@ -112,14 +114,14 @@
 
         .quick-action-card {
             transition: all 0.25s ease;
-            border: 1px solid rgba(0,0,0,0.06);
+            border: 1px solid rgba(0, 0, 0, 0.06);
             border-radius: 14px;
             background: var(--bs-card-bg, #ffffff);
         }
 
         .quick-action-card:hover {
             transform: translateY(-4px);
-            box-shadow: 0 10px 24px rgba(0,0,0,0.08);
+            box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
         }
 
         .dashboard-section-card {
@@ -161,14 +163,45 @@
             line-height: 1.1;
         }
 
-        .icon-bg-purple { background-color: #f0edff; color: #6f42c1; }
-        .icon-bg-blue   { background-color: #e7f1ff; color: #0d6efd; }
-        .icon-bg-teal   { background-color: #e0fbf6; color: #0d9488; }
-        .icon-bg-red    { background-color: #ffeef0; color: #dc3545; }
-        .icon-bg-amber  { background-color: #fff8e6; color: #d97706; }
-        .icon-bg-green  { background-color: #e8f8ee; color: #198754; }
-        .icon-bg-gray   { background-color: #f1f3f5; color: #6c757d; }
-        .icon-bg-indigo { background-color: #eef2ff; color: #4f46e5; }
+        .icon-bg-purple {
+            background-color: #f0edff;
+            color: #6f42c1;
+        }
+
+        .icon-bg-blue {
+            background-color: #e7f1ff;
+            color: #0d6efd;
+        }
+
+        .icon-bg-teal {
+            background-color: #e0fbf6;
+            color: #0d9488;
+        }
+
+        .icon-bg-red {
+            background-color: #ffeef0;
+            color: #dc3545;
+        }
+
+        .icon-bg-amber {
+            background-color: #fff8e6;
+            color: #d97706;
+        }
+
+        .icon-bg-green {
+            background-color: #e8f8ee;
+            color: #198754;
+        }
+
+        .icon-bg-gray {
+            background-color: #f1f3f5;
+            color: #6c757d;
+        }
+
+        .icon-bg-indigo {
+            background-color: #eef2ff;
+            color: #4f46e5;
+        }
 
         @media (max-width: 575.98px) {
             .icon-box-shape {
@@ -177,16 +210,20 @@
                 font-size: 1.05rem;
                 border-radius: 10px;
             }
+
             .card-body {
                 padding: 0.85rem 0.75rem !important;
             }
+
             .stat-title {
                 font-size: 0.75rem !important;
                 line-height: 1.2;
             }
+
             .stat-val {
                 font-size: 1.2rem !important;
             }
+
             .highlight-pending-card::after {
                 font-size: 0.55rem;
                 top: -8px;
@@ -204,14 +241,25 @@
             <div class="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-3">
                 <div>
                     <span class="dashboard-chip mb-3">
-                        <i class="bi bi-person-badge me-2"></i>Area Persetujuan Kalab
+                        <i class="bi bi-person-badge me-2"></i>Area Kepala Laboratorium (Kalab)
                     </span>
                     <h3 class="fw-bold mb-2">Halo, {{ $user->full_name }} 👋</h3>
-                    <p class="mb-0 text-white-50">Pantau pengajuan laboratorium, kelola persetujuan, dan pastikan aktivitas lab tetap terkontrol.</p>
+                    <p class="mb-0 text-white-50">
+                        @if ($my_lab_managers->isNotEmpty())
+                            Memantau aktivitas & persetujuan peminjaman untuk:
+                            <strong class="text-white">
+                                {{ $my_lab_managers->pluck('lab.nama_lab')->filter()->join(', ') }}
+                                ({{ $my_lab_managers->pluck('lab.kode_lab')->filter()->join(', ') }})
+                            </strong>
+                        @else
+                            Pantau pengajuan laboratorium, kelola persetujuan, dan pastikan aktivitas lab tetap terkontrol.
+                        @endif
+                    </p>
                 </div>
                 <div class="d-flex flex-wrap gap-2">
                     <span id="dashboard-date" class="dashboard-chip dashboard-chip-soft">
-                        <i class="bi bi-calendar3 me-2"></i>{{ \Carbon\Carbon::now()->locale('id')->translatedFormat('d F Y') }}
+                        <i
+                            class="bi bi-calendar3 me-2"></i>{{ \Carbon\Carbon::now()->locale('id')->translatedFormat('d F Y') }}
                     </span>
                     <span id="dashboard-time" class="dashboard-chip dashboard-chip-soft">
                         <i class="bi bi-clock-history me-2"></i>{{ \Carbon\Carbon::now()->translatedFormat('H:i') }} WIB
@@ -221,12 +269,15 @@
         </div>
     </div>
 
-    @if($show_signature_alert)
+    @if ($show_signature_alert)
         <div class="card border-warning shadow-sm mb-4">
-            <div class="card-body d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-3">
+            <div
+                class="card-body d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-3">
                 <div>
-                    <h6 class="mb-2 text-warning"><i class="bi bi-exclamation-triangle-fill me-2"></i>TTD Digital Belum Diunggah</h6>
-                    <p class="mb-0 text-muted">Anda belum mengunggah tanda tangan digital. Silakan unggah terlebih dahulu agar proses persetujuan peminjaman dapat berjalan dengan lancar.</p>
+                    <h6 class="mb-2 text-warning"><i class="bi bi-exclamation-triangle-fill me-2"></i>TTD Digital Belum
+                        Diunggah</h6>
+                    <p class="mb-0 text-muted">Anda belum mengunggah tanda tangan digital. Silakan unggah terlebih dahulu
+                        agar proses persetujuan peminjaman dapat berjalan dengan lancar.</p>
                 </div>
                 <a href="{{ route('profile.index') }}" class="btn btn-warning btn-sm">
                     <i class="bi bi-pen-fill me-1"></i>Upload TTD Digital
@@ -247,7 +298,8 @@
                 <div class="card-body">
                     <div class="row g-2 g-sm-3">
                         <div class="col-6 col-md-4">
-                            <a href="{{ route('approval.index') }}" class="btn btn-outline-warning w-100 text-start py-2.5 px-2 px-sm-3 d-flex align-items-center quick-action-card">
+                            <a href="{{ route('approval.index') }}"
+                                class="btn btn-outline-warning w-100 text-start py-2.5 px-2 px-sm-3 d-flex align-items-center quick-action-card">
                                 <div class="icon-box-shape icon-bg-amber me-2 me-sm-3">
                                     <i class="bi bi-check2-square"></i>
                                 </div>
@@ -258,7 +310,8 @@
                             </a>
                         </div>
                         <div class="col-6 col-md-4">
-                            <a href="{{ route('presensi.monitoring') }}" class="btn btn-outline-success w-100 text-start py-2.5 px-2 px-sm-3 d-flex align-items-center quick-action-card">
+                            <a href="{{ route('presensi.monitoring') }}"
+                                class="btn btn-outline-success w-100 text-start py-2.5 px-2 px-sm-3 d-flex align-items-center quick-action-card">
                                 <div class="icon-box-shape icon-bg-green me-2 me-sm-3">
                                     <i class="bi bi-display-fill"></i>
                                 </div>
@@ -269,7 +322,8 @@
                             </a>
                         </div>
                         <div class="col-12 col-md-4">
-                            <a href="{{ route('profile.index') }}" class="btn btn-outline-primary w-100 text-start py-2.5 px-2 px-sm-3 d-flex align-items-center quick-action-card">
+                            <a href="{{ route('profile.index') }}"
+                                class="btn btn-outline-primary w-100 text-start py-2.5 px-2 px-sm-3 d-flex align-items-center quick-action-card">
                                 <div class="icon-box-shape icon-bg-purple me-2 me-sm-3">
                                     <i class="bi bi-person-gear"></i>
                                 </div>
@@ -285,21 +339,27 @@
         </div>
     </section>
 
-    {{-- ===== KARTU STATISTIK SISTEM ===== --}}
-    <h6 class="mb-3 text-muted fw-bold d-flex align-items-center">
-        <i class="bi bi-speedometer2 me-2 text-primary"></i>Ringkasan Statistik Peminjaman
-    </h6>
+    {{-- ===== KARTU STATISTIK LAB KALAB ===== --}}
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <h6 class="mb-0 text-muted fw-bold d-flex align-items-center">
+            <i class="bi bi-speedometer2 me-2 text-primary"></i>Statistik Laboratorium Anda
+        </h6>
+        <small class="text-muted fst-italic">Data otomatis difilter sesuai lab tanggung jawab Anda</small>
+    </div>
+
+    {{-- Baris 1: Ringkasan Utama --}}
     <section class="row">
         <div class="col-6 col-lg-3 col-md-6 mb-3">
             <div class="card mb-0 h-100 dashboard-stat-card">
                 <div class="card-body">
                     <div class="d-flex align-items-center gap-3">
                         <div class="dashboard-stat-icon icon-bg-teal">
-                            <i class="bi bi-building-gear"></i>
+                            <i class="bi bi-building-check"></i>
                         </div>
                         <div>
-                            <h6 class="text-muted font-semibold stat-title mb-1">Total Lab</h6>
-                            <h4 class="font-extrabold stat-val mb-0 dashboard-stat-number">{{ $labs->count() }}</h4>
+                            <h6 class="text-muted font-semibold stat-title mb-1">Lab Dikelola</h6>
+                            <h4 class="font-extrabold stat-val mb-0 dashboard-stat-number">{{ $total_lab_kalab }}</h4>
+                            <small class="text-muted" style="font-size: 0.72rem;">Unit Laboratorium</small>
                         </div>
                     </div>
                 </div>
@@ -313,8 +373,10 @@
                             <i class="bi bi-mortarboard-fill"></i>
                         </div>
                         <div>
-                            <h6 class="text-muted font-semibold stat-title mb-1">Mahasiswa</h6>
-                            <h4 class="font-extrabold stat-val mb-0 dashboard-stat-number">{{ $jml_mahasiswa }}</h4>
+                            <h6 class="text-muted font-semibold stat-title mb-1">Peminjam Lab</h6>
+                            <h4 class="font-extrabold stat-val mb-0 dashboard-stat-number">{{ $total_mahasiswa_kalab }}
+                            </h4>
+                            <small class="text-muted" style="font-size: 0.72rem;">Mahasiswa unik</small>
                         </div>
                     </div>
                 </div>
@@ -329,28 +391,37 @@
                         </div>
                         <div>
                             <h6 class="text-muted font-semibold stat-title mb-1">Total Peminjaman</h6>
-                            <h4 class="font-extrabold stat-val mb-0 dashboard-stat-number">{{ $total_peminjaman_by_kalab }}</h4>
+                            <h4 class="font-extrabold stat-val mb-0 dashboard-stat-number">{{ $total_peminjaman_by_kalab }}
+                            </h4>
+                            <small class="text-muted" style="font-size: 0.72rem;">Semua riwayat pengajuan</small>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
         <div class="col-6 col-lg-3 col-md-6 mb-3">
-            <div class="card mb-0 h-100 dashboard-stat-card">
+            <div class="card mb-0 h-100 dashboard-stat-card"
+                title="Mahasiswa dengan peminjaman aktif hari ini di lab Anda namun belum melakukan presensi masuk">
                 <div class="card-body">
                     <div class="d-flex align-items-center gap-3">
                         <div class="dashboard-stat-icon icon-bg-blue">
-                            <i class="bi bi-calendar2-event-fill"></i>
+                            <i class="bi bi-person-exclamation"></i>
                         </div>
                         <div>
-                            <h6 class="text-muted font-semibold stat-title mb-1">Aktif Hari Ini</h6>
-                            <h4 class="font-extrabold stat-val mb-0 dashboard-stat-number">{{ $peminjaman_hari_ini }}</h4>
+                            <h6 class="text-muted font-semibold stat-title mb-1">Belum Presensi Hari Ini</h6>
+                            <h4 class="font-extrabold stat-val mb-0 dashboard-stat-number text-primary">
+                                {{ $belum_presensi_hari_ini_kalab }}</h4>
+                            <small class="text-muted" style="font-size: 0.72rem;">Jadwal aktif belum hadir</small>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-6 col-lg-4 col-md-4 mb-3">
+    </section>
+
+    {{-- Baris 2: Status Persetujuan & Aktivitas Lab --}}
+    <section class="row mb-3">
+        <div class="col-6 col-lg-3 col-md-6 mb-3">
             <div class="card mb-0 h-100 dashboard-stat-card {{ $pending_kalab > 0 ? 'highlight-pending-card' : '' }}">
                 <div class="card-body">
                     <div class="d-flex align-items-center gap-3">
@@ -360,12 +431,30 @@
                         <div>
                             <h6 class="text-muted font-semibold stat-title mb-1">Menunggu Approval</h6>
                             <h4 class="font-extrabold stat-val mb-0 dashboard-stat-number">{{ $pending_kalab }}</h4>
+                            <small class="text-muted" style="font-size: 0.72rem;">Perlu ditinjau Kalab</small>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-6 col-lg-4 col-md-4 mb-3">
+        <div class="col-6 col-lg-3 col-md-6 mb-3">
+            <div class="card mb-0 h-100 dashboard-stat-card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="dashboard-stat-icon icon-bg-teal">
+                            <i class="bi bi-person-workspace"></i>
+                        </div>
+                        <div>
+                            <h6 class="text-muted font-semibold stat-title mb-1">Sedang di Lab</h6>
+                            <h4 class="font-extrabold stat-val mb-0 dashboard-stat-number text-success">
+                                {{ $sedang_di_lab_kalab }}</h4>
+                            <small class="text-muted" style="font-size: 0.72rem;">Sedang beraktivitas</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3 col-md-6 mb-3">
             <div class="card mb-0 h-100 dashboard-stat-card">
                 <div class="card-body">
                     <div class="d-flex align-items-center gap-3">
@@ -375,12 +464,13 @@
                         <div>
                             <h6 class="text-muted font-semibold stat-title mb-1">Peminjaman Selesai</h6>
                             <h4 class="font-extrabold stat-val mb-0 dashboard-stat-number">{{ $selesai_kalab }}</h4>
+                            <small class="text-muted" style="font-size: 0.72rem;">Selesai digunakan</small>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-12 col-lg-4 col-md-4 mb-3">
+        <div class="col-6 col-lg-3 col-md-6 mb-3">
             <div class="card mb-0 h-100 dashboard-stat-card">
                 <div class="card-body">
                     <div class="d-flex align-items-center gap-3">
@@ -390,6 +480,7 @@
                         <div>
                             <h6 class="text-muted font-semibold stat-title mb-1">Peminjaman Ditolak</h6>
                             <h4 class="font-extrabold stat-val mb-0 dashboard-stat-number">{{ $tolak_kalab }}</h4>
+                            <small class="text-muted" style="font-size: 0.72rem;">Permohonan tidak lolos</small>
                         </div>
                     </div>
                 </div>
@@ -397,55 +488,118 @@
         </div>
     </section>
 
-    {{-- ===== BARIS GRAFIK ===== --}}
-    <section class="row mb-3">
-        <div class="col-12">
-            <div class="card mb-0 dashboard-section-card">
-                <div class="card-header pt-3 pb-0">
-                    <h5 class="card-title fs-6 fs-sm-5 mb-0">Peminjaman per Laboratorium</h5>
+    {{-- ===== BARIS GRAFIK & VISUALISASI LAB ===== --}}
+    <section class="row mb-4">
+        {{-- Grafik 1: Tren Peminjaman Lab (6 Bulan Terakhir) --}}
+        <div class="col-12 col-lg-8 mb-3 mb-lg-0">
+            <div class="card mb-0 h-100 dashboard-section-card">
+                <div class="card-header d-flex align-items-center justify-content-between pt-3 pb-2">
+                    <div>
+                        <h5 class="card-title fs-6 fs-sm-5 mb-0 d-flex align-items-center">
+                            <i class="bi bi-graph-up-arrow text-primary me-2"></i>Tren Peminjaman Lab Anda
+                        </h5>
+                        <small class="text-muted">Aktivitas peminjaman selama 6 bulan terakhir</small>
+                    </div>
+                    <span class="badge bg-light-primary text-primary fw-semibold px-2 py-1">
+                        Total: {{ $total_peminjaman_by_kalab }} Pengajuan
+                    </span>
                 </div>
-                <div class="card-body">
-                    <div id="chart-peminjaman-dosen"></div>
+                <div class="card-body pt-2">
+                    <div id="chart-tren-peminjaman-kalab"></div>
+                </div>
+            </div>
+        </div>
+
+        {{-- Grafik 2: Komposisi Status Peminjaman (Donut Chart) --}}
+        <div class="col-12 col-lg-4">
+            <div class="card mb-0 h-100 dashboard-section-card">
+                <div class="card-header pt-3 pb-2">
+                    <h5 class="card-title fs-6 fs-sm-5 mb-0 d-flex align-items-center">
+                        <i class="bi bi-pie-chart-fill text-info me-2"></i>Status Peminjaman Lab
+                    </h5>
+                    <small class="text-muted">Distribusi status permohonan</small>
+                </div>
+                <div class="card-body d-flex flex-column justify-content-center pt-2">
+                    @if ($total_peminjaman_by_kalab > 0)
+                        <div id="chart-status-peminjaman-kalab"></div>
+                    @else
+                        <div class="text-center py-5 text-muted">
+                            <i class="bi bi-inbox fs-1 d-block mb-2 text-secondary opacity-50"></i>
+                            <p class="mb-0 small">Belum ada data peminjaman di lab Anda</p>
+                        </div>
+                    @endif
                 </div>
             </div>
         </div>
     </section>
 
-    {{-- ===== BARIS 2: DAFTAR LAB + PENGAJUAN TERBARU ===== --}}
+    {{-- ===== BARIS 2: DETAIL LAB ANDA + PENGAJUAN TERBARU ===== --}}
     <section class="row">
-        {{-- Daftar Laboratorium --}}
+        {{-- Informasi Detail Laboratorium yang Dikelola --}}
         <div class="col-12 col-lg-5 mb-3">
             <div class="card mb-0 h-100 dashboard-section-card">
                 <div class="card-header pt-3 pb-2">
-                    <h5 class="card-title fs-6 fs-sm-5 mb-0">Informasi Laboratorium</h5>
+                    <h5 class="card-title fs-6 fs-sm-5 mb-0 d-flex align-items-center">
+                        <i class="bi bi-building text-teal me-2"></i>Laboratorium yang Anda Kelola
+                    </h5>
+                    <small class="text-muted">Informasi teknis & pendamping lab</small>
                 </div>
                 <div class="card-body p-0">
                     <div class="table-responsive">
                         <table class="table table-hover align-middle mb-0" style="font-size: 0.9rem;">
                             <thead class="table-light">
                                 <tr>
-                                    <th>No</th>
                                     <th>Nama Lab</th>
                                     <th>Lokasi</th>
-                                    <th>Kalab</th>
-                                    <th>PLP</th>
+                                    <th>Teknisi / PLP</th>
+                                    <th>Status Saat Ini</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                @forelse ($lab_managers as $lm)
+                                @forelse ($my_lab_managers as $lm)
+                                    @php
+                                        // Hitung mahasiswa yang sedang ada di dalam lab ini
+                                        $mhs_di_lab_ini = \App\Models\PresensiLab::whereHas('peminjamanLab', function (
+                                            $q,
+                                        ) use ($lm) {
+                                            $q->where('lab_id', $lm->lab_id);
+                                        })
+                                            ->where('status_presensi', 'didalam')
+                                            ->count();
+                                    @endphp
                                     <tr>
-                                        <td>{{ $loop->iteration }}</td>
                                         <td>
                                             <span class="fw-semibold">{{ $lm->lab->nama_lab ?? '-' }}</span><br>
-                                            <small class="text-muted">{{ $lm->lab->kode_lab ?? '' }}</small>
+                                            <span class="badge bg-light-secondary text-secondary"
+                                                style="font-size: 0.7rem;">{{ $lm->lab->kode_lab ?? '-' }}</span>
                                         </td>
                                         <td><small class="text-muted">{{ $lm->lab->lokasi ?? '-' }}</small></td>
-                                        <td><small>{{ $lm->kalab->full_name ?? '-' }}</small></td>
-                                        <td><small>{{ $lm->plp->full_name ?? '-' }}</small></td>
+                                        <td>
+                                            <small class="fw-medium text-dark">{{ $lm->plp->full_name ?? '-' }}</small>
+                                            @if (!empty($lm->plp->nip))
+                                                <br><small class="text-muted" style="font-size: 0.72rem;">NIP.
+                                                    {{ $lm->plp->nip }}</small>
+                                            @endif
+                                        </td>
+                                        <td>
+                                            @if ($mhs_di_lab_ini > 0)
+                                                <span class="badge bg-info text-white">
+                                                    <i class="bi bi-person-fill me-1"></i>Digunakan
+                                                    ({{ $mhs_di_lab_ini }})
+                                                </span>
+                                            @else
+                                                <span class="badge bg-success">
+                                                    <i class="bi bi-check2 me-1"></i>Tersedia / Kosong
+                                                </span>
+                                            @endif
+                                        </td>
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="5" class="text-center text-muted py-3">Belum ada data laboratorium.</td>
+                                        <td colspan="4" class="text-center text-muted py-4">
+                                            <i class="bi bi-exclamation-circle fs-3 d-block text-warning mb-2"></i>
+                                            Akun Anda belum terdaftar sebagai Kepala Lab pada data laboratorium.
+                                        </td>
                                     </tr>
                                 @endforelse
                             </tbody>
@@ -455,12 +609,18 @@
             </div>
         </div>
 
-        {{-- Pengajuan Terbaru --}}
+        {{-- Pengajuan Terbaru di Lab Kalab --}}
         <div class="col-12 col-lg-7 mb-3">
             <div class="card mb-0 h-100 dashboard-section-card">
                 <div class="card-header d-flex justify-content-between align-items-center pt-3 pb-2">
-                    <h5 class="card-title fs-6 fs-sm-5 mb-0">Peminjaman Terbaru di Lab Anda</h5>
-                    <a href="{{ route('approval.index') }}" class="btn btn-sm btn-primary rounded-pill">Kelola</a>
+                    <div>
+                        <h5 class="card-title fs-6 fs-sm-5 mb-0 d-flex align-items-center">
+                            <i class="bi bi-clock-history text-primary me-2"></i>Pengajuan Terbaru di Lab Anda
+                        </h5>
+                        <small class="text-muted">Daftar permohonan terkini untuk lab tanggung jawab Anda</small>
+                    </div>
+                    <a href="{{ route('approval.index') }}" class="btn btn-sm btn-primary rounded-pill px-3">Kelola
+                        Semua</a>
                 </div>
                 <div class="card-body p-0">
                     <div class="table-responsive">
@@ -469,7 +629,7 @@
                                 <tr>
                                     <th>Mahasiswa</th>
                                     <th>Laboratorium</th>
-                                    <th>Waktu Mulai</th>
+                                    <th>Waktu Penggunaan</th>
                                     <th>Status</th>
                                 </tr>
                             </thead>
@@ -477,12 +637,21 @@
                                 @forelse ($pengajuan_terbaru_kalab as $item)
                                     <tr>
                                         <td>
-                                            <span class="fw-semibold text-truncate d-inline-block" style="max-width: 140px;">{{ $item->mahasiswa->full_name ?? '-' }}</span>
+                                            <span class="fw-semibold text-truncate d-inline-block"
+                                                style="max-width: 140px;">
+                                                {{ $item->mahasiswa->full_name ?? ($item->mahasiswa->nama_asli ?? '-') }}
+                                            </span><br>
+                                            <small class="text-muted">{{ $item->mahasiswa->nrp ?? '-' }}</small>
                                         </td>
-                                        <td><small>{{ $item->lab->nama_lab ?? '-' }}</small></td>
+                                        <td>
+                                            <small class="fw-medium">{{ $item->lab->nama_lab ?? '-' }}</small>
+                                        </td>
                                         <td>
                                             <small>{{ $item->waktu_mulai ? $item->waktu_mulai->format('d/m/Y') : '-' }}</small><br>
-                                            <small class="text-muted">{{ $item->waktu_mulai ? $item->waktu_mulai->format('H:i') : '' }}</small>
+                                            <small
+                                                class="text-muted">{{ $item->waktu_mulai ? $item->waktu_mulai->format('H:i') : '' }}
+                                                - {{ $item->waktu_selesai ? $item->waktu_selesai->format('H:i') : '' }}
+                                                WIB</small>
                                         </td>
                                         <td>
                                             @if ($item->status == 'pending_plp')
@@ -506,7 +675,10 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="4" class="text-center text-muted py-3">Belum ada pengajuan peminjaman.</td>
+                                        <td colspan="4" class="text-center text-muted py-4">
+                                            <i class="bi bi-inbox fs-3 d-block text-secondary opacity-50 mb-2"></i>
+                                            Belum ada pengajuan peminjaman untuk lab Anda.
+                                        </td>
                                     </tr>
                                 @endforelse
                             </tbody>
@@ -520,7 +692,7 @@
 
 @section('scripts')
     <script>
-        document.addEventListener('DOMContentLoaded', function () {
+        document.addEventListener('DOMContentLoaded', function() {
             const dateEl = document.getElementById('dashboard-date');
             const timeEl = document.getElementById('dashboard-time');
 
@@ -539,7 +711,8 @@
                 const updateClock = () => {
                     const now = new Date();
                     dateEl.innerHTML = '<i class="bi bi-calendar3 me-2"></i>' + dateFormatter.format(now);
-                    timeEl.innerHTML = '<i class="bi bi-clock-history me-2"></i>' + timeFormatter.format(now) + ' WIB';
+                    timeEl.innerHTML = '<i class="bi bi-clock-history me-2"></i>' + timeFormatter.format(now) +
+                        ' WIB';
                 };
 
                 updateClock();
@@ -547,53 +720,151 @@
             }
         });
 
-        // Grafik Bar: Jumlah Peminjaman per Laboratorium
-        const labNames = @json($peminjaman_per_lab->pluck('nama_lab'));
-        const labCounts = @json($peminjaman_per_lab->pluck('peminjaman_labs_count'));
+        // ==========================================
+        // 1. Grafik Tren Peminjaman Lab (Area Chart)
+        // ==========================================
+        const trenLabels = @json($tren_kalab_labels ?? []);
+        const trenData = @json($tren_kalab_data ?? []);
 
-        const chartBar = new ApexCharts(document.querySelector('#chart-peminjaman-dosen'), {
+        const optionsTren = {
             series: [{
-                name: 'Jumlah Peminjaman',
-                data: labCounts,
+                name: 'Pengajuan Peminjaman',
+                data: trenData
             }],
             chart: {
-                type: 'bar',
-                height: 250,
+                type: 'area',
+                height: 270,
                 toolbar: {
                     show: false
                 },
+                fontFamily: 'inherit'
             },
             colors: ['#435ebe'],
-            plotOptions: {
-                bar: {
-                    borderRadius: 6,
-                    columnWidth: '50%',
-                },
+            stroke: {
+                curve: 'smooth',
+                width: 3
             },
-            xaxis: {
-                categories: labNames,
-                labels: {
-                    style: {
-                        fontSize: '11px'
-                    }
-                },
-            },
-            yaxis: {
-                min: 0,
-                tickAmount: 4,
+            fill: {
+                type: 'gradient',
+                gradient: {
+                    shadeIntensity: 1,
+                    opacityFrom: 0.45,
+                    opacityTo: 0.05,
+                    stops: [20, 100]
+                }
             },
             dataLabels: {
                 enabled: false
             },
+            xaxis: {
+                categories: trenLabels,
+                labels: {
+                    style: {
+                        colors: '#6c757d',
+                        fontSize: '11px'
+                    }
+                },
+                axisBorder: {
+                    show: false
+                },
+                axisTicks: {
+                    show: false
+                }
+            },
+            yaxis: {
+                min: 0,
+                forceNiceScale: true,
+                labels: {
+                    formatter: val => Math.round(val),
+                    style: {
+                        colors: '#6c757d',
+                        fontSize: '11px'
+                    }
+                }
+            },
             tooltip: {
                 y: {
-                    formatter: val => val + ' pengajuan'
+                    formatter: val => val + ' Pengajuan'
                 }
             },
             grid: {
-                borderColor: '#f1f1f1'
-            },
-        });
-        chartBar.render();
+                borderColor: '#eef2f6',
+                strokeDashArray: 4
+            }
+        };
+
+        const chartTren = new ApexCharts(document.querySelector('#chart-tren-peminjaman-kalab'), optionsTren);
+        chartTren.render();
+
+        // ==========================================
+        // 2. Grafik Komposisi Status (Donut Chart)
+        // ==========================================
+        @if ($total_peminjaman_by_kalab > 0)
+            const statusLabels = @json($status_kalab_chart['labels'] ?? []);
+            const statusSeries = @json($status_kalab_chart['series'] ?? []);
+
+            const optionsStatus = {
+                series: statusSeries,
+                labels: statusLabels,
+                chart: {
+                    type: 'donut',
+                    height: 250,
+                    toolbar: {
+                        show: false
+                    },
+                    fontFamily: 'inherit'
+                },
+                colors: ['#198754', '#ff9f43', '#dc3545', '#6c757d'],
+                plotOptions: {
+                    pie: {
+                        donut: {
+                            size: '68%',
+                            labels: {
+                                show: true,
+                                name: {
+                                    show: true,
+                                    fontSize: '12px',
+                                    fontWeight: 600
+                                },
+                                value: {
+                                    show: true,
+                                    fontSize: '18px',
+                                    fontWeight: 700,
+                                    formatter: val => val
+                                },
+                                total: {
+                                    show: true,
+                                    showAlways: false,
+                                    label: 'Total',
+                                    fontSize: '12px',
+                                    fontWeight: 600,
+                                    formatter: w => {
+                                        return w.globals.seriesTotals.reduce((a, b) => a + b, 0);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                dataLabels: {
+                    enabled: false
+                },
+                legend: {
+                    position: 'bottom',
+                    fontSize: '11px',
+                    markers: {
+                        radius: 12
+                    }
+                },
+                tooltip: {
+                    y: {
+                        formatter: val => val + ' Pengajuan'
+                    }
+                }
+            };
+
+            const chartStatus = new ApexCharts(document.querySelector('#chart-status-peminjaman-kalab'), optionsStatus);
+            chartStatus.render();
+        @endif
     </script>
 @endsection

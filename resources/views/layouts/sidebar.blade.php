@@ -143,14 +143,16 @@
                         </a>
 
                         <ul class="submenu">
-                            @if (in_array(Auth::user()->role_id, [1, 2]))
+                            @if (in_array(Auth::user()->role_id, [1, 3]))
                                 <li class="submenu-item @if (request()->routeIs('inventaris.*')) active @endif">
-                                    <a href="{{ route('inventaris.index') }}" class="submenu-link">Master Inventaris</a>
+                                    <a href="{{ route('inventaris.index') }}" class="submenu-link">Master
+                                        Inventaris</a>
                                 </li>
                             @endif
 
                             <li class="submenu-item @if (request()->routeIs('inventaris-ruangan.*')) active @endif">
-                                <a href="{{ route('inventaris-ruangan.index') }}" class="submenu-link">Daftar Inventaris (DIR)</a>
+                                <a href="{{ route('inventaris-ruangan.index') }}" class="submenu-link">Daftar
+                                    Inventaris (DIR)</a>
                             </li>
                         </ul>
                     </li>

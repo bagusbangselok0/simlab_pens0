@@ -51,7 +51,7 @@ class ApprovalController extends Controller
                     return $row->mahasiswa->getFullNameAttribute();
                 })
                 ->addColumn('lab', function ($row) {
-                    return $row->lab->nama_lab;
+                    return $row->lab->nama_lab . ' (' . $row->lab->kode_lab . ')';
                 })
                 ->addColumn('tujuan', function ($row) {
                     return $row->tujuan;

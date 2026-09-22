@@ -413,6 +413,7 @@ class PresensiController extends Controller
                     'mahasiswa_name' => $presensi->mahasiswa->full_name ?? '-',
                     'mahasiswa_email' => $presensi->mahasiswa->email ?? '-',
                     'lab_name' => $presensi->peminjamanLab->lab->nama_lab ?? '-',
+                    'lab_code' => $presensi->peminjamanLab->lab->kode_lab ?? '-',
                     'tujuan' => $presensi->peminjamanLab->tujuan ?? '-',
                     'status_presensi' => $presensi->status_presensi,
                     'satpam_masuk' => $presensi->satpamMasuk->full_name ?? 'N/A',

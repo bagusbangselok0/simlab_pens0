@@ -128,7 +128,7 @@
                                 <strong>${item.mahasiswa_name}</strong><br>
                                 <small class="text-muted">${item.mahasiswa_email}</small>
                             </td>
-                            <td>${item.lab_name}</td>
+                            <td>${item.lab_name} (${item.lab_code})</td>
                             <td>${item.tujuan}</td>
                             <td>${getBadge(item.status_presensi)}</td>
                             <td>${getSatpamName(item)}</td>
@@ -149,7 +149,9 @@
                 dataTableInstance = $('#presensiTable').DataTable({
                     responsive: true,
                     pageLength: 25,
-                    order: [[6, 'desc']], // Order by Waktu Request
+                    order: [
+                        [6, 'desc']
+                    ], // Order by Waktu Request
                     language: {
                         url: '//cdn.datatables.net/plug-ins/1.10.25/i18n/Indonesian.json'
                     }
@@ -194,4 +196,3 @@
         });
     </script>
 @endsection
-

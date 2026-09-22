@@ -37,7 +37,8 @@
                                                     <strong>{{ $presensi->mahasiswa->full_name }}</strong><br>
                                                     <small class="text-muted">{{ $presensi->mahasiswa->email }}</small>
                                                 </td>
-                                                <td>{{ $presensi->peminjamanLab->lab->nama_lab }}</td>
+                                                <td>{{ $presensi->peminjamanLab->lab->nama_lab . '(' . $presensi->peminjamanLab->lab->kode_lab . ')' }}
+                                                </td>
                                                 <td>{{ $presensi->peminjamanLab->tujuan }}</td>
                                                 <td>
                                                     @if (in_array($presensi->status_presensi, ['menunggu_konfirmasi_masuk']))
@@ -59,8 +60,8 @@
                                                         {{-- Tombol klaim sendiri sebagai satpam bertugas jika belum ditugaskan ke satpam saat ini --}}
                                                         @if (
                                                             ($presensi->status_presensi === 'menunggu_konfirmasi_masuk' && Auth::user()->id !== $presensi->satpamMasuk?->id) ||
-                                                            ($presensi->status_presensi === 'menunggu_konfirmasi_keluar' && Auth::user()->id !== $presensi->satpamKeluar?->id)
-                                                        )
+                                                                ($presensi->status_presensi === 'menunggu_konfirmasi_keluar' &&
+                                                                    Auth::user()->id !== $presensi->satpamKeluar?->id))
                                                             <button type="button" class="btn btn-sm btn-outline-primary"
                                                                 onclick="confirmAssign({{ $presensi->id }}, '{{ $presensi->status_presensi === 'menunggu_konfirmasi_masuk' ? 'masuk' : 'keluar' }}')">
                                                                 <i class="bi bi-person-check"></i> Klaim Satpam
@@ -70,8 +71,8 @@
                                                         {{-- Tampilkan tombol konfirmasi hanya jika satpam yang login adalah yang dipilih untuk konfirmasi --}}
                                                         @if (
                                                             (Auth::user()->id === $presensi->satpamMasuk?->id && $presensi->status_presensi === 'menunggu_konfirmasi_masuk') ||
-                                                            (Auth::user()->id === $presensi->satpamKeluar?->id && $presensi->status_presensi === 'menunggu_konfirmasi_keluar')
-                                                        )
+                                                                (Auth::user()->id === $presensi->satpamKeluar?->id &&
+                                                                    $presensi->status_presensi === 'menunggu_konfirmasi_keluar'))
                                                             <div class="btn-group" role="group">
                                                                 <button type="button" class="btn btn-sm btn-success"
                                                                     onclick="confirmPresensi({{ $presensi->id }}, 'approve', '{{ $presensi->status_presensi === 'menunggu_konfirmasi_masuk' ? 'masuk' : 'keluar' }}', {{ $presensi->peminjaman_lab_id }})">
@@ -153,7 +154,8 @@
                     <p id="assignMessage"></p>
                     <div class="alert alert-warning">
                         <i class="bi bi-exclamation-triangle"></i>
-                        <strong>Catatan:</strong> Setelah diklaim, presensi akan menjadi tanggung jawab Anda untuk dikonfirmasi.
+                        <strong>Catatan:</strong> Setelah diklaim, presensi akan menjadi tanggung jawab Anda untuk
+                        dikonfirmasi.
                     </div>
                 </div>
                 <div class="modal-footer">

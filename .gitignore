@@ -54,6 +54,12 @@ test_*.php
 implementation_plan_*.md
 GEMINI.md
 GEMINI.MD
+.agent/rules/laravel.md
+.agent/rules/laravel.MD
+.antigravityignore
+antigravityignore
+antigravityignore\357\200\272Zone.Identifier
+laravel.md\357\200\272Zone.Identifier
 
 # Docker Local Data
 docker/mysql/data/
