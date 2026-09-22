@@ -23,9 +23,17 @@ class ApprovalController extends Controller
             $query = PeminjamanLab::with('lab', 'mahasiswa', 'labManager');
 
             if ($jabatanId == 4) { // PLP
-                $query->whereIn('status', ['pending_plp', 'pending_kalab', 'disetujui', 'kadaluarsa', 'ditolak'])->orderBy('status', 'asc');
+                // Hanya tampilkan pengajuan untuk lab yang PLP ini bertanggung jawab
+                $query->whereHas('labManager', function ($q) use ($user) {
+                    $q->where('plp_id', $user->id);
+                })->whereIn('status', ['pending_plp', 'pending_kalab', 'disetujui', 'kadaluarsa', 'ditolak'])
+                  ->orderBy('status', 'asc');
             } elseif ($jabatanId == 3) { // Kalab
-                $query->whereIn('status', ['pending_kalab', 'pending_plp', 'disetujui', 'kadaluarsa', 'ditolak'])->orderBy('status', 'asc');
+                // Hanya tampilkan pengajuan untuk lab yang Kalab ini bertanggung jawab
+                $query->whereHas('labManager', function ($q) use ($user) {
+                    $q->where('kalab_id', $user->id);
+                })->whereIn('status', ['pending_kalab', 'pending_plp', 'disetujui', 'kadaluarsa', 'ditolak'])
+                  ->orderBy('status', 'asc');
             } else {
                 // Admin atau jabatan lain bisa lihat semua
                 $query->whereIn('status', ['pending_plp', 'pending_kalab', 'disetujui', 'kadaluarsa', 'ditolak'])->orderBy('status', 'asc');

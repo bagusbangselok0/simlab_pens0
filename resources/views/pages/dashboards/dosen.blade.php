@@ -124,6 +124,10 @@
             box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
         }
 
+        .quick-action-card > .text-truncate {
+            min-width: 0;
+        }
+
         .dashboard-section-card {
             border: 0;
             border-radius: 18px;
@@ -161,6 +165,20 @@
         .dashboard-stat-number {
             font-size: clamp(1.15rem, 1.7vw, 1.5rem);
             line-height: 1.1;
+        }
+
+        .dashboard-section-card .card-header > div,
+        .dashboard-section-card .card-header > h5 {
+            min-width: 0;
+        }
+
+        .dashboard-section-card .table {
+            min-width: 620px;
+        }
+
+        #chart-tren-peminjaman-kalab,
+        #chart-status-peminjaman-kalab {
+            min-width: 0;
         }
 
         .icon-bg-purple {
@@ -203,6 +221,78 @@
             color: #4f46e5;
         }
 
+        @media (max-width: 1199.98px) {
+            .dashboard-hero .card-body {
+                padding: 1.5rem !important;
+            }
+
+            .dashboard-stat-card .card-body {
+                padding: 1rem !important;
+            }
+
+            .dashboard-stat-card .d-flex {
+                gap: 0.75rem !important;
+            }
+
+            .dashboard-stat-card .dashboard-stat-icon {
+                width: 42px;
+                height: 42px;
+                font-size: 1.1rem;
+                border-radius: 12px;
+            }
+
+            .dashboard-section-card .card-header {
+                gap: 0.75rem;
+            }
+        }
+
+        @media (max-width: 767.98px) {
+            .dashboard-hero {
+                border-radius: 18px;
+            }
+
+            .dashboard-hero h3 {
+                font-size: 1.35rem;
+            }
+
+            .dashboard-hero p {
+                font-size: 0.9rem;
+                line-height: 1.5;
+            }
+
+            .dashboard-hero .d-flex.flex-wrap {
+                width: 100%;
+            }
+
+            .dashboard-chip {
+                font-size: 0.75rem;
+                padding: 0.4rem 0.65rem;
+            }
+
+            .dashboard-section-card .card-header {
+                align-items: flex-start !important;
+                flex-wrap: wrap;
+            }
+
+            .dashboard-section-card .card-header .badge,
+            .dashboard-section-card .card-header > a {
+                margin-left: auto;
+            }
+
+            .dashboard-section-card .card-header h5 {
+                font-size: 0.95rem;
+            }
+
+            .dashboard-section-card .card-header small {
+                display: block;
+                line-height: 1.4;
+            }
+
+            .dashboard-stat-number {
+                font-size: 1.25rem;
+            }
+        }
+
         @media (max-width: 575.98px) {
             .icon-box-shape {
                 width: 38px;
@@ -222,6 +312,51 @@
 
             .stat-val {
                 font-size: 1.2rem !important;
+            }
+
+            .dashboard-hero .card-body {
+                padding: 1.25rem !important;
+            }
+
+            .dashboard-hero .dashboard-chip:first-child {
+                white-space: normal;
+            }
+
+            .dashboard-hero .d-flex.flex-wrap .dashboard-chip {
+                flex: 1 1 auto;
+                justify-content: center;
+            }
+
+            .dashboard-section-card .card-body {
+                padding: 0.85rem 0.75rem !important;
+            }
+
+            .dashboard-section-card .card-header {
+                padding-left: 0.75rem !important;
+                padding-right: 0.75rem !important;
+            }
+
+            .dashboard-section-card .card-header .badge,
+            .dashboard-section-card .card-header > a {
+                margin-left: 0;
+                width: 100%;
+                text-align: center;
+            }
+
+            .quick-action-card {
+                min-height: 64px;
+            }
+
+            .quick-action-card h6 {
+                font-size: 0.85rem;
+            }
+
+            .quick-action-card small {
+                font-size: 0.72rem;
+            }
+
+            .dashboard-section-card .table {
+                min-width: 680px;
             }
 
             .highlight-pending-card::after {
@@ -297,7 +432,7 @@
                 </div>
                 <div class="card-body">
                     <div class="row g-2 g-sm-3">
-                        <div class="col-6 col-md-4">
+                        <div class="col-12 col-sm-6 col-md-4">
                             <a href="{{ route('approval.index') }}"
                                 class="btn btn-outline-warning w-100 text-start py-2.5 px-2 px-sm-3 d-flex align-items-center quick-action-card">
                                 <div class="icon-box-shape icon-bg-amber me-2 me-sm-3">
@@ -309,7 +444,7 @@
                                 </div>
                             </a>
                         </div>
-                        <div class="col-6 col-md-4">
+                        <div class="col-12 col-sm-6 col-md-4">
                             <a href="{{ route('presensi.monitoring') }}"
                                 class="btn btn-outline-success w-100 text-start py-2.5 px-2 px-sm-3 d-flex align-items-center quick-action-card">
                                 <div class="icon-box-shape icon-bg-green me-2 me-sm-3">
@@ -321,7 +456,7 @@
                                 </div>
                             </a>
                         </div>
-                        <div class="col-12 col-md-4">
+                        <div class="col-12 col-sm-6 col-md-4">
                             <a href="{{ route('profile.index') }}"
                                 class="btn btn-outline-primary w-100 text-start py-2.5 px-2 px-sm-3 d-flex align-items-center quick-action-card">
                                 <div class="icon-box-shape icon-bg-purple me-2 me-sm-3">
@@ -349,7 +484,7 @@
 
     {{-- Baris 1: Ringkasan Utama --}}
     <section class="row">
-        <div class="col-6 col-lg-3 col-md-6 mb-3">
+        <div class="col-12 col-sm-6 col-lg-3 col-md-6 mb-3">
             <div class="card mb-0 h-100 dashboard-stat-card">
                 <div class="card-body">
                     <div class="d-flex align-items-center gap-3">
@@ -365,7 +500,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-6 col-lg-3 col-md-6 mb-3">
+        <div class="col-12 col-sm-6 col-lg-3 col-md-6 mb-3">
             <div class="card mb-0 h-100 dashboard-stat-card">
                 <div class="card-body">
                     <div class="d-flex align-items-center gap-3">
@@ -382,7 +517,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-6 col-lg-3 col-md-6 mb-3">
+        <div class="col-12 col-sm-6 col-lg-3 col-md-6 mb-3">
             <div class="card mb-0 h-100 dashboard-stat-card">
                 <div class="card-body">
                     <div class="d-flex align-items-center gap-3">
@@ -399,7 +534,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-6 col-lg-3 col-md-6 mb-3">
+        <div class="col-12 col-sm-6 col-lg-3 col-md-6 mb-3">
             <div class="card mb-0 h-100 dashboard-stat-card"
                 title="Mahasiswa dengan peminjaman aktif hari ini di lab Anda namun belum melakukan presensi masuk">
                 <div class="card-body">
@@ -421,7 +556,7 @@
 
     {{-- Baris 2: Status Persetujuan & Aktivitas Lab --}}
     <section class="row mb-3">
-        <div class="col-6 col-lg-3 col-md-6 mb-3">
+        <div class="col-12 col-sm-6 col-lg-3 col-md-6 mb-3">
             <div class="card mb-0 h-100 dashboard-stat-card {{ $pending_kalab > 0 ? 'highlight-pending-card' : '' }}">
                 <div class="card-body">
                     <div class="d-flex align-items-center gap-3">
@@ -437,7 +572,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-6 col-lg-3 col-md-6 mb-3">
+        <div class="col-12 col-sm-6 col-lg-3 col-md-6 mb-3">
             <div class="card mb-0 h-100 dashboard-stat-card">
                 <div class="card-body">
                     <div class="d-flex align-items-center gap-3">
@@ -454,7 +589,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-6 col-lg-3 col-md-6 mb-3">
+        <div class="col-12 col-sm-6 col-lg-3 col-md-6 mb-3">
             <div class="card mb-0 h-100 dashboard-stat-card">
                 <div class="card-body">
                     <div class="d-flex align-items-center gap-3">
@@ -470,7 +605,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-6 col-lg-3 col-md-6 mb-3">
+        <div class="col-12 col-sm-6 col-lg-3 col-md-6 mb-3">
             <div class="card mb-0 h-100 dashboard-stat-card">
                 <div class="card-body">
                     <div class="d-flex align-items-center gap-3">
