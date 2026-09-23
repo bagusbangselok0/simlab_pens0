@@ -159,7 +159,7 @@ Untuk mengaktifkan fitur notifikasi push langsung ke device/browser pengguna, An
 
 ## ⏰ Task Scheduler Setup
 
-Aplikasi ini menggunakan **Laravel Task Scheduler** untuk menjalankan tugas otomatis berikut (didefinisikan di `app/Console/Kernel.php`):
+Aplikasi ini menggunakan **Laravel Task Scheduler** untuk menjalankan tugas otomatis berikut (didefinisikan di `routes/console.php`):
 
 | Perintah | Jadwal | Fungsi |
 |---|---|---|

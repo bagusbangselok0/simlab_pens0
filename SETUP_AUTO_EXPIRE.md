@@ -24,7 +24,7 @@ Sistem akan:
 // Dijalankan dengan: php artisan peminjaman:expire
 ```
 
-### 2. **Scheduler** (`app/Console/Kernel.php`)
+### 2. **Scheduler** (`routes/console.php`)
 ```php
 // Scheduler mengatur kapan command dijalankan:
 // - Setiap menit otomatis
@@ -188,7 +188,7 @@ Kolom yang diperlukan:
 
 ### ❌ Ingin mengubah frekuensi (misal tiap 30 menit)
 **Solusi:**
-1. Edit `app/Console/Kernel.php`
+1. Edit `routes/console.php`
 2. Ubah `->hourly()` menjadi `->everyThirtyMinutes()`
 3. Re-run `setup-scheduler-windows.bat` untuk update task
 
