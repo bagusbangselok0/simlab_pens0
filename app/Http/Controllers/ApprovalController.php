@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\PeminjamanLab;
+use App\Models\Setting;
 use App\Notifications\PeminjamanNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -27,13 +28,13 @@ class ApprovalController extends Controller
                 $query->whereHas('labManager', function ($q) use ($user) {
                     $q->where('plp_id', $user->id);
                 })->whereIn('status', ['pending_plp', 'pending_kalab', 'disetujui', 'kadaluarsa', 'ditolak'])
-                  ->orderBy('status', 'asc');
+                    ->orderBy('status', 'asc');
             } elseif ($jabatanId == 3) { // Kalab
                 // Hanya tampilkan pengajuan untuk lab yang Kalab ini bertanggung jawab
                 $query->whereHas('labManager', function ($q) use ($user) {
                     $q->where('kalab_id', $user->id);
                 })->whereIn('status', ['pending_kalab', 'pending_plp', 'disetujui', 'kadaluarsa', 'ditolak'])
-                  ->orderBy('status', 'asc');
+                    ->orderBy('status', 'asc');
             } else {
                 // Admin atau jabatan lain bisa lihat semua
                 $query->whereIn('status', ['pending_plp', 'pending_kalab', 'disetujui', 'kadaluarsa', 'ditolak'])->orderBy('status', 'asc');
@@ -150,17 +151,37 @@ class ApprovalController extends Controller
         // Logic approval berdasarkan jabatan
         if ($jabatanId == 4) { // PLP
             if ($peminjaman->status == 'pending_plp') {
-                $peminjaman->status = 'pending_kalab';
                 $peminjaman->tgl_ttd_plp = now(
                     date_default_timezone_set('Asia/Jakarta')
                 );
                 // simpan signature_path user ke ttd_plp_file
                 $peminjaman->ttd_plp_file = $user->signature_path;
-                $message = 'Peminjaman disetujui PLP, menunggu approval Kalab';
 
-                $actionType = 'approve_plp';
-                $recipient = $peminjaman->labManager->kalab ?? null;
-                $recipient->notify(new PeminjamanNotification($peminjaman, $actionType, Auth::user()));
+                $kalab = $peminjaman->labManager->kalab ?? null;
+                $autoApprove = Setting::boolean(
+                    Setting::AUTO_APPROVE_KALAB,
+                    Setting::labScope($peminjaman->lab_id)
+                );
+
+                if ($autoApprove && $kalab && $kalab->signature_path && $kalab->signature_status === 'approved') {
+                    $peminjaman->status = 'disetujui';
+                    $peminjaman->tgl_ttd_kalab = now(
+                        date_default_timezone_set('Asia/Jakarta')
+                    );
+                    $peminjaman->ttd_kalab_file = $kalab->signature_path;
+                    $message = 'Peminjaman disetujui PLP dan otomatis disetujui Kalab';
+                    $actionType = 'approve_final';
+                    $recipient = $peminjaman->mahasiswa ?? null;
+                } else {
+                    $peminjaman->status = 'pending_kalab';
+                    $message = 'Peminjaman disetujui PLP, menunggu approval Kalab';
+                    $actionType = 'approve_plp';
+                    $recipient = $kalab;
+                }
+
+                if ($recipient && $actionType !== 'approve_final') {
+                    $recipient->notify(new PeminjamanNotification($peminjaman, $actionType, Auth::user()));
+                }
             } else {
                 return response()->json(['success' => false, 'message' => 'Status tidak valid untuk approval PLP'], 400);
             }
@@ -177,7 +198,6 @@ class ApprovalController extends Controller
 
                 $actionType = 'approve_final';
                 $recipient = $peminjaman->mahasiswa ?? null;
-                $recipient->notify(new PeminjamanNotification($peminjaman, $actionType, Auth::user()));
             } else {
                 return response()->json(['success' => false, 'message' => 'Status tidak valid untuk approval Kalab'], 400);
             }

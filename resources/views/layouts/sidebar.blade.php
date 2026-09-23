@@ -90,6 +90,10 @@
                             <li class="submenu-item @if (request()->routeIs('admin.signatures.*')) active @endif">
                                 <a href="{{ route('admin.signatures.index') }}" class="submenu-link">Verifikasi TTD</a>
                             </li>
+
+                            <li class="submenu-item @if (request()->routeIs('settings.*')) active @endif">
+                                <a href="{{ route('settings.index') }}" class="submenu-link">Pengaturan Sistem</a>
+                            </li>
                         </ul>
                     </li>
                 @endif

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ApprovalController;
 use App\Http\Controllers\SignatureVerificationController;
+use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\InventarisBarangController;
 use App\Http\Controllers\InventarisRuanganController;
 use App\Http\Controllers\DashboardController;
@@ -154,6 +155,10 @@ Route::middleware('auth')->group(function () {
             Route::delete('/{id}', [LabManagerController::class, 'destroy'])->name('lab_manager.destroy');
             // Tambahkan route lain untuk CRUD Lab Manager jika diperlukan
         });
+
+        Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');
+        Route::patch('/settings/labs/{lab}/auto-approve-kalab', [SettingsController::class, 'updateAutoApproveKalab'])
+            ->name('settings.auto-approve-kalab');
     });
 
     // ---------------------------------------------------------
