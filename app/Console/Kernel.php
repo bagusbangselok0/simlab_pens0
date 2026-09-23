@@ -12,9 +12,9 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
-        // Jalankan command untuk expire peminjaman setiap jam
+        // Periksa peminjaman yang melewati batas waktu setiap menit.
         $schedule->command('peminjaman:expire')
-            ->hourly()
+            ->everyMinute()
             ->withoutOverlapping()
             ->runInBackground();
 

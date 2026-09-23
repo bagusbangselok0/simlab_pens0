@@ -163,7 +163,7 @@ Aplikasi ini menggunakan **Laravel Task Scheduler** untuk menjalankan tugas otom
 
 | Perintah | Jadwal | Fungsi |
 |---|---|---|
-| `peminjaman:expire` | Setiap jam | Membatalkan pengajuan *pending* yang belum diproses selama 24 jam atau sudah melewati `waktu_selesai`; mengubah peminjaman disetujui yang sudah lewat waktu menjadi `kadaluarsa` |
+| `peminjaman:expire` | Setiap menit | Membatalkan pengajuan *pending* yang belum diproses selama 24 jam atau sudah melewati `waktu_selesai`; mengubah peminjaman disetujui yang sudah lewat waktu menjadi `kadaluarsa` |
 | `notifications:prune` | Setiap hari pukul 02:00 | Menghapus notifikasi yang sudah lebih dari 10 hari |
 
 Agar kedua tugas ini berjalan, Anda **harus** mengaktifkan scheduler sesuai environment Anda:
@@ -213,6 +213,8 @@ php artisan schedule:run
 php artisan schedule:work
 ```
 
+> **Catatan:** `php artisan schedule:run` hanya menjalankan task yang sudah jatuh tempo pada menit tersebut. Pesan `No scheduled commands are ready to run` berarti scheduler berhasil dijalankan, tetapi belum ada task yang waktunya cocok. Untuk menjalankan logika pembatalan langsung tanpa menunggu scheduler, gunakan `php artisan peminjaman:expire`.
+
 ### Non-Docker / Windows (XAMPP / Laragon)
 
 **Production (Task Scheduler):**
@@ -249,6 +251,12 @@ php artisan schedule:work
 ```
 
 > **Catatan:** `schedule:work` akan berjalan di foreground dan mengecek jadwal setiap menit, cocok untuk development tanpa perlu setup cron/Task Scheduler.
+
+Untuk pengujian langsung tanpa menunggu jadwal, jalankan:
+
+```powershell
+php artisan peminjaman:expire
+```
 
 ## ⚙️ Pengaturan Auto-Approval Kalab
 

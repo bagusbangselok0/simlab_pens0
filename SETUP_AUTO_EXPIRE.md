@@ -6,7 +6,7 @@ Fitur ini akan secara **otomatis mengubah status peminjaman** berdasarkan kondis
 Sistem akan:
 - ✅ Mengubah peminjaman `pending_plp`/`pending_kalab` yang belum disetujui dalam **24 jam** → `dibatalkan`
 - ✅ Mengubah peminjaman `disetujui` yang sudah sampai ke **waktu selesai** → `kadaluarsa`
-- ✅ Berjalan secara background/otomatis setiap jam
+- ✅ Berjalan secara background/otomatis setiap menit
 
 ## 🔧 Cara Kerja Teknis
 
@@ -27,7 +27,7 @@ Sistem akan:
 ### 2. **Scheduler** (`app/Console/Kernel.php`)
 ```php
 // Scheduler mengatur kapan command dijalankan:
-// - Setiap jam otomatis
+// - Setiap menit otomatis
 // - Mencegah duplikasi dengan withoutOverlapping()
 ```
 
@@ -150,8 +150,8 @@ Kolom yang diperlukan:
 
 | Status | Deskripsi | Kondisi Expiration |
 |--------|-----------|-------------------|
-| `pending_plp` | Menunggu persetujuan PLP | ⏰ > 24 jam → `dibatalkan` |
-| `pending_kalab` | Menunggu persetujuan Kalab | ⏰ > 24 jam → `dibatalkan` |
+| `pending_plp` | Menunggu persetujuan PLP | ⏰ > 24 jam atau `waktu_selesai` lewat → `dibatalkan` |
+| `pending_kalab` | Menunggu persetujuan Kalab | ⏰ > 24 jam atau `waktu_selesai` lewat → `dibatalkan` |
 | `disetujui` | Sudah disetujui (aktif) | ⏰ waktu_selesai lewat → `kadaluarsa` |
 | `dibatalkan` | Dibatalkan (pending > 24 jam) | ❌ Final state |
 | `ditolak` | Ditolak oleh PLP/Kalab | ❌ Final state |
