@@ -22,18 +22,23 @@ class ExpirePeminjamanLab extends Command
      *
      * @var string
      */
-    protected $description = 'Mengubah status peminjaman: pending > 24 jam menjadi dibatalkan, disetujui yang sudah lewat waktu selesai menjadi kadaluarsa, presensi belum_hadir menjadi tidak_hadir';
+    protected $description = 'Membatalkan pengajuan pending yang melewati 24 jam atau waktu selesai, lalu memproses peminjaman dan presensi yang sudah lewat waktu';
 
     /**
      * Execute the console command.
      */
     public function handle()
     {
-        // 1. Ubah peminjaman pending yang dibuat lebih dari 24 jam lalu menjadi dibatalkan
-        $twentyFourHoursAgo = Carbon::now()->subHours(24);
+        // 1. Batalkan pengajuan pending yang tidak diproses selama 24 jam
+        //    atau sudah melewati waktu selesai peminjaman.
+        $now = Carbon::now('Asia/Jakarta');
+        $twentyFourHoursAgo = $now->copy()->subHours(24);
         $pendingLoans = PeminjamanLab::with('mahasiswa', 'lab')
             ->whereIn('status', ['pending_plp', 'pending_kalab'])
-            ->where('created_at', '<', $twentyFourHoursAgo)
+            ->where(function ($query) use ($twentyFourHoursAgo, $now) {
+                $query->where('created_at', '<=', $twentyFourHoursAgo)
+                    ->orWhere('waktu_selesai', '<=', $now);
+            })
             ->get();
 
         $canceledCount = 0;
@@ -46,10 +51,9 @@ class ExpirePeminjamanLab extends Command
             $canceledCount++;
         }
 
-        $this->info("Jumlah peminjaman pending yang dibatalkan (>24 jam): {$canceledCount}");
+        $this->info("Jumlah peminjaman pending yang dibatalkan otomatis: {$canceledCount}");
 
         // 2. Ubah peminjaman yang sudah disetujui tapi sudah lewat waktu selesai menjadi kadaluarsa
-        $now = Carbon::now();
         $expired = PeminjamanLab::where('status', 'disetujui')
             ->where('waktu_selesai', '<=', $now)
             ->update(['status' => 'kadaluarsa']);

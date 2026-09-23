@@ -16,7 +16,8 @@ Aplikasi ini juga dilengkapi dengan fitur modern untuk mempermudah birokrasi, se
 ## 🚀 Key Features
 
 - **Role-Based Access Control:** Dedicated, distinct dashboards for Admin, Lecturer (Dosen), and Students (Mahasiswa).
-- **Peminjaman Lab (Lab Loans):** Streamlined requesting and management of laboratory rooms and equipment. Includes an automated system that cancels pending requests after 24 hours of inactivity if not approved.
+- **Peminjaman Lab (Lab Loans):** Streamlined requesting and management of laboratory rooms and equipment. Includes an automated system that cancels pending requests after 24 hours of inactivity or after the requested end time has passed.
+- **Per-Lab Kalab Auto-Approval:** Admin dapat mengaktifkan atau menonaktifkan auto-approval Kalab untuk setiap laboratorium. Approval PLP tetap wajib dilakukan terlebih dahulu.
 - **Flattened & Secure PDF Export:** Surat peminjaman lab dicetak dalam format PDF yang di-flatten (dikonversi menjadi gambar utuh beresolusi 200 DPI via `Imagick` & `Ghostscript`). Seluruh teks dan file tanda tangan digital terkunci, tidak dapat diseleksi, disalin (*copy-paste*), atau diekstrak demi keamanan dokumen dan tanda tangan pejabat terkait.
 - **Browser Push Notifications:** Real-time native OS/device notifications via standard Web Push API (built-in browser API), working in the background even when the app tab is closed (FCM/Firebase-free).
 - **WhatsApp Notification Integration:** Built-in channel using Fonnte API (optional, can be turned on/off).
@@ -162,7 +163,7 @@ Aplikasi ini menggunakan **Laravel Task Scheduler** untuk menjalankan tugas otom
 
 | Perintah | Jadwal | Fungsi |
 |---|---|---|
-| `peminjaman:expire` | Setiap jam | Otomatis membatalkan peminjaman yang berstatus *pending* lebih dari 24 jam |
+| `peminjaman:expire` | Setiap jam | Membatalkan pengajuan *pending* yang belum diproses selama 24 jam atau sudah melewati `waktu_selesai`; mengubah peminjaman disetujui yang sudah lewat waktu menjadi `kadaluarsa` |
 | `notifications:prune` | Setiap hari pukul 02:00 | Menghapus notifikasi yang sudah lebih dari 10 hari |
 
 Agar kedua tugas ini berjalan, Anda **harus** mengaktifkan scheduler sesuai environment Anda:
@@ -249,6 +250,39 @@ php artisan schedule:work
 
 > **Catatan:** `schedule:work` akan berjalan di foreground dan mengecek jadwal setiap menit, cocok untuk development tanpa perlu setup cron/Task Scheduler.
 
+## ⚙️ Pengaturan Auto-Approval Kalab
+
+Fitur auto-approval hanya berlaku untuk tahap persetujuan Kalab dan dikonfigurasi per laboratorium oleh Admin.
+
+Alur persetujuan normal:
+
+```text
+pending_plp -> pending_kalab -> disetujui
+```
+
+Jika auto-approval Kalab aktif untuk suatu laboratorium:
+
+```text
+pending_plp -> disetujui
+```
+
+Ketentuannya:
+
+- PLP tetap harus menyetujui pengajuan terlebih dahulu.
+- Auto-approval hanya berjalan jika laboratorium memiliki Kalab.
+- Tanda tangan digital Kalab harus sudah disetujui Admin.
+- Dosen yang bukan Kalab dan PLP tidak memiliki pengaturan auto-approval.
+- Setting dapat diubah Admin melalui menu **Data Master > Pengaturan Sistem**.
+- Setting yang belum tersedia dianggap nonaktif (`false`).
+
+Pengaturan disimpan pada tabel `settings` menggunakan key `approval.auto_approve_kalab` dan scope `lab:{id}`. Default setting per laboratorium dibuat oleh `SettingsSeeder` tanpa menimpa konfigurasi yang sudah diubah Admin.
+
+Untuk menjalankan seeder secara manual:
+
+```bash
+php artisan db:seed --class=SettingsSeeder
+```
+
 ---
 
 ## 🔧 Core Workflows Overview
@@ -256,7 +290,7 @@ php artisan schedule:work
 - **Signature Security & Flat PDF:** Dokumen surat peminjaman lab yang dicetak dikonversi menjadi citra utuh yang terproteksi (*flattened*). Hal ini mencegah duplikasi, ekstraksi gambar tanda tangan secara terpisah, atau modifikasi isi surat oleh pihak yang tidak bertanggung jawab.
 - **Signature Management:** Digital signatures are handled via an AJAX controller (`ProfileController`). Uploading a new signature safely removes the old file from local storage and updates the database reference seamlessly.
 - **Password Reset Protocol:** To enhance security, automated email resets are disabled. Users must request a reset from an Administrator, who will generate a secure, one-time link from the Admin Dashboard.
-- **Automated Request Expiration:** Lab loan requests that remain in a "pending" state for over 24 hours are automatically flagged and canceled by the system to free up requested resources.
+- **Automated Request Expiration:** Lab loan requests that remain in a `pending_plp` or `pending_kalab` state for over 24 hours, or whose requested end time has passed, are automatically changed to `dibatalkan` and the student is notified. Approved loans that pass their end time are changed to `kadaluarsa`.
 
 ## 📄 License
 
