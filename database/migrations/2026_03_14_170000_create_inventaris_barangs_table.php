@@ -18,6 +18,9 @@ return new class extends Migration
             $table->string('nama_barang');
             $table->string('merk')->nullable();
             $table->string('tipe')->nullable();
+            $table->enum('jenis_barang', ['barang_habis_pakai', 'barang_tidak_habis_pakai'])->default('barang_tidak_habis_pakai');
+            $table->text('foto_barang')->nullable();
+            $table->enum('sumber_dana', ['apbn', 'apbd', 'prodi', 'lainnya'])->nullable();
             $table->date('tgl_buku_pertama')->nullable();
             $table->date('tgl_perolehan')->nullable();
             $table->text('spesifikasi')->nullable();

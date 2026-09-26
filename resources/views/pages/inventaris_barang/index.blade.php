@@ -6,7 +6,7 @@
 <style>
     .inventory-toolbar { display: flex; flex-wrap: wrap; gap: .5rem; justify-content: flex-end; }
     .inventory-toolbar .btn { margin: 0 !important; }
-    .inventory-table { min-width: 980px; }
+    .inventory-table { min-width: 1180px; }
     @media (max-width: 575.98px) {
         .inventory-toolbar { justify-content: stretch; }
         .inventory-toolbar .btn { flex: 1 1 100%; }
@@ -160,6 +160,8 @@
                             <th>KODE BARANG</th>
                             <th>NUP</th>
                             <th>NAMA BARANG</th>
+                            <th>JENIS BARANG</th>
+                            <th>SUMBER DANA</th>
                             <th>MERK / TIPE</th>
                             <th class="text-center">TGL BUKU</th>
                             <th class="text-center">TGL PEROLEHAN</th>
@@ -180,6 +182,8 @@
                                 </td>
                                 <td>{{ $item->nup ?? '-' }}</td>
                                 <td class="fw-bold">{{ $item->nama_barang }}</td>
+                                <td>{{ $item->jenis_barang === 'barang_habis_pakai' ? 'Habis Pakai' : 'Tidak Habis Pakai' }}</td>
+                                <td>{{ $item->sumber_dana ? strtoupper($item->sumber_dana) : '-' }}</td>
                                 <td>{{ $item->merk_tipe }}</td>
                                 <td class="text-center">{{ $item->tgl_buku_pertama ? $item->tgl_buku_pertama->format('d/m/Y') : '-' }}</td>
                                 <td class="text-center">{{ $item->tgl_perolehan ? $item->tgl_perolehan->format('d/m/Y') : '-' }}</td>
@@ -196,6 +200,9 @@
                                     @endif
                                 </td>
                                 <td class="text-center">
+                                    <button type="button" class="btn btn-sm btn-info text-white me-1" data-bs-toggle="modal" data-bs-target="#modalFotoMaster{{ $item->id }}" title="Lihat Foto Barang">
+                                        <i class="bi bi-image"></i>
+                                    </button>
                                     @if(!$item->assigned_dir)
                                         <button type="button" class="btn btn-sm btn-success me-1" data-bs-toggle="modal" data-bs-target="#modalAssign{{ $item->id }}" title="Tempatkan ke Ruangan (DIR)">
                                             <i class="bi bi-door-open-fill"></i>
@@ -213,6 +220,28 @@
                                     </form>
                                 </td>
                             </tr>
+
+                            <!-- Modal Foto Barang -->
+                            <div class="modal fade" id="modalFotoMaster{{ $item->id }}" tabindex="-1" aria-hidden="true">
+                                <div class="modal-dialog modal-dialog-centered modal-lg inventory-modal-dialog">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title"><i class="bi bi-image me-2"></i>Foto Barang</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        </div>
+                                        <div class="modal-body text-center">
+                                            @if($item->foto_barang)
+                                                <img src="{{ asset('storage/' . ltrim($item->foto_barang, '/')) }}" alt="Foto {{ $item->nama_barang }}" class="img-fluid rounded" style="max-height: 70vh; object-fit: contain;">
+                                            @else
+                                                <div class="text-muted py-5">
+                                                    <i class="bi bi-image fs-1 d-block mb-2"></i>
+                                                    Foto barang belum tersedia.
+                                                </div>
+                                            @endif
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
 
                             <!-- Modal Assign ke Ruangan -->
                             @if(!$item->inventarisRuangan)
@@ -275,7 +304,7 @@
                             <div class="modal fade" id="modalEditMaster{{ $item->id }}" tabindex="-1" aria-hidden="true">
                                     <div class="modal-dialog modal-lg inventory-modal-dialog">
                                     <div class="modal-content">
-                                        <form action="{{ route('inventaris.update', $item->id) }}" method="POST">
+                                        <form action="{{ route('inventaris.update', $item->id) }}" method="POST" enctype="multipart/form-data">
                                             @csrf
                                             @method('PUT')
                                             <div class="modal-header bg-warning text-dark">
@@ -297,12 +326,34 @@
                                                         <input type="text" name="nama_barang" class="form-control" value="{{ old('nama_barang', $item->nama_barang) }}" required>
                                                     </div>
                                                     <div class="col-md-6">
+                                                        <label class="form-label fw-bold">Jenis Barang <span class="text-danger">*</span></label>
+                                                        <select name="jenis_barang" class="form-select" required>
+                                                            <option value="barang_tidak_habis_pakai" {{ old('jenis_barang', $item->jenis_barang) === 'barang_tidak_habis_pakai' ? 'selected' : '' }}>Barang Tidak Habis Pakai</option>
+                                                            <option value="barang_habis_pakai" {{ old('jenis_barang', $item->jenis_barang) === 'barang_habis_pakai' ? 'selected' : '' }}>Barang Habis Pakai</option>
+                                                        </select>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <label class="form-label fw-bold">Sumber Dana</label>
+                                                        <select name="sumber_dana" class="form-select">
+                                                            <option value="">-- Pilih Sumber Dana --</option>
+                                                            <option value="apbn" {{ old('sumber_dana', $item->sumber_dana) === 'apbn' ? 'selected' : '' }}>APBN</option>
+                                                            <option value="apbd" {{ old('sumber_dana', $item->sumber_dana) === 'apbd' ? 'selected' : '' }}>APBD</option>
+                                                            <option value="prodi" {{ old('sumber_dana', $item->sumber_dana) === 'prodi' ? 'selected' : '' }}>Prodi</option>
+                                                            <option value="lainnya" {{ old('sumber_dana', $item->sumber_dana) === 'lainnya' ? 'selected' : '' }}>Lainnya</option>
+                                                        </select>
+                                                    </div>
+                                                    <div class="col-md-6">
                                                         <label class="form-label fw-bold">Merk</label>
                                                         <input type="text" name="merk" class="form-control" value="{{ old('merk', $item->merk) }}" placeholder="Contoh: HP, Dell, Panasonic">
                                                     </div>
                                                     <div class="col-md-6">
                                                         <label class="form-label fw-bold">Tipe</label>
                                                         <input type="text" name="tipe" class="form-control" value="{{ old('tipe', $item->tipe) }}" placeholder="Contoh: Pavilion, Core i5">
+                                                    </div>
+                                                    <div class="col-md-12">
+                                                        <label class="form-label fw-bold">Foto Barang</label>
+                                                        <input type="file" name="foto_barang" class="form-control" accept="image/*">
+                                                        <small class="text-muted">Opsional, maksimal 5 MB. Upload baru akan menggantikan foto lama.</small>
                                                     </div>
                                                     <div class="col-md-6">
                                                         <label class="form-label fw-bold">Tanggal Buku Pertama</label>
@@ -332,7 +383,7 @@
                             </div>
                         @empty
                             <tr>
-                                <td colspan="9" class="text-center text-muted py-5">
+                                <td colspan="11" class="text-center text-muted py-5">
                                     <i class="bi bi-inbox fs-2 d-block mb-2"></i>
                                     Belum ada data master inventaris.
                                 </td>
@@ -353,7 +404,7 @@
     <div class="modal fade" id="modalTambahMaster" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg inventory-modal-dialog">
             <div class="modal-content">
-                <form action="{{ route('inventaris.store') }}" method="POST">
+                <form action="{{ route('inventaris.store') }}" method="POST" enctype="multipart/form-data">
                     @csrf
                     <div class="modal-header bg-primary text-white">
                         <h5 class="modal-title text-white"><i class="bi bi-plus-circle me-2"></i> Tambah Master Inventaris Baru</h5>
@@ -374,6 +425,23 @@
                                 <input type="text" name="nama_barang" class="form-control" placeholder="Contoh: Personal Computer / Osiloskop" required>
                             </div>
                             <div class="col-md-6">
+                                <label class="form-label fw-bold">Jenis Barang <span class="text-danger">*</span></label>
+                                <select name="jenis_barang" class="form-select" required>
+                                    <option value="barang_tidak_habis_pakai" selected>Barang Tidak Habis Pakai</option>
+                                    <option value="barang_habis_pakai">Barang Habis Pakai</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Sumber Dana</label>
+                                <select name="sumber_dana" class="form-select">
+                                    <option value="" selected>-- Pilih Sumber Dana --</option>
+                                    <option value="apbn">APBN</option>
+                                    <option value="apbd">APBD</option>
+                                    <option value="prodi">Prodi</option>
+                                    <option value="lainnya">Lainnya</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
                                 <label class="form-label fw-bold">Merk</label>
                                 <input type="text" name="merk" class="form-control" placeholder="Contoh: HP, Dell, Panasonic">
                             </div>
@@ -388,6 +456,11 @@
                             <div class="col-md-6">
                                 <label class="form-label fw-bold">Tanggal Perolehan</label>
                                 <input type="date" name="tgl_perolehan" class="form-control" value="{{ date('Y-m-d') }}">
+                            </div>
+                            <div class="col-md-12">
+                                <label class="form-label fw-bold">Foto Barang</label>
+                                <input type="file" name="foto_barang" class="form-control" accept="image/*">
+                                <small class="text-muted">Opsional, maksimal 5 MB.</small>
                             </div>
                             <div class="col-md-12">
                                 <label class="form-label fw-bold">Spesifikasi / Uraian Teknis</label>

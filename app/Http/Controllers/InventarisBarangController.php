@@ -9,6 +9,7 @@ use App\Models\LabManager;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 use Shuchkin\SimpleXLSX;
 
 class InventarisBarangController extends Controller
@@ -91,11 +92,18 @@ class InventarisBarangController extends Controller
             'nama_barang' => 'required|string|max:255',
             'merk' => 'nullable|string|max:100',
             'tipe' => 'nullable|string|max:100',
+            'jenis_barang' => 'required|in:barang_habis_pakai,barang_tidak_habis_pakai',
+            'sumber_dana' => 'nullable|in:apbn,apbd,prodi,lainnya',
+            'foto_barang' => 'nullable|image|max:5120',
             'tgl_buku_pertama' => 'nullable|date',
             'tgl_perolehan' => 'nullable|date',
             'spesifikasi' => 'nullable|string',
             'keterangan' => 'nullable|string',
         ]);
+
+        if ($request->hasFile('foto_barang')) {
+            $validated['foto_barang'] = $request->file('foto_barang')->store('inventaris_barang', 'public');
+        }
 
         InventarisBarang::create($validated);
 
@@ -116,11 +124,22 @@ class InventarisBarangController extends Controller
             'nama_barang' => 'required|string|max:255',
             'merk' => 'nullable|string|max:100',
             'tipe' => 'nullable|string|max:100',
+            'jenis_barang' => 'required|in:barang_habis_pakai,barang_tidak_habis_pakai',
+            'sumber_dana' => 'nullable|in:apbn,apbd,prodi,lainnya',
+            'foto_barang' => 'nullable|image|max:5120',
             'tgl_buku_pertama' => 'nullable|date',
             'tgl_perolehan' => 'nullable|date',
             'spesifikasi' => 'nullable|string',
             'keterangan' => 'nullable|string',
         ]);
+
+        if ($request->hasFile('foto_barang')) {
+            if ($item->foto_barang) {
+                Storage::disk('public')->delete($item->foto_barang);
+            }
+
+            $validated['foto_barang'] = $request->file('foto_barang')->store('inventaris_barang', 'public');
+        }
 
         $item->update($validated);
 
@@ -144,6 +163,11 @@ class InventarisBarangController extends Controller
     public function destroy($id)
     {
         $item = InventarisBarang::findOrFail($id);
+
+        if ($item->foto_barang) {
+            Storage::disk('public')->delete($item->foto_barang);
+        }
+
         $item->delete();
 
         return redirect()->route('inventaris.index')
