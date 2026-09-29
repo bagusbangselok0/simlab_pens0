@@ -89,6 +89,8 @@ class PresensiController extends Controller
             ]);
         }
 
+        $message = '';
+
         if ($request->tipe_presensi === 'masuk') {
             // Validasi waktu presensi masuk
             if ($now->lt($peminjaman->waktu_mulai)) {
@@ -230,9 +232,9 @@ class PresensiController extends Controller
     {
         $title = 'Konfirmasi Presensi Lab';
 
-        // Get semua presensi yang menunggu konfirmasi
+        // Include active visits so guards can record an exit without a student request.
         $presensiMenunggu = PresensiLab::with(['peminjamanLab.lab', 'mahasiswa', 'satpamMasuk', 'satpamKeluar'])
-            ->whereIn('status_presensi', ['menunggu_konfirmasi_masuk', 'menunggu_konfirmasi_keluar'])
+            ->whereIn('status_presensi', ['menunggu_konfirmasi_masuk', 'menunggu_konfirmasi_keluar', 'didalam'])
             ->orderBy('created_at', 'desc')
             ->get();
 
@@ -242,51 +244,72 @@ class PresensiController extends Controller
     public function confirmPresence(Request $request, $id)
     {
         $request->validate([
-            'action' => 'required|in:approve,reject',
+            'action' => 'required|in:approve,reject,mark_exited',
         ]);
 
         $presensi = PresensiLab::findOrFail($id);
+        $message = '';
 
-        // Pastikan presensi dalam status menunggu konfirmasi
-        if (!in_array($presensi->status_presensi, ['menunggu_konfirmasi_masuk', 'menunggu_konfirmasi_keluar'])) {
-            if ($request->ajax()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Presensi ini sudah dikonfirmasi atau tidak valid.',
-                ], 400);
+        if ($request->action === 'mark_exited') {
+            if ($presensi->status_presensi !== 'didalam') {
+                if ($request->ajax()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Presensi ini tidak sedang berstatus di dalam lab.',
+                    ], 400);
+                }
+                return back()->withErrors(['action' => 'Presensi ini tidak sedang berstatus di dalam lab.']);
             }
-            return back()->withErrors(['action' => 'Presensi ini sudah dikonfirmasi atau tidak valid.']);
-        }
 
-        if ($request->action === 'approve') {
-            if ($presensi->status_presensi === 'menunggu_konfirmasi_masuk') {
-                // Konfirmasi presensi masuk
-                $presensi->update([
-                    'jam_masuk' => now('Asia/Jakarta'),
-                    'status_presensi' => 'didalam',
-                ]);
-                $message = 'Presensi masuk berhasil dikonfirmasi.';
-            } elseif ($presensi->status_presensi === 'menunggu_konfirmasi_keluar') {
-                // Konfirmasi presensi keluar
-                $presensi->update([
-                    'jam_keluar' => now('Asia/Jakarta'),
-                    'status_presensi' => 'selesai',
-                ]);
-                $message = 'Presensi keluar berhasil dikonfirmasi.';
+            $presensi->update([
+                'satpam_keluar_id' => Auth::id(),
+                'jam_keluar' => now('Asia/Jakarta'),
+                'status_presensi' => 'selesai',
+            ]);
+            $message = 'Presensi keluar berhasil dicatat oleh satpam.';
+        } else {
+            // Pastikan presensi dalam status menunggu konfirmasi
+            if (!in_array($presensi->status_presensi, ['menunggu_konfirmasi_masuk', 'menunggu_konfirmasi_keluar'])) {
+                if ($request->ajax()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Presensi ini sudah dikonfirmasi atau tidak valid.',
+                    ], 400);
+                }
+                return back()->withErrors(['action' => 'Presensi ini sudah dikonfirmasi atau tidak valid.']);
             }
-        } elseif ($request->action === 'reject') {
-            // Tolak presensi - kembalikan ke status sebelumnya
-            if ($presensi->status_presensi === 'menunggu_konfirmasi_masuk') {
-                // Hapus presensi masuk yang ditolak
-                $presensi->delete();
-                $message = 'Presensi masuk ditolak.';
-            } elseif ($presensi->status_presensi === 'menunggu_konfirmasi_keluar') {
-                // Kembalikan ke status didalam
-                $presensi->update([
-                    'satpam_keluar_id' => null,
-                    'status_presensi' => 'didalam',
-                ]);
-                $message = 'Presensi keluar ditolak.';
+
+            if ($request->action === 'approve') {
+                if ($presensi->status_presensi === 'menunggu_konfirmasi_masuk') {
+                    // Konfirmasi presensi masuk
+                    $presensi->update([
+                        'jam_masuk' => now('Asia/Jakarta'),
+                        'status_presensi' => 'didalam',
+                    ]);
+                    $message = 'Presensi masuk berhasil dikonfirmasi.';
+                } elseif ($presensi->status_presensi === 'menunggu_konfirmasi_keluar') {
+                    // Konfirmasi presensi keluar
+                    $presensi->update([
+                        'satpam_keluar_id' => Auth::id(),
+                        'jam_keluar' => now('Asia/Jakarta'),
+                        'status_presensi' => 'selesai',
+                    ]);
+                    $message = 'Presensi keluar berhasil dikonfirmasi.';
+                }
+            } elseif ($request->action === 'reject') {
+                // Tolak presensi - kembalikan ke status sebelumnya
+                if ($presensi->status_presensi === 'menunggu_konfirmasi_masuk') {
+                    // Hapus presensi masuk yang ditolak
+                    $presensi->delete();
+                    $message = 'Presensi masuk ditolak.';
+                } elseif ($presensi->status_presensi === 'menunggu_konfirmasi_keluar') {
+                    // Kembalikan ke status didalam
+                    $presensi->update([
+                        'satpam_keluar_id' => null,
+                        'status_presensi' => 'didalam',
+                    ]);
+                    $message = 'Presensi keluar ditolak.';
+                }
             }
         }
 
@@ -415,6 +438,8 @@ class PresensiController extends Controller
                     'lab_name' => $presensi->peminjamanLab->lab->nama_lab ?? '-',
                     'lab_code' => $presensi->peminjamanLab->lab->kode_lab ?? '-',
                     'tujuan' => $presensi->peminjamanLab->tujuan ?? '-',
+                    'waktu_mulai' => optional($presensi->peminjamanLab->waktu_mulai)->setTimezone('Asia/Jakarta')->format('d/m/Y H:i'),
+                    'waktu_selesai' => optional($presensi->peminjamanLab->waktu_selesai)->setTimezone('Asia/Jakarta')->format('d/m/Y H:i'),
                     'status_presensi' => $presensi->status_presensi,
                     'satpam_masuk' => $presensi->satpamMasuk->full_name ?? 'N/A',
                     'satpam_keluar' => $presensi->satpamKeluar->full_name ?? 'N/A',

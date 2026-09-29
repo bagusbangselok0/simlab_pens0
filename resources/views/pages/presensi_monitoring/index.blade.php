@@ -48,6 +48,8 @@
                                         <th>Mahasiswa</th>
                                         <th>Laboratorium</th>
                                         <th>Tujuan</th>
+                                        <th>Waktu Mulai</th>
+                                        <th>Waktu Selesai</th>
                                         <th>Jenis Presensi</th>
                                         <th>Satpam</th>
                                         <th>Waktu Request</th>
@@ -130,6 +132,8 @@
                             </td>
                             <td>${item.lab_name} (${item.lab_code})</td>
                             <td>${item.tujuan}</td>
+                            <td>${item.waktu_mulai || '-'}</td>
+                            <td>${item.waktu_selesai || '-'}</td>
                             <td>${getBadge(item.status_presensi)}</td>
                             <td>${getSatpamName(item)}</td>
                             <td>${item.created_at}</td>
@@ -150,7 +154,7 @@
                     responsive: true,
                     pageLength: 25,
                     order: [
-                        [6, 'desc']
+                        [8, 'desc']
                     ], // Order by Waktu Request
                     language: {
                         url: '//cdn.datatables.net/plug-ins/1.10.25/i18n/Indonesian.json'

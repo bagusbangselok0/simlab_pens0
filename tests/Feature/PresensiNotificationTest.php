@@ -107,4 +107,46 @@ class PresensiNotificationTest extends TestCase
             'notifiable_type' => User::class,
         ]);
     }
+
+    public function test_satpam_can_record_exit_without_student_request_and_is_saved_as_exit_guard()
+    {
+        $data = $this->setupRelationalData();
+        $satpamPengganti = User::create([
+            'role_id' => $data['satpam']->role_id,
+            'nama_asli' => 'Satpam Pengganti',
+            'email' => 'satpam-pengganti@example.com',
+            'password' => bcrypt('password'),
+            'is_verified' => true,
+            'is_active' => true,
+        ]);
+
+        $peminjaman = PeminjamanLab::create([
+            'mahasiswa_id' => $data['mahasiswa']->id,
+            'lab_id' => $data['lab_id'],
+            'lab_manager_id' => $data['manager_id'],
+            'tujuan' => 'Test Presensi Keluar',
+            'waktu_mulai' => Carbon::today()->setTime(8, 0, 0),
+            'waktu_selesai' => Carbon::today()->setTime(17, 0, 0),
+            'status' => 'disetujui',
+        ]);
+        $presensi = PresensiLab::create([
+            'peminjaman_lab_id' => $peminjaman->id,
+            'mahasiswa_id' => $data['mahasiswa']->id,
+            'tanggal_presensi' => Carbon::today()->toDateString(),
+            'satpam_masuk_id' => $data['satpam']->id,
+            'status_presensi' => 'didalam',
+        ]);
+
+        Carbon::setTestNow(Carbon::today()->setTime(16, 30, 0));
+        $this->actingAs($satpamPengganti)
+            ->patch(route('satpam.confirm', $presensi->id), ['action' => 'mark_exited'])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('presensi_lab', [
+            'id' => $presensi->id,
+            'status_presensi' => 'selesai',
+            'satpam_keluar_id' => $satpamPengganti->id,
+            'jam_keluar' => Carbon::now('Asia/Jakarta')->toDateTimeString(),
+        ]);
+    }
 }

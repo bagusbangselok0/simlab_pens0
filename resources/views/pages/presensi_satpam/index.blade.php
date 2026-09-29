@@ -23,6 +23,8 @@
                                             <th>Mahasiswa</th>
                                             <th>Laboratorium</th>
                                             <th>Tujuan</th>
+                                            <th>Waktu Mulai</th>
+                                            <th>Waktu Selesai</th>
                                             <th>Jenis Presensi</th>
                                             <th>Satpam Dipilih</th>
                                             <th>Waktu Request</th>
@@ -40,6 +42,8 @@
                                                 <td>{{ $presensi->peminjamanLab->lab->nama_lab . '(' . $presensi->peminjamanLab->lab->kode_lab . ')' }}
                                                 </td>
                                                 <td>{{ $presensi->peminjamanLab->tujuan }}</td>
+                                                <td>{{ $presensi->peminjamanLab->waktu_mulai->setTimezone('Asia/Jakarta')->format('d/m/Y H:i') }}</td>
+                                                <td>{{ $presensi->peminjamanLab->waktu_selesai->setTimezone('Asia/Jakarta')->format('d/m/Y H:i') }}</td>
                                                 <td>
                                                     @if (in_array($presensi->status_presensi, ['menunggu_konfirmasi_masuk']))
                                                         <span class="badge bg-primary">Presensi Masuk</span>
@@ -57,6 +61,13 @@
                                                 <td>{{ $presensi->created_at->format('d/m/Y H:i') }}</td>
                                                 <td>
                                                     <div class="d-flex flex-column gap-2">
+                                                        @if ($presensi->status_presensi === 'didalam')
+                                                            <button type="button" class="btn btn-sm btn-danger"
+                                                                onclick="confirmPresensi({{ $presensi->id }}, 'mark_exited', 'keluar', {{ $presensi->peminjaman_lab_id }})">
+                                                                <i class="bi bi-box-arrow-right"></i> Telah Keluar
+                                                            </button>
+                                                        @endif
+
                                                         {{-- Tombol klaim sendiri sebagai satpam bertugas jika belum ditugaskan ke satpam saat ini --}}
                                                         @if (
                                                             ($presensi->status_presensi === 'menunggu_konfirmasi_masuk' && Auth::user()->id !== $presensi->satpamMasuk?->id) ||
@@ -184,16 +195,18 @@
             $('#btnCetakPdf').data('peminjaman-id', peminjamanId);
 
             const jenisText = jenis === 'masuk' ? 'masuk' : 'keluar';
-            const actionText = action === 'approve' ? 'menyetujui' : 'menolak';
+            const confirmationMessage = action === 'mark_exited' ?
+                'Apakah Anda yakin ingin mencatat bahwa mahasiswa ini telah keluar dari lab?' :
+                `Apakah Anda yakin ingin <strong>${action === 'approve' ? 'menyetujui' : 'menolak'}</strong> presensi ${jenisText} untuk mahasiswa ini?`;
 
-            $('#confirmMessage').html(`
-                Apakah Anda yakin ingin <strong>${actionText}</strong> presensi ${jenisText}
-                untuk mahasiswa ini?
-            `);
+            $('#confirmMessage').html(confirmationMessage);
 
             if (action === 'approve') {
                 $('#confirmBtn').removeClass('btn-danger').addClass('btn-success');
                 $('#confirmBtnText').text('Setujui');
+            } else if (action === 'mark_exited') {
+                $('#confirmBtn').removeClass('btn-success').addClass('btn-danger');
+                $('#confirmBtnText').text('Telah Keluar');
             } else {
                 $('#confirmBtn').removeClass('btn-success').addClass('btn-danger');
                 $('#confirmBtnText').text('Tolak');
@@ -330,7 +343,7 @@
                     responsive: true,
                     pageLength: 25,
                     order: [
-                        [6, 'desc']
+                        [8, 'desc']
                     ], // Order by waktu request
                     language: {
                         url: '//cdn.datatables.net/plug-ins/1.10.25/i18n/Indonesian.json'
