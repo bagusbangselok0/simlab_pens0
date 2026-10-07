@@ -51,7 +51,7 @@
         }
 
         .logo-blu {
-            width: 55px;
+            width: 70px;
         }
 
         .title-section {
@@ -129,7 +129,7 @@
     {{-- Header Kop Surat (Sesuai format resmi cetak PDF peminjaman) --}}
     <table class="header-table">
         <tr>
-            <td width="15%">
+            <td width="10%">
                 @php
                     $pensLogoPath = public_path('images/logo/logo_PENS.png');
                     $pensLogoBase64 = file_exists($pensLogoPath) ? base64_encode(file_get_contents($pensLogoPath)) : '';
@@ -139,8 +139,7 @@
                 @endif
             </td>
             <td class="header-text">
-                <p>KEMENTERIAN PENDIDIKAN, KEBUDAYAAN,</p>
-                <p>RISET DAN TEKNOLOGI</p>
+                <p>KEMENTERIAN PENDIDIKAN, KEBUDAYAAN, RISET DAN TEKNOLOGI</p>
                 <h3>POLITEKNIK ELEKTRONIKA NEGERI SURABAYA</h3>
                 <h3 style="letter-spacing: 2px;">KAMPUS SUMENEP</h3>
                 <p style="font-size: 9.5pt; margin-top: 4px; font-weight: 200;">
@@ -148,7 +147,7 @@
                     Telepon: 032867419, WA: 081394646263<br> Laman: https://www.pens.ac.id
                 </p>
             </td>
-            <td width="15%" style="text-align: right;">
+            <td width="10%" style="text-align: right;">
                 @php
                     $bluLogoPath = public_path('images/logo/Logo_BLU_Speed.png');
                     $bluLogoBase64 = file_exists($bluLogoPath) ? base64_encode(file_get_contents($bluLogoPath)) : '';
@@ -163,7 +162,8 @@
     <div class="title-section">
         <h4>DAFTAR PEMINJAMAN LABORATORIUM</h4>
         @if ($selectedStudent)
-            <p><strong>Filter Mahasiswa:</strong> {{ $selectedStudent->nama_asli }} (NRP: {{ $selectedStudent->nrp ?? '-' }})</p>
+            <p><strong>Filter Mahasiswa:</strong> {{ $selectedStudent->nama_asli }} (NRP:
+                {{ $selectedStudent->nrp ?? '-' }})</p>
         @else
             <p><strong>Filter:</strong> Semua Mahasiswa</p>
         @endif
@@ -206,7 +206,7 @@
             @empty
                 <tr>
                     <td colspan="7" class="text-center" style="padding: 16px;">
-                        Tidak ada data peminjaman yang ditemukan.
+                        Tidak ada data peminjaman dengan status Disetujui atau Selesai.
                     </td>
                 </tr>
             @endforelse
@@ -217,8 +217,8 @@
         <tr>
             <td width="60%">
                 <span class="footer-info">
-                    Dicetak secara otomatis oleh SIMLAB PENS PSDKU Sumenep.<br>
-                    Total Data: {{ count($peminjamans) }} transaksi peminjaman.
+                    Dicetak secara otomatis oleh SIMLAB PENS Kampus Sumenep.<br>
+                    Total Data: {{ count($peminjamans) }} transaksi peminjaman (Disetujui &amp; Selesai).
                 </span>
             </td>
             <td width="40%" style="text-align: right;">

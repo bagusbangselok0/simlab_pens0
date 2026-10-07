@@ -77,6 +77,7 @@ class PeminjamanController extends Controller
     public function exportAdminPdf(Request $request)
     {
         $query = PeminjamanLab::with(['mahasiswa', 'lab'])
+            ->whereIn('status', ['disetujui', 'kadaluarsa'])
             ->orderBy('created_at', 'desc');
 
         $selectedStudent = null;
@@ -100,6 +101,7 @@ class PeminjamanController extends Controller
     public function exportAdminExcel(Request $request)
     {
         $query = PeminjamanLab::with(['mahasiswa', 'lab'])
+            ->whereIn('status', ['disetujui', 'kadaluarsa'])
             ->orderBy('created_at', 'desc');
 
         $selectedStudent = null;
@@ -119,6 +121,7 @@ class PeminjamanController extends Controller
         $rows[] = ['<center>Jl. Raya Lenteng KM.2 Batuan Kabupaten Sumenep | Telepon: 032867419, WA: 081394646263 | Laman: https://www.pens.ac.id</center>'];
         $rows[] = [''];
         $rows[] = ['<center><b>DAFTAR PEMINJAMAN LABORATORIUM</b></center>'];
+        $rows[] = ['<center>Status: Disetujui & Kadaluarsa</center>'];
 
         if ($selectedStudent) {
             $rows[] = ['<center><b>Filter Mahasiswa: ' . ($selectedStudent->nama_asli ?? '-') . ' (NRP: ' . ($selectedStudent->nrp ?? '-') . ')</b></center>'];
@@ -142,7 +145,7 @@ class PeminjamanController extends Controller
 
         if ($peminjamans->isEmpty()) {
             $rows[] = [
-                '<style border="thin"><center>Tidak ada data peminjaman</center></style>',
+                '<style border="thin"><center>Tidak ada data peminjaman (Disetujui & Kadaluarsa)</center></style>',
                 '<style border="thin"></style>',
                 '<style border="thin"></style>',
                 '<style border="thin"></style>',
@@ -176,10 +179,11 @@ class PeminjamanController extends Controller
             ->mergeCells('A4:G4')
             ->mergeCells('A6:G6')
             ->mergeCells('A7:G7')
-            ->mergeCells('A8:G8');
+            ->mergeCells('A8:G8')
+            ->mergeCells('A9:G9');
 
         if ($peminjamans->isEmpty()) {
-            $xlsx->mergeCells('A10:G10');
+            $xlsx->mergeCells('A11:G11');
         }
 
         $xlsx->setColWidth(1, 6)
