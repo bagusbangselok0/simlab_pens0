@@ -65,10 +65,10 @@
     <!-- Filter Ruangan / Lab -->
     <div class="card mb-4">
         <div class="card-body dir-filter">
-            <form action="{{ route('inventaris-ruangan.index') }}" method="GET" class="row g-3 align-items-end">
+            <form id="filterForm" class="row g-3 align-items-end" onsubmit="return false;">
                 <div class="col-md-5">
                     <label class="form-label fw-bold">Pilih Laboratorium / Ruangan</label>
-                    <select name="lab_id" class="form-select" onchange="this.form.submit()">
+                    <select name="lab_id" id="filter_lab_id" class="form-select">
                         @forelse($labs as $lab)
                             <option value="{{ $lab->id }}" {{ ($selectedLab && $selectedLab->id == $lab->id) ? 'selected' : '' }}>
                                 {{ $lab->nama_lab }} ({{ $lab->kode_lab }})
@@ -80,31 +80,50 @@
                 </div>
                 <div class="col-md-3">
                     <label class="form-label fw-bold">Filter Kondisi</label>
-                    <select name="kondisi" class="form-select" onchange="this.form.submit()">
+                    <select name="kondisi" id="filter_kondisi" class="form-select">
                         <option value="">Semua Kondisi</option>
-                        <option value="baik" {{ request('kondisi') == 'baik' ? 'selected' : '' }}>Baik</option>
-                        <option value="rusak_ringan" {{ request('kondisi') == 'rusak_ringan' ? 'selected' : '' }}>Rusak Ringan</option>
-                        <option value="rusak_berat" {{ request('kondisi') == 'rusak_berat' ? 'selected' : '' }}>Rusak Berat</option>
+                        <option value="baik">Baik</option>
+                        <option value="rusak_ringan">Rusak Ringan</option>
+                        <option value="rusak_berat">Rusak Berat</option>
                     </select>
                 </div>
                 <div class="col-md-4">
                     <label class="form-label fw-bold">Pencarian</label>
                     <div class="input-group">
-                        <input type="text" name="search" class="form-control" placeholder="Cari nama, kode, spesifikasi..." value="{{ request('search') }}">
-                        <button class="btn btn-outline-primary" type="submit"><i class="bi bi-search"></i></button>
+                        <input type="text" name="search" id="filter_search" class="form-control" placeholder="Cari nama, kode, spesifikasi...">
+                        <button class="btn btn-outline-primary" type="button" id="btnSearch"><i class="bi bi-search"></i> Cari</button>
+                        <button class="btn btn-outline-secondary" type="button" id="btnResetFilter">Reset</button>
                     </div>
                 </div>
                 <div class="col-12">
                     <div class="row g-2 pt-2 border-top">
-                        <div class="col-6 col-md-2"><input type="text" name="filter_kode_barang" class="form-control form-control-sm" placeholder="Filter kode" value="{{ request('filter_kode_barang') }}"></div>
-                        <div class="col-6 col-md-1"><input type="text" name="filter_nup" class="form-control form-control-sm" placeholder="Filter NUP" value="{{ request('filter_nup') }}"></div>
-                        <div class="col-12 col-md-3"><input type="text" name="filter_nama_barang" class="form-control form-control-sm" placeholder="Filter nama barang" value="{{ request('filter_nama_barang') }}"></div>
-                        <div class="col-12 col-md-3"><input type="text" name="filter_spesifikasi_merk_tipe" class="form-control form-control-sm" placeholder="Filter spesifikasi / merk tipe" value="{{ request('filter_spesifikasi_merk_tipe') }}"></div>
-                        <div class="col-6 col-md-1"><input type="text" name="filter_tahun_perolehan" class="form-control form-control-sm" placeholder="Tahun" value="{{ request('filter_tahun_perolehan') }}"></div>
-                        <div class="col-6 col-md-1"><input type="text" name="filter_jumlah" class="form-control form-control-sm" placeholder="Jumlah" value="{{ request('filter_jumlah') }}"></div>
-                        <div class="col-6 col-md-2"><select name="filter_dapat_dipinjam" class="form-select form-select-sm"><option value="">Filter pinjam</option><option value="ya" {{ request('filter_dapat_dipinjam') === 'ya' ? 'selected' : '' }}>Dapat dipinjam</option><option value="tidak" {{ request('filter_dapat_dipinjam') === 'tidak' ? 'selected' : '' }}>Tidak dipinjam</option></select></div>
-                        <div class="col-6 col-md-2"><select name="per_page" class="form-select form-select-sm" onchange="this.form.submit()"><option value="10" {{ request('per_page', 25) == 10 ? 'selected' : '' }}>10 baris</option><option value="25" {{ request('per_page', 25) == 25 ? 'selected' : '' }}>25 baris</option><option value="50" {{ request('per_page', 25) == 50 ? 'selected' : '' }}>50 baris</option><option value="100" {{ request('per_page', 25) == 100 ? 'selected' : '' }}>100 baris</option></select></div>
-                        <div class="col-12 d-flex flex-wrap gap-2"><button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-funnel me-1"></i> Terapkan Filter Kolom</button>@if(request()->except('page'))<a href="{{ route('inventaris-ruangan.index', ['lab_id' => $selectedLab?->id]) }}" class="btn btn-sm btn-outline-secondary">Reset Semua Filter</a>@endif</div>
+                        <div class="col-6 col-md-2"><input type="text" name="filter_kode_barang" id="filter_kode_barang" class="form-control form-control-sm" placeholder="Filter kode"></div>
+                        <div class="col-6 col-md-1"><input type="text" name="filter_nup" id="filter_nup" class="form-control form-control-sm" placeholder="Filter NUP"></div>
+                        <div class="col-12 col-md-3"><input type="text" name="filter_nama_barang" id="filter_nama_barang" class="form-control form-control-sm" placeholder="Filter nama barang"></div>
+                        <div class="col-12 col-md-3"><input type="text" name="filter_spesifikasi_merk_tipe" id="filter_spesifikasi_merk_tipe" class="form-control form-control-sm" placeholder="Filter spesifikasi / merk tipe"></div>
+                        <div class="col-6 col-md-1"><input type="text" name="filter_tahun_perolehan" id="filter_tahun_perolehan" class="form-control form-control-sm" placeholder="Tahun"></div>
+                        <div class="col-6 col-md-1"><input type="text" name="filter_jumlah" id="filter_jumlah" class="form-control form-control-sm" placeholder="Jumlah"></div>
+                        <div class="col-6 col-md-2">
+                            <select name="filter_dapat_dipinjam" id="filter_dapat_dipinjam" class="form-select form-select-sm">
+                                <option value="">Filter pinjam</option>
+                                <option value="ya">Dapat dipinjam</option>
+                                <option value="tidak">Tidak dipinjam</option>
+                            </select>
+                        </div>
+                        <div class="col-6 col-md-2">
+                            <select name="per_page" id="filter_per_page" class="form-select form-select-sm">
+                                <option value="10">10 baris</option>
+                                <option value="25" selected>25 baris</option>
+                                <option value="50">50 baris</option>
+                                <option value="100">100 baris</option>
+                            </select>
+                        </div>
+                        <div class="col-12 d-flex flex-wrap gap-2">
+                            <button type="button" id="btnApplyFilter" class="btn btn-sm btn-primary">
+                                <i class="bi bi-funnel me-1"></i> Terapkan Filter Kolom
+                            </button>
+                            <button type="button" id="btnResetAll" class="btn btn-sm btn-outline-secondary">Reset Semua Filter</button>
+                        </div>
                     </div>
                 </div>
             </form>
@@ -194,10 +213,10 @@
             </div>
             <div class="card-body mt-3 dir-card-body">
                 <div class="table-responsive">
-                    <table class="table table-hover table-striped dir-table">
+                    <table class="table table-hover table-striped dir-table w-100" id="dirTable">
                         <thead class="table-dark">
                             <tr>
-                                <th style="width: 50px;">NO</th>
+                                <th style="width: 50px;" class="text-center">NO</th>
                                 <th>KODE BARANG</th>
                                 <th>NAMA BARANG</th>
                                 <th>SPESIFIKASI / MERK TIPE</th>
@@ -209,133 +228,79 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @forelse($inventaris as $index => $item)
-                                <tr>
-                                    <td class="text-center">{{ $inventaris->firstItem() + $index }}</td>
-                                    <td>
-                                        @if($item->kode_barang)
-                                            <span class="font-monospace fw-bold">{{ $item->kode_barang }}</span>
-                                        @else
-                                            <span class="text-muted">-</span>
-                                        @endif
-                                        @if($item->nup)
-                                            <br><small class="text-muted">NUP: {{ $item->nup }}</small>
-                                        @endif
-                                    </td>
-                                    <td class="fw-bold">{{ $item->nama_barang }}</td>
-                                    <td>{{ $item->spesifikasi_merk_tipe ?? '-' }}</td>
-                                    <td class="text-center">{{ $item->tahun_perolehan ?? '-' }}</td>
-                                    <td class="text-center fw-bold">{{ $item->jumlah }} {{ $item->satuan }}</td>
-                                    <td class="text-center">
-                                        <span class="{{ $item->kondisi_badge_class }}">
-                                            {{ $item->kondisi_label }}
-                                        </span>
-                                    </td>
-                                    <td class="text-center">
-                                        @if($item->is_bisa_dipinjam)
-                                            <span class="badge bg-light-success text-success"><i class="bi bi-check-circle"></i> Ya</span>
-                                        @else
-                                            <span class="badge bg-light-secondary text-secondary"><i class="bi bi-dash-circle"></i> Tidak</span>
-                                        @endif
-                                    </td>
-                                    <td class="text-center">
-                                        <button type="button" class="btn btn-sm btn-warning me-1" data-bs-toggle="modal" data-bs-target="#modalEdit{{ $item->id }}" title="Edit">
-                                            <i class="bi bi-pencil-square"></i>
-                                        </button>
-                                        <button type="button" class="btn btn-sm btn-danger" onclick="confirmDelete('{{ $item->id }}')" title="Hapus">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
-                                        <form id="delete-form-{{ $item->id }}" action="{{ route('inventaris-ruangan.destroy', $item->id) }}" method="POST" class="d-none">
-                                            @csrf
-                                            @method('DELETE')
-                                        </form>
-                                    </td>
-                                </tr>
-
-                                <!-- Modal Edit -->
-                                <div class="modal fade" id="modalEdit{{ $item->id }}" tabindex="-1" aria-labelledby="modalEditLabel{{ $item->id }}" aria-hidden="true">
-                                    <div class="modal-dialog modal-lg dir-modal-dialog">
-                                        <div class="modal-content">
-                                            <form action="{{ route('inventaris-ruangan.update', $item->id) }}" method="POST">
-                                                @csrf
-                                                @method('PUT')
-                                                <div class="modal-header bg-warning text-dark">
-                                                    <h5 class="modal-title" id="modalEditLabel{{ $item->id }}"><i class="bi bi-pencil-square me-2"></i> Edit Inventaris</h5>
-                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                                </div>
-                                                <div class="modal-body text-start">
-                                                    <div class="row g-3">
-                                                        <div class="col-md-6">
-                                                            <label class="form-label fw-bold">Kode Barang (Opsional)</label>
-                                                            <input type="text" name="kode_barang" class="form-control" value="{{ old('kode_barang', $item->kode_barang) }}" placeholder="Contoh: 3050204004">
-                                                        </div>
-                                                        <div class="col-md-6">
-                                                            <label class="form-label fw-bold">NUP (Opsional)</label>
-                                                            <input type="text" name="nup" class="form-control" value="{{ old('nup', $item->nup) }}" placeholder="Contoh: 1 s.d 24">
-                                                        </div>
-                                                        <div class="col-md-12">
-                                                            <label class="form-label fw-bold">Nama Barang <span class="text-danger">*</span></label>
-                                                            <input type="text" name="nama_barang" class="form-control" value="{{ old('nama_barang', $item->nama_barang) }}" required>
-                                                        </div>
-                                                        <div class="col-md-8">
-                                                            <label class="form-label fw-bold">Spesifikasi / Merk Tipe</label>
-                                                            <input type="text" name="spesifikasi_merk_tipe" class="form-control" value="{{ old('spesifikasi_merk_tipe', $item->spesifikasi_merk_tipe) }}" placeholder="Contoh: Panasonic / HP / Malvin 800M">
-                                                        </div>
-                                                        <div class="col-md-4">
-                                                            <label class="form-label fw-bold">Tahun Perolehan</label>
-                                                            <input type="number" name="tahun_perolehan" class="form-control" value="{{ old('tahun_perolehan', $item->tahun_perolehan) }}" placeholder="Contoh: 2020" min="1900" max="2100">
-                                                        </div>
-                                                        <div class="col-md-4">
-                                                            <label class="form-label fw-bold">Jumlah <span class="text-danger">*</span></label>
-                                                            <input type="number" name="jumlah" class="form-control" value="{{ old('jumlah', $item->jumlah) }}" min="1" required>
-                                                        </div>
-                                                        <div class="col-md-4">
-                                                            <label class="form-label fw-bold">Satuan <span class="text-danger">*</span></label>
-                                                            <input type="text" name="satuan" class="form-control" value="{{ old('satuan', $item->satuan) }}" required>
-                                                        </div>
-                                                        <div class="col-md-4">
-                                                            <label class="form-label fw-bold">Kondisi <span class="text-danger">*</span></label>
-                                                            <select name="kondisi" class="form-select" required>
-                                                                <option value="baik" {{ $item->kondisi == 'baik' ? 'selected' : '' }}>Baik</option>
-                                                                <option value="rusak_ringan" {{ $item->kondisi == 'rusak_ringan' ? 'selected' : '' }}>Rusak Ringan</option>
-                                                                <option value="rusak_berat" {{ $item->kondisi == 'rusak_berat' ? 'selected' : '' }}>Rusak Berat</option>
-                                                            </select>
-                                                        </div>
-                                                        <div class="col-md-12">
-                                                            <div class="form-check form-switch mt-2">
-                                                                <input class="form-check-input" type="checkbox" name="is_bisa_dipinjam" id="is_bisa_dipinjam{{ $item->id }}" value="1" {{ $item->is_bisa_dipinjam ? 'checked' : '' }}>
-                                                                <label class="form-check-label fw-bold" for="is_bisa_dipinjam{{ $item->id }}">Dapat Dipinjam Mahasiswa</label>
-                                                            </div>
-                                                        </div>
-                                                        <div class="col-md-12">
-                                                            <label class="form-label fw-bold">Keterangan / Catatan</label>
-                                                            <textarea name="keterangan" class="form-control" rows="2" placeholder="Catatan tambahan kondisi alat">{{ old('keterangan', $item->keterangan) }}</textarea>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <div class="modal-footer">
-                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-                                                    <button type="submit" class="btn btn-warning">Simpan Perubahan</button>
-                                                </div>
-                                            </form>
-                                        </div>
-                                    </div>
-                                </div>
-                            @empty
-                                <tr>
-                                    <td colspan="9" class="text-center text-muted py-4">
-                                        <i class="bi bi-inbox fs-2 d-block mb-2"></i>
-                                        Belum ada data inventaris untuk ruangan ini.
-                                    </td>
-                                </tr>
-                            @endforelse
+                            <!-- DataTables Server-Side Rendering -->
                         </tbody>
                     </table>
                 </div>
+            </div>
+        </div>
 
-                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-3">
-                    <small class="text-muted">Menampilkan {{ $inventaris->firstItem() ?? 0 }}-{{ $inventaris->lastItem() ?? 0 }} dari {{ $inventaris->total() }} data</small>
-                    {{ $inventaris->links() }}
+        <!-- Shared Modal Edit Inventaris -->
+        <div class="modal fade" id="modalEditDir" tabindex="-1" aria-labelledby="modalEditDirLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg dir-modal-dialog">
+                <div class="modal-content">
+                    <form id="formEditDir" action="" method="POST">
+                        @csrf
+                        @method('PUT')
+                        <div class="modal-header bg-warning text-dark">
+                            <h5 class="modal-title" id="modalEditDirLabel"><i class="bi bi-pencil-square me-2"></i> Edit Inventaris Ruangan</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">Kode Barang</label>
+                                    <input type="text" name="kode_barang" id="edit_kode_barang" class="form-control" placeholder="Contoh: 3030101033">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">NUP</label>
+                                    <input type="text" name="nup" id="edit_nup" class="form-control" placeholder="Contoh: 1, 2, 3">
+                                </div>
+                                <div class="col-md-12">
+                                    <label class="form-label fw-bold">Nama Barang <span class="text-danger">*</span></label>
+                                    <input type="text" name="nama_barang" id="edit_nama_barang" class="form-control" required>
+                                </div>
+                                <div class="col-md-12">
+                                    <label class="form-label fw-bold">Spesifikasi / Merk Tipe</label>
+                                    <textarea name="spesifikasi_merk_tipe" id="edit_spesifikasi_merk_tipe" class="form-control" rows="2" placeholder="Merk, model, spesifikasi alat"></textarea>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold">Tahun Perolehan</label>
+                                    <input type="number" name="tahun_perolehan" id="edit_tahun_perolehan" class="form-control" placeholder="Contoh: 2022" min="1900" max="2100">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold">Jumlah <span class="text-danger">*</span></label>
+                                    <input type="number" name="jumlah" id="edit_jumlah" class="form-control" min="1" required>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold">Satuan <span class="text-danger">*</span></label>
+                                    <input type="text" name="satuan" id="edit_satuan" class="form-control" required>
+                                </div>
+                                <div class="col-md-12">
+                                    <label class="form-label fw-bold">Kondisi <span class="text-danger">*</span></label>
+                                    <select name="kondisi" id="edit_kondisi" class="form-select" required>
+                                        <option value="baik">Baik</option>
+                                        <option value="rusak_ringan">Rusak Ringan</option>
+                                        <option value="rusak_berat">Rusak Berat</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-12">
+                                    <div class="form-check form-switch mt-2">
+                                        <input class="form-check-input" type="checkbox" name="is_bisa_dipinjam" id="edit_is_bisa_dipinjam" value="1">
+                                        <label class="form-check-label fw-bold" for="edit_is_bisa_dipinjam">Dapat Dipinjam Mahasiswa</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-12">
+                                    <label class="form-label fw-bold">Keterangan / Catatan</label>
+                                    <textarea name="keterangan" id="edit_keterangan" class="form-control" rows="2" placeholder="Catatan tambahan kondisi alat"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                            <button type="submit" class="btn btn-warning">Simpan Perubahan</button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
@@ -411,6 +376,12 @@
                 </div>
             </div>
         </div>
+
+        <!-- Hidden Form for Delete -->
+        <form id="deleteFormDir" action="" method="POST" class="d-none">
+            @csrf
+            @method('DELETE')
+        </form>
     @else
         <div class="card">
             <div class="card-body text-center py-5">
@@ -424,6 +395,8 @@
 
 @push('scripts')
 <script>
+    var tableDir;
+
     document.addEventListener('DOMContentLoaded', function () {
         const groupSelect = document.getElementById('masterBarangGroup');
         const nupSelect = document.getElementById('masterBarangNups');
@@ -450,11 +423,170 @@
         }
     });
 
-    function confirmDelete(id) {
-        if (confirm('Apakah Anda yakin ingin menghapus data inventaris ini?')) {
-            document.getElementById('delete-form-' + id).submit();
+    $(document).ready(function() {
+        @if($selectedLab)
+        tableDir = $('#dirTable').DataTable({
+            processing: true,
+            serverSide: true,
+            pageLength: 25,
+            lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
+            searching: false, // Custom filter inputs used above
+            ajax: {
+                url: "{{ route('inventaris-ruangan.index') }}",
+                data: function(d) {
+                    d.lab_id = $('#filter_lab_id').val();
+                    d.kondisi = $('#filter_kondisi').val();
+                    d.search_global = $('#filter_search').val();
+                    d.filter_kode_barang = $('#filter_kode_barang').val();
+                    d.filter_nup = $('#filter_nup').val();
+                    d.filter_nama_barang = $('#filter_nama_barang').val();
+                    d.filter_spesifikasi_merk_tipe = $('#filter_spesifikasi_merk_tipe').val();
+                    d.filter_tahun_perolehan = $('#filter_tahun_perolehan').val();
+                    d.filter_jumlah = $('#filter_jumlah').val();
+                    d.filter_dapat_dipinjam = $('#filter_dapat_dipinjam').val();
+                }
+            },
+            columns: [
+                { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false, className: 'text-center' },
+                { data: 'kode_barang_display', name: 'kode_barang' },
+                { data: 'nama_barang_display', name: 'nama_barang' },
+                { data: 'spesifikasi_display', name: 'spesifikasi_merk_tipe' },
+                { data: 'tahun_perolehan_display', name: 'tahun_perolehan', className: 'text-center' },
+                { data: 'jumlah_display', name: 'jumlah', className: 'text-center' },
+                { data: 'kondisi_badge', name: 'kondisi', className: 'text-center' },
+                { data: 'pinjam_badge', name: 'is_bisa_dipinjam', className: 'text-center' },
+                { data: 'action', name: 'action', orderable: false, searchable: false, className: 'text-center text-nowrap' }
+            ],
+            order: [[2, 'asc']], // Order by nama_barang
+            language: {
+                processing: '<div class="spinner-border spinner-border-sm text-primary" role="status"></div> Memuat data...',
+                lengthMenu: "Tampilkan _MENU_ data",
+                info: "Menampilkan _START_ sampai _END_ dari _TOTAL_ data",
+                infoEmpty: "Menampilkan 0 sampai 0 dari 0 data",
+                infoFiltered: "(disaring dari _MAX_ total data)",
+                zeroRecords: "Tidak ditemukan data yang sesuai",
+                emptyTable: "Belum ada data inventaris untuk ruangan ini.",
+                paginate: {
+                    first: "Awal",
+                    previous: "Sebelumnya",
+                    next: "Selanjutnya",
+                    last: "Akhir"
+                }
+            }
+        });
+        @endif
+
+        // Lab selector navigates to lab
+        $('#filter_lab_id').on('change', function() {
+            var labId = $(this).val();
+            if (labId) {
+                window.location.href = "{{ route('inventaris-ruangan.index') }}?lab_id=" + labId;
+            }
+        });
+
+        // Kondisi dropdown filter triggers reload
+        $('#filter_kondisi').on('change', function() {
+            if (tableDir) tableDir.ajax.reload();
+        });
+
+        // Search button click
+        $('#btnSearch').on('click', function() {
+            if (tableDir) tableDir.ajax.reload();
+        });
+
+        // Enter key in filter form inputs
+        $('#filterForm input').on('keypress', function(e) {
+            if (e.which === 13) {
+                e.preventDefault();
+                if (tableDir) tableDir.ajax.reload();
+            }
+        });
+
+        // Apply column filters
+        $('#btnApplyFilter').on('click', function() {
+            if (tableDir) tableDir.ajax.reload();
+        });
+
+        // Per page dropdown sync
+        $('#filter_per_page').on('change', function() {
+            if (tableDir) tableDir.page.len(parseInt($(this).val())).draw();
+        });
+
+        // Reset filter
+        function resetFilters() {
+            $('#filter_kondisi').val('');
+            $('#filter_search').val('');
+            $('#filter_kode_barang').val('');
+            $('#filter_nup').val('');
+            $('#filter_nama_barang').val('');
+            $('#filter_spesifikasi_merk_tipe').val('');
+            $('#filter_tahun_perolehan').val('');
+            $('#filter_jumlah').val('');
+            $('#filter_dapat_dipinjam').val('');
+            $('#filter_per_page').val('25');
+            if (tableDir) {
+                tableDir.page.len(25);
+                tableDir.ajax.reload();
+            }
         }
-    }
+
+        $('#btnResetFilter, #btnResetAll').on('click', function() {
+            resetFilters();
+        });
+
+        // --- Event Delegation for Dynamic Table Action Buttons ---
+
+        // 1. Modal Edit Inventaris Ruangan
+        $(document).on('click', '.btnEdit', function() {
+            var id = $(this).data('id');
+            $('#formEditDir').attr('action', '/inventaris-ruangan/' + id);
+
+            // Clear inputs
+            $('#edit_kode_barang').val('');
+            $('#edit_nup').val('');
+            $('#edit_nama_barang').val('');
+            $('#edit_spesifikasi_merk_tipe').val('');
+            $('#edit_tahun_perolehan').val('');
+            $('#edit_jumlah').val('');
+            $('#edit_satuan').val('');
+            $('#edit_kondisi').val('baik');
+            $('#edit_is_bisa_dipinjam').prop('checked', false);
+            $('#edit_keterangan').val('');
+            $('#modalEditDir').modal('show');
+
+            $.ajax({
+                url: '/inventaris-ruangan/' + id + '/detail',
+                type: 'GET',
+                dataType: 'json',
+                success: function(response) {
+                    var item = response.data;
+                    $('#edit_kode_barang').val(item.kode_barang || '');
+                    $('#edit_nup').val(item.nup || '');
+                    $('#edit_nama_barang').val(item.nama_barang || '');
+                    $('#edit_spesifikasi_merk_tipe').val(item.spesifikasi_merk_tipe || '');
+                    $('#edit_tahun_perolehan').val(item.tahun_perolehan || '');
+                    $('#edit_jumlah').val(item.jumlah || 1);
+                    $('#edit_satuan').val(item.satuan || 'Unit');
+                    $('#edit_kondisi').val(item.kondisi || 'baik');
+                    $('#edit_is_bisa_dipinjam').prop('checked', !!item.is_bisa_dipinjam);
+                    $('#edit_keterangan').val(item.keterangan || '');
+                },
+                error: function() {
+                    alert('Gagal mengambil data inventaris ruangan untuk diedit.');
+                }
+            });
+        });
+
+        // 2. Delete Confirmation
+        $(document).on('click', '.btnDelete', function() {
+            var id = $(this).data('id');
+            if (confirm('Apakah Anda yakin ingin menghapus data inventaris ini dari ruangan?')) {
+                var form = $('#deleteFormDir');
+                form.attr('action', '/inventaris-ruangan/' + id);
+                form.submit();
+            }
+        });
+    });
 </script>
 @endpush
 @endsection

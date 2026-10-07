@@ -9,6 +9,7 @@ use App\Models\LabManager;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Yajra\DataTables\DataTables;
 
 class InventarisRuanganController extends Controller
 {
@@ -46,40 +47,82 @@ class InventarisRuanganController extends Controller
             return !in_array($key, $assignedNupKeys, true);
         })->values();
 
-        // Query data inventaris
-        $query = InventarisRuangan::query();
+        // Handle AJAX DataTables request
+        if ($request->ajax()) {
+            $query = InventarisRuangan::query();
 
-        if ($selectedLabId) {
-            $query->where('lab_id', $selectedLabId);
-        } else {
-            $query->whereRaw('1 = 0'); // Empty if no lab available
-        }
-
-        if ($request->filled('kondisi')) {
-            $query->where('kondisi', $request->kondisi);
-        }
-
-        if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->where('nama_barang', 'like', "%{$search}%")
-                    ->orWhere('kode_barang', 'like', "%{$search}%")
-                    ->orWhere('spesifikasi_merk_tipe', 'like', "%{$search}%");
-            });
-        }
-
-        foreach (['kode_barang', 'nup', 'nama_barang', 'spesifikasi_merk_tipe', 'tahun_perolehan', 'jumlah'] as $column) {
-            if ($request->filled('filter_' . $column)) {
-                $query->where($column, 'like', '%' . $request->input('filter_' . $column) . '%');
+            if ($selectedLabId) {
+                $query->where('lab_id', $selectedLabId);
+            } else {
+                $query->whereRaw('1 = 0');
             }
-        }
 
-        if ($request->filled('filter_dapat_dipinjam')) {
-            $query->where('is_bisa_dipinjam', $request->input('filter_dapat_dipinjam') === 'ya');
-        }
+            if ($request->filled('kondisi') && $request->kondisi !== '') {
+                $query->where('kondisi', $request->kondisi);
+            }
 
-        $perPage = min(max((int) $request->input('per_page', 25), 10), 100);
-        $inventaris = $query->orderBy('nama_barang')->paginate($perPage)->withQueryString();
+            if ($request->filled('search_global') && $request->search_global !== '') {
+                $search = $request->search_global;
+                $query->where(function ($q) use ($search) {
+                    $q->where('nama_barang', 'like', "%{$search}%")
+                        ->orWhere('kode_barang', 'like', "%{$search}%")
+                        ->orWhere('spesifikasi_merk_tipe', 'like', "%{$search}%")
+                        ->orWhere('nup', 'like', "%{$search}%");
+                });
+            }
+
+            foreach (['kode_barang', 'nup', 'nama_barang', 'spesifikasi_merk_tipe', 'tahun_perolehan', 'jumlah'] as $column) {
+                if ($request->filled('filter_' . $column) && $request->input('filter_' . $column) !== '') {
+                    $query->where($column, 'like', '%' . $request->input('filter_' . $column) . '%');
+                }
+            }
+
+            if ($request->filled('filter_dapat_dipinjam') && $request->input('filter_dapat_dipinjam') !== '') {
+                $query->where('is_bisa_dipinjam', $request->input('filter_dapat_dipinjam') === 'ya');
+            }
+
+            return DataTables::of($query)
+                ->addIndexColumn()
+                ->addColumn('kode_barang_display', function ($item) {
+                    $html = '';
+                    if ($item->kode_barang) {
+                        $html .= '<span class="font-monospace fw-bold">' . e($item->kode_barang) . '</span>';
+                    } else {
+                        $html .= '<span class="text-muted">-</span>';
+                    }
+                    if ($item->nup) {
+                        $html .= '<br><small class="text-muted">NUP: ' . e($item->nup) . '</small>';
+                    }
+                    return $html;
+                })
+                ->addColumn('nama_barang_display', function ($item) {
+                    return '<span class="fw-bold">' . e($item->nama_barang) . '</span>';
+                })
+                ->addColumn('spesifikasi_display', function ($item) {
+                    return e($item->spesifikasi_merk_tipe ?? '-');
+                })
+                ->addColumn('tahun_perolehan_display', function ($item) {
+                    return e($item->tahun_perolehan ?? '-');
+                })
+                ->addColumn('jumlah_display', function ($item) {
+                    return '<span class="fw-bold">' . e($item->jumlah) . ' ' . e($item->satuan) . '</span>';
+                })
+                ->addColumn('kondisi_badge', function ($item) {
+                    return '<span class="' . e($item->kondisi_badge_class) . '">' . e($item->kondisi_label) . '</span>';
+                })
+                ->addColumn('pinjam_badge', function ($item) {
+                    if ($item->is_bisa_dipinjam) {
+                        return '<span class="badge bg-light-success text-success"><i class="bi bi-check-circle"></i> Ya</span>';
+                    }
+                    return '<span class="badge bg-light-secondary text-secondary"><i class="bi bi-dash-circle"></i> Tidak</span>';
+                })
+                ->addColumn('action', function ($item) {
+                    return '<button type="button" class="btn btn-sm btn-warning me-1 btnEdit" data-id="' . $item->id . '" title="Edit"><i class="bi bi-pencil-square"></i></button>' .
+                           '<button type="button" class="btn btn-sm btn-danger btnDelete" data-id="' . $item->id . '" title="Hapus"><i class="bi bi-trash"></i></button>';
+                })
+                ->rawColumns(['kode_barang_display', 'nama_barang_display', 'jumlah_display', 'kondisi_badge', 'pinjam_badge', 'action'])
+                ->make(true);
+        }
 
         // Ringkasan Statistik
         $stats = [
@@ -91,7 +134,31 @@ class InventarisRuanganController extends Controller
         ];
 
         $title = 'Daftar Inventaris Ruangan (DIR)';
-        return view('pages.inventaris_ruangan.index', compact('title', 'labs', 'selectedLab', 'inventaris', 'stats', 'masterInventaris'));
+        return view('pages.inventaris_ruangan.index', compact('title', 'labs', 'selectedLab', 'stats', 'masterInventaris'));
+    }
+
+    /**
+     * Get single item detail for AJAX modal edit.
+     */
+    public function show($id)
+    {
+        $item = InventarisRuangan::findOrFail($id);
+
+        return response()->json([
+            'data' => [
+                'id' => $item->id,
+                'kode_barang' => $item->kode_barang,
+                'nup' => $item->nup,
+                'nama_barang' => $item->nama_barang,
+                'spesifikasi_merk_tipe' => $item->spesifikasi_merk_tipe,
+                'tahun_perolehan' => $item->tahun_perolehan,
+                'jumlah' => $item->jumlah,
+                'satuan' => $item->satuan,
+                'kondisi' => $item->kondisi,
+                'is_bisa_dipinjam' => (bool) $item->is_bisa_dipinjam,
+                'keterangan' => $item->keterangan,
+            ]
+        ]);
     }
 
     /**

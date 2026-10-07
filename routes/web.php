@@ -183,6 +183,7 @@ Route::middleware('auth')->group(function () {
     // ---------------------------------------------------------
     Route::middleware('role:plp,dosen,admin')->group(function () {
         Route::get('/inventaris-ruangan', [InventarisRuanganController::class, 'index'])->name('inventaris-ruangan.index');
+        Route::get('/inventaris-ruangan/{id}/detail', [InventarisRuanganController::class, 'show'])->name('inventaris-ruangan.show');
         Route::post('/inventaris-ruangan', [InventarisRuanganController::class, 'store'])->name('inventaris-ruangan.store');
         Route::put('/inventaris-ruangan/{id}', [InventarisRuanganController::class, 'update'])->name('inventaris-ruangan.update');
         Route::delete('/inventaris-ruangan/{id}', [InventarisRuanganController::class, 'destroy'])->name('inventaris-ruangan.destroy');
