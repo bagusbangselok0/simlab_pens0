@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Shuchkin\SimpleXLSX;
+use Yajra\DataTables\DataTables;
 
 class InventarisBarangController extends Controller
 {
@@ -31,54 +32,135 @@ class InventarisBarangController extends Controller
             $labs = Lab::whereIn('id', $managedLabIds)->orderBy('nama_lab')->get();
         }
 
-        $query = InventarisBarang::with('inventarisRuangan.lab');
+        // Handle AJAX DataTables request
+        if ($request->ajax()) {
+            $query = InventarisBarang::with('inventarisRuangan.lab');
 
-        // Filter status penempatan (unassigned / assigned)
-        if ($request->filled('status')) {
-            if ($request->status === 'unassigned') {
-                $query->whereDoesntHave('inventarisRuangan');
-            } elseif ($request->status === 'assigned') {
-                $query->whereHas('inventarisRuangan');
+            // Filter status penempatan (unassigned / assigned)
+            if ($request->filled('status') && $request->status !== '') {
+                if ($request->status === 'unassigned') {
+                    $query->whereDoesntHave('inventarisRuangan');
+                } elseif ($request->status === 'assigned') {
+                    $query->whereHas('inventarisRuangan');
+                }
             }
-        }
 
-        // Pencarian
-        if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->where('nama_barang', 'like', "%{$search}%")
-                    ->orWhere('kode_barang', 'like', "%{$search}%")
-                    ->orWhere('nup', 'like', "%{$search}%")
-                    ->orWhere('merk', 'like', "%{$search}%")
-                    ->orWhere('tipe', 'like', "%{$search}%");
-            });
-        }
-
-        foreach (['kode_barang', 'nup', 'nama_barang', 'merk', 'tipe'] as $column) {
-            if ($request->filled('filter_' . $column)) {
-                $query->where($column, 'like', '%' . $request->input('filter_' . $column) . '%');
+            // Pencarian umum
+            if ($request->filled('search_global') && $request->search_global !== '') {
+                $search = $request->search_global;
+                $query->where(function ($q) use ($search) {
+                    $q->where('nama_barang', 'like', "%{$search}%")
+                        ->orWhere('kode_barang', 'like', "%{$search}%")
+                        ->orWhere('nup', 'like', "%{$search}%")
+                        ->orWhere('merk', 'like', "%{$search}%")
+                        ->orWhere('tipe', 'like', "%{$search}%");
+                });
             }
-        }
 
-        foreach (['tgl_buku_pertama', 'tgl_perolehan'] as $column) {
-            if ($request->filled('filter_' . $column)) {
-                $query->whereDate($column, $request->input('filter_' . $column));
+            // Filter kolom spesifik
+            foreach (['kode_barang', 'nup', 'nama_barang', 'merk', 'tipe'] as $column) {
+                if ($request->filled('filter_' . $column) && $request->input('filter_' . $column) !== '') {
+                    $query->where($column, 'like', '%' . $request->input('filter_' . $column) . '%');
+                }
             }
-        }
 
-        $perPage = min(max((int) $request->input('per_page', 25), 10), 100);
-        $items = $query->orderByDesc('created_at')->paginate($perPage)->withQueryString();
+            foreach (['tgl_buku_pertama', 'tgl_perolehan'] as $column) {
+                if ($request->filled('filter_' . $column) && $request->input('filter_' . $column) !== '') {
+                    $query->whereDate($column, $request->input('filter_' . $column));
+                }
+            }
+
+            return DataTables::of($query->orderByDesc('created_at'))
+                ->addIndexColumn()
+                ->addColumn('kode_barang_display', function ($item) {
+                    if ($item->kode_barang) {
+                        return '<span class="font-monospace fw-bold">' . e($item->kode_barang) . '</span>';
+                    }
+                    return '<span class="text-muted">-</span>';
+                })
+                ->addColumn('nup_display', function ($item) {
+                    return e($item->nup ?? '-');
+                })
+                ->addColumn('nama_barang_display', function ($item) {
+                    return '<span class="fw-bold">' . e($item->nama_barang) . '</span>';
+                })
+                ->addColumn('jenis_barang_display', function ($item) {
+                    return $item->jenis_barang === 'barang_habis_pakai' ? 'Habis Pakai' : 'Tidak Habis Pakai';
+                })
+                ->addColumn('sumber_dana_display', function ($item) {
+                    return $item->sumber_dana ? strtoupper($item->sumber_dana) : '-';
+                })
+                ->addColumn('merk_tipe_display', function ($item) {
+                    return e($item->merk_tipe);
+                })
+                ->addColumn('tgl_buku_display', function ($item) {
+                    return $item->tgl_buku_pertama ? $item->tgl_buku_pertama->format('d/m/Y') : '-';
+                })
+                ->addColumn('tgl_perolehan_display', function ($item) {
+                    return $item->tgl_perolehan ? $item->tgl_perolehan->format('d/m/Y') : '-';
+                })
+                ->addColumn('status_dir', function ($item) {
+                    $assignedDir = $item->assigned_dir;
+                    if ($assignedDir) {
+                        $labName = $assignedDir->lab->nama_lab ?? 'DIR';
+                        $kondisi = $assignedDir->kondisi_label ?? '';
+                        return '<span class="badge bg-success"><i class="bi bi-check-circle me-1"></i> ' . e($labName) . '</span>'
+                            . '<br><small class="text-muted">(' . e($kondisi) . ')</small>';
+                    }
+                    return '<span class="badge bg-warning text-dark"><i class="bi bi-clock-history me-1"></i> Belum Masuk DIR</span>';
+                })
+                ->addColumn('action', function ($item) {
+                    $html = '<button type="button" class="btn btn-sm btn-info text-white me-1 btnFoto" data-id="' . $item->id . '" title="Lihat Foto Barang"><i class="bi bi-image"></i></button>';
+                    if (!$item->inventarisRuangan) {
+                        $html .= '<button type="button" class="btn btn-sm btn-success me-1 btnAssign" data-id="' . $item->id . '" title="Tempatkan ke Ruangan (DIR)"><i class="bi bi-door-open-fill"></i></button>';
+                    }
+                    $html .= '<button type="button" class="btn btn-sm btn-warning me-1 btnEdit" data-id="' . $item->id . '" title="Edit Master"><i class="bi bi-pencil-square"></i></button>';
+                    $html .= '<button type="button" class="btn btn-sm btn-danger btnDelete" data-id="' . $item->id . '" title="Hapus Master"><i class="bi bi-trash"></i></button>';
+                    return $html;
+                })
+                ->rawColumns(['kode_barang_display', 'nama_barang_display', 'status_dir', 'action'])
+                ->make(true);
+        }
 
         // Ringkasan Statistik
-        $masterItems = InventarisBarang::all();
+        $totalItems = InventarisBarang::count();
+        $assignedCount = InventarisBarang::whereHas('inventarisRuangan')->count();
         $stats = [
-            'total_item' => $masterItems->count(),
-            'unassigned' => $masterItems->filter(fn ($item) => $item->assigned_dir === null)->count(),
-            'assigned' => $masterItems->filter(fn ($item) => $item->assigned_dir !== null)->count(),
+            'total_item' => $totalItems,
+            'unassigned' => $totalItems - $assignedCount,
+            'assigned' => $assignedCount,
         ];
 
         $title = 'Master Data Inventaris';
-        return view('pages.inventaris_barang.index', compact('title', 'items', 'labs', 'stats'));
+        return view('pages.inventaris_barang.index', compact('title', 'labs', 'stats'));
+    }
+
+    /**
+     * Get single item detail for AJAX modals (edit, assign, foto).
+     */
+    public function show($id)
+    {
+        $item = InventarisBarang::with('inventarisRuangan.lab')->findOrFail($id);
+
+        return response()->json([
+            'data' => [
+                'id' => $item->id,
+                'kode_barang' => $item->kode_barang,
+                'nup' => $item->nup,
+                'nama_barang' => $item->nama_barang,
+                'jenis_barang' => $item->jenis_barang,
+                'sumber_dana' => $item->sumber_dana,
+                'merk' => $item->merk,
+                'tipe' => $item->tipe,
+                'merk_tipe' => $item->merk_tipe,
+                'foto_barang' => $item->foto_barang ? asset('storage/' . ltrim($item->foto_barang, '/')) : null,
+                'tgl_buku_pertama' => $item->tgl_buku_pertama ? $item->tgl_buku_pertama->format('Y-m-d') : '',
+                'tgl_perolehan' => $item->tgl_perolehan ? $item->tgl_perolehan->format('Y-m-d') : '',
+                'spesifikasi' => $item->spesifikasi,
+                'keterangan' => $item->keterangan,
+                'has_dir' => $item->inventarisRuangan ? true : false,
+            ]
+        ]);
     }
 
     /**

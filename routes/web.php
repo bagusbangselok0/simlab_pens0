@@ -173,6 +173,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/inventaris', [InventarisBarangController::class, 'store'])->name('inventaris.store');
         Route::post('/inventaris/import', [InventarisBarangController::class, 'import'])->name('inventaris.import');
         Route::get('/inventaris/template', [InventarisBarangController::class, 'downloadTemplate'])->name('inventaris.template');
+        Route::get('/inventaris/{id}/detail', [InventarisBarangController::class, 'show'])->name('inventaris.show');
         Route::put('/inventaris/{id}', [InventarisBarangController::class, 'update'])->name('inventaris.update');
         Route::delete('/inventaris/{id}', [InventarisBarangController::class, 'destroy'])->name('inventaris.destroy');
         Route::post('/inventaris/{id}/assign-ruangan', [InventarisBarangController::class, 'assignToRuangan'])->name('inventaris.assign');
