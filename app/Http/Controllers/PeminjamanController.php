@@ -6,9 +6,11 @@ use App\Models\PeminjamanLab;
 use App\Models\Lab;
 use App\Models\User;
 use App\Notifications\PeminjamanNotification;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Shuchkin\SimpleXLSXGen;
 use Yajra\DataTables\DataTables;
 
 class PeminjamanController extends Controller
@@ -69,6 +71,133 @@ class PeminjamanController extends Controller
         }
 
         return view('pages.peminjaman.admin_index', compact('title', 'students'));
+    }
+
+    // Export PDF Semua Peminjaman (Admin)
+    public function exportAdminPdf(Request $request)
+    {
+        $query = PeminjamanLab::with(['mahasiswa', 'lab'])
+            ->orderBy('created_at', 'desc');
+
+        $selectedStudent = null;
+        if ($request->filled('mahasiswa_id')) {
+            $query->where('mahasiswa_id', $request->mahasiswa_id);
+            $selectedStudent = User::find($request->mahasiswa_id);
+        }
+
+        $peminjamans = $query->get();
+
+        $pdf = Pdf::loadView('pages.peminjaman.export_pdf_admin', compact('peminjamans', 'selectedStudent'))
+            ->setPaper('a4', 'landscape');
+
+        $cleanName = $selectedStudent ? '_' . str_replace(' ', '_', $selectedStudent->nama_asli) : '_Semua';
+        $namaFile = 'Rekap_Peminjaman_Lab' . $cleanName . '_' . date('Ymd_His') . '.pdf';
+
+        return $pdf->stream($namaFile);
+    }
+
+    // Export Excel Semua Peminjaman (Admin)
+    public function exportAdminExcel(Request $request)
+    {
+        $query = PeminjamanLab::with(['mahasiswa', 'lab'])
+            ->orderBy('created_at', 'desc');
+
+        $selectedStudent = null;
+        if ($request->filled('mahasiswa_id')) {
+            $query->where('mahasiswa_id', $request->mahasiswa_id);
+            $selectedStudent = User::find($request->mahasiswa_id);
+        }
+
+        $peminjamans = $query->get();
+
+        $rows = [];
+
+        // Header KOP Surat (sesuai format resmi cetak PDF peminjaman)
+        $rows[] = ['<center><b>KEMENTERIAN PENDIDIKAN, KEBUDAYAAN, RISET DAN TEKNOLOGI</b></center>'];
+        $rows[] = ['<center><b>POLITEKNIK ELEKTRONIKA NEGERI SURABAYA</b></center>'];
+        $rows[] = ['<center><b>KAMPUS SUMENEP</b></center>'];
+        $rows[] = ['<center>Jl. Raya Lenteng KM.2 Batuan Kabupaten Sumenep | Telepon: 032867419, WA: 081394646263 | Laman: https://www.pens.ac.id</center>'];
+        $rows[] = [''];
+        $rows[] = ['<center><b>DAFTAR PEMINJAMAN LABORATORIUM</b></center>'];
+
+        if ($selectedStudent) {
+            $rows[] = ['<center><b>Filter Mahasiswa: ' . ($selectedStudent->nama_asli ?? '-') . ' (NRP: ' . ($selectedStudent->nrp ?? '-') . ')</b></center>'];
+        } else {
+            $rows[] = ['<center><b>Filter: Semua Mahasiswa</b></center>'];
+        }
+
+        $rows[] = ['<center>Waktu Cetak: ' . Carbon::now()->locale('id')->translatedFormat('d F Y, H:i') . ' WIB</center>'];
+        $rows[] = [''];
+
+        // Table Header (Kolom status ditiadakan sesuai instruksi user)
+        $rows[] = [
+            '<style bgcolor="#E2EFDA" border="thin"><center><b>NO</b></center></style>',
+            '<style bgcolor="#E2EFDA" border="thin"><center><b>NAMA MAHASISWA</b></center></style>',
+            '<style bgcolor="#E2EFDA" border="thin"><center><b>NRP</b></center></style>',
+            '<style bgcolor="#E2EFDA" border="thin"><center><b>LABORATORIUM</b></center></style>',
+            '<style bgcolor="#E2EFDA" border="thin"><center><b>KEPERLUAN</b></center></style>',
+            '<style bgcolor="#E2EFDA" border="thin"><center><b>WAKTU MULAI</b></center></style>',
+            '<style bgcolor="#E2EFDA" border="thin"><center><b>WAKTU SELESAI</b></center></style>',
+        ];
+
+        if ($peminjamans->isEmpty()) {
+            $rows[] = [
+                '<style border="thin"><center>Tidak ada data peminjaman</center></style>',
+                '<style border="thin"></style>',
+                '<style border="thin"></style>',
+                '<style border="thin"></style>',
+                '<style border="thin"></style>',
+                '<style border="thin"></style>',
+                '<style border="thin"></style>',
+            ];
+        } else {
+            foreach ($peminjamans as $index => $row) {
+                $waktuMulai = $row->waktu_mulai ? Carbon::parse($row->waktu_mulai)->format('d-m-Y H:i') : '-';
+                $waktuSelesai = $row->waktu_selesai ? Carbon::parse($row->waktu_selesai)->format('d-m-Y H:i') : '-';
+                $labText = ($row->lab->nama_lab ?? '-') . ' (' . ($row->lab->kode_lab ?? '-') . ')';
+                $nrpText = $row->mahasiswa && $row->mahasiswa->nrp ? "\0" . $row->mahasiswa->nrp : '-';
+
+                $rows[] = [
+                    '<style border="thin"><center>' . ($index + 1) . '</center></style>',
+                    '<style border="thin">' . ($row->mahasiswa->nama_asli ?? '-') . '</style>',
+                    '<style border="thin"><center>' . $nrpText . '</center></style>',
+                    '<style border="thin">' . $labText . '</style>',
+                    '<style border="thin">' . ($row->tujuan ?? '-') . '</style>',
+                    '<style border="thin"><center>' . $waktuMulai . '</center></style>',
+                    '<style border="thin"><center>' . $waktuSelesai . '</center></style>',
+                ];
+            }
+        }
+
+        $xlsx = SimpleXLSXGen::fromArray($rows)
+            ->mergeCells('A1:G1')
+            ->mergeCells('A2:G2')
+            ->mergeCells('A3:G3')
+            ->mergeCells('A4:G4')
+            ->mergeCells('A6:G6')
+            ->mergeCells('A7:G7')
+            ->mergeCells('A8:G8');
+
+        if ($peminjamans->isEmpty()) {
+            $xlsx->mergeCells('A10:G10');
+        }
+
+        $xlsx->setColWidth(1, 6)
+            ->setColWidth(2, 28)
+            ->setColWidth(3, 18)
+            ->setColWidth(4, 30)
+            ->setColWidth(5, 45)
+            ->setColWidth(6, 20)
+            ->setColWidth(7, 20);
+
+        $cleanName = $selectedStudent ? '_' . str_replace(' ', '_', $selectedStudent->nama_asli) : '_Semua';
+        $fileName = 'Rekap_Peminjaman_Lab' . $cleanName . '_' . date('Ymd_His') . '.xlsx';
+
+        return response((string) $xlsx, 200, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
+            'Cache-Control' => 'max-age=0',
+        ]);
     }
 
     // Menampilkan daftar pinjaman milik mahasiswa yang sedang login

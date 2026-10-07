@@ -45,10 +45,12 @@
 @section('content')
     <section class="section">
         <div class="card">
-            <div class="card-header">
-                <div class="row align-items-center mt-3">
-                    <div class="col-md-6 mb-3">
-                        <label for="mahasiswa_filter" class="form-label fw-bold">Filter Berdasarkan Mahasiswa</label>
+            <div class="card-header pb-2">
+                <div class="row align-items-end g-3 mt-1">
+                    <div class="col-12 col-md-6 col-lg-5">
+                        <label for="mahasiswa_filter" class="form-label fw-bold text-muted small mb-1">
+                            <i class="bi bi-person-fill me-1"></i>Filter Berdasarkan Mahasiswa
+                        </label>
                         <select id="mahasiswa_filter" class="form-select select2">
                             <option value="">-- Semua Mahasiswa --</option>
                             @foreach ($students as $student)
@@ -56,6 +58,14 @@
                                 </option>
                             @endforeach
                         </select>
+                    </div>
+                    <div class="col-12 col-md-6 col-lg-7 d-flex justify-content-start justify-content-md-end gap-2 flex-wrap mb-1">
+                        <a href="{{ route('peminjaman.admin.export-excel') }}" id="btnExportExcel" class="btn btn-success d-inline-flex align-items-center shadow-sm">
+                            <i class="bi bi-file-earmark-excel-fill me-1"></i> Export Excel
+                        </a>
+                        <a href="{{ route('peminjaman.admin.export-pdf') }}" id="btnExportPdf" target="_blank" class="btn btn-danger d-inline-flex align-items-center shadow-sm">
+                            <i class="bi bi-file-earmark-pdf-fill me-1"></i> Export PDF
+                        </a>
                     </div>
                 </div>
             </div>
@@ -197,9 +207,25 @@
                 ]
             });
 
+            // Update Export URLs with Filter
+            function updateExportUrls() {
+                let mId = $('#mahasiswa_filter').val();
+                let excelBase = "{{ route('peminjaman.admin.export-excel') }}";
+                let pdfBase = "{{ route('peminjaman.admin.export-pdf') }}";
+
+                if (mId) {
+                    $('#btnExportExcel').attr('href', excelBase + '?mahasiswa_id=' + encodeURIComponent(mId));
+                    $('#btnExportPdf').attr('href', pdfBase + '?mahasiswa_id=' + encodeURIComponent(mId));
+                } else {
+                    $('#btnExportExcel').attr('href', excelBase);
+                    $('#btnExportPdf').attr('href', pdfBase);
+                }
+            }
+
             // Handle filter change
             $('#mahasiswa_filter').on('change', function() {
                 table.ajax.reload();
+                updateExportUrls();
             });
 
             // Handle Detail Button Click
@@ -226,6 +252,7 @@
                             text: 'Gagal mengambil detail peminjaman.',
                             backgroundColor: "#dc3545",
                             position: "right",
+                            duration: 3000
                         }).showToast();
                     }
                 });

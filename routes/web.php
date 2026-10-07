@@ -137,6 +137,8 @@ Route::middleware('auth')->group(function () {
         });
 
         Route::get('/admin/peminjaman', [PeminjamanController::class, 'indexAdmin'])->name('peminjaman.admin');
+        Route::get('/admin/peminjaman/export-excel', [PeminjamanController::class, 'exportAdminExcel'])->name('peminjaman.admin.export-excel');
+        Route::get('/admin/peminjaman/export-pdf', [PeminjamanController::class, 'exportAdminPdf'])->name('peminjaman.admin.export-pdf');
 
         // Manajemen Labs
         Route::prefix('labs')->group(function () {
