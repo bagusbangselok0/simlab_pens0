@@ -248,35 +248,27 @@
                         </div>
                         <div class="modal-body">
                             <div class="row g-3">
-                                <div class="col-md-6">
-                                    <label class="form-label fw-bold">Kode Barang</label>
-                                    <input type="text" name="kode_barang" id="edit_kode_barang" class="form-control" placeholder="Contoh: 3030101033">
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label fw-bold">NUP</label>
-                                    <input type="text" name="nup" id="edit_nup" class="form-control" placeholder="Contoh: 1, 2, 3">
+                                <div class="col-md-12">
+                                    <label class="form-label fw-bold">Pilih Kode dan Nama Barang <span class="text-danger">*</span></label>
+                                    <select id="editMasterBarangGroup" class="form-select" required>
+                                        <option value="">-- Pilih kode dan nama barang --</option>
+                                    </select>
                                 </div>
                                 <div class="col-md-12">
-                                    <label class="form-label fw-bold">Nama Barang <span class="text-danger">*</span></label>
-                                    <input type="text" name="nama_barang" id="edit_nama_barang" class="form-control" required>
-                                </div>
-                                <div class="col-md-12">
-                                    <label class="form-label fw-bold">Spesifikasi / Merk Tipe</label>
-                                    <textarea name="spesifikasi_merk_tipe" id="edit_spesifikasi_merk_tipe" class="form-control" rows="2" placeholder="Merk, model, spesifikasi alat"></textarea>
+                                    <label class="form-label fw-bold">Pilih NUP (Tersedia & Dialokasikan) <span class="text-danger">*</span></label>
+                                    <select name="inventaris_barang_ids[]" id="editMasterBarangNups" class="form-select" multiple size="6" required>
+                                    </select>
+                                    <small class="text-muted">Tekan Ctrl (Windows) atau Command (Mac) untuk memilih lebih dari satu NUP. Setiap NUP dihitung sebagai 1 unit.</small>
                                 </div>
                                 <div class="col-md-4">
-                                    <label class="form-label fw-bold">Tahun Perolehan</label>
-                                    <input type="number" name="tahun_perolehan" id="edit_tahun_perolehan" class="form-control" placeholder="Contoh: 2022" min="1900" max="2100">
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label fw-bold">Jumlah <span class="text-danger">*</span></label>
-                                    <input type="number" name="jumlah" id="edit_jumlah" class="form-control" min="1" required>
+                                    <label class="form-label fw-bold">Jumlah NUP Terpilih</label>
+                                    <input type="number" name="jumlah" id="editJumlahNupTerpilih" class="form-control" value="0" min="1" readonly required>
                                 </div>
                                 <div class="col-md-4">
                                     <label class="form-label fw-bold">Satuan <span class="text-danger">*</span></label>
-                                    <input type="text" name="satuan" id="edit_satuan" class="form-control" required>
+                                    <input type="text" name="satuan" id="edit_satuan" class="form-control" value="Unit" required>
                                 </div>
-                                <div class="col-md-12">
+                                <div class="col-md-4">
                                     <label class="form-label fw-bold">Kondisi <span class="text-danger">*</span></label>
                                     <select name="kondisi" id="edit_kondisi" class="form-select" required>
                                         <option value="baik">Baik</option>
@@ -292,7 +284,7 @@
                                 </div>
                                 <div class="col-md-12">
                                     <label class="form-label fw-bold">Keterangan / Catatan</label>
-                                    <textarea name="keterangan" id="edit_keterangan" class="form-control" rows="2" placeholder="Catatan tambahan kondisi alat"></textarea>
+                                    <textarea name="keterangan" id="edit_keterangan" class="form-control" rows="2" placeholder="Catatan tambahan jika ada"></textarea>
                                 </div>
                             </div>
                         </div>
@@ -536,19 +528,73 @@
 
         // --- Event Delegation for Dynamic Table Action Buttons ---
 
+        var allEditNups = [];
+
+        function updateEditNupCount() {
+            var count = $('#editMasterBarangNups option:selected').length;
+            $('#editJumlahNupTerpilih').val(count);
+        }
+
+        function renderEditNups(groupKey, preselectedIds) {
+            var nupSelect = $('#editMasterBarangNups');
+            nupSelect.empty();
+
+            if (!groupKey) {
+                nupSelect.prop('disabled', true);
+                $('#editJumlahNupTerpilih').val(0);
+                return;
+            }
+
+            var filtered = allEditNups.filter(function(n) {
+                return n.group_key === groupKey;
+            });
+
+            if (filtered.length === 0) {
+                nupSelect.append('<option value="" disabled>Tidak ada NUP tersedia untuk barang ini</option>');
+                nupSelect.prop('disabled', true);
+                $('#editJumlahNupTerpilih').val(0);
+                return;
+            }
+
+            nupSelect.prop('disabled', false);
+            filtered.forEach(function(n) {
+                var isSelected = false;
+                if (preselectedIds && preselectedIds.length > 0) {
+                    isSelected = preselectedIds.indexOf(n.id) !== -1;
+                } else {
+                    isSelected = !!n.is_selected;
+                }
+                var opt = $('<option></option>')
+                    .attr('value', n.id)
+                    .attr('data-group', n.group_key)
+                    .text('NUP ' + n.nup)
+                    .prop('selected', isSelected);
+                nupSelect.append(opt);
+            });
+
+            updateEditNupCount();
+        }
+
+        $('#editMasterBarangGroup').on('change', function() {
+            var selectedGroup = $(this).val();
+            renderEditNups(selectedGroup, []);
+        });
+
+        $('#editMasterBarangNups').on('change', function() {
+            updateEditNupCount();
+        });
+
         // 1. Modal Edit Inventaris Ruangan
         $(document).on('click', '.btnEdit', function() {
             var id = $(this).data('id');
             $('#formEditDir').attr('action', '/inventaris-ruangan/' + id);
 
             // Clear inputs
-            $('#edit_kode_barang').val('');
-            $('#edit_nup').val('');
-            $('#edit_nama_barang').val('');
-            $('#edit_spesifikasi_merk_tipe').val('');
-            $('#edit_tahun_perolehan').val('');
-            $('#edit_jumlah').val('');
-            $('#edit_satuan').val('');
+            allEditNups = [];
+            $('#editMasterBarangGroup').html('<option value="">Memuat data barang...</option>');
+            $('#editMasterBarangNups').empty().prop('disabled', true);
+            $('#editJumlahNupTerpilih').val(0);
+            $('#edit_satuan').val('Unit');
             $('#edit_kondisi').val('baik');
             $('#edit_is_bisa_dipinjam').prop('checked', false);
             $('#edit_keterangan').val('');
@@ -560,12 +606,21 @@
                 dataType: 'json',
                 success: function(response) {
                     var item = response.data;
-                    $('#edit_kode_barang').val(item.kode_barang || '');
-                    $('#edit_nup').val(item.nup || '');
-                    $('#edit_nama_barang').val(item.nama_barang || '');
-                    $('#edit_spesifikasi_merk_tipe').val(item.spesifikasi_merk_tipe || '');
-                    $('#edit_tahun_perolehan').val(item.tahun_perolehan || '');
-                    $('#edit_jumlah').val(item.jumlah || 1);
+                    allEditNups = item.nups || [];
+
+                    // Render list group barang
+                    var groupOptions = '<option value="">-- Pilih kode dan nama barang --</option>';
+                    if (item.groups && item.groups.length > 0) {
+                        item.groups.forEach(function(g) {
+                            var selected = (g.key === item.selected_group_key) ? ' selected' : '';
+                            groupOptions += '<option value="' + g.key + '"' + selected + '>' + g.label + '</option>';
+                        });
+                    }
+                    $('#editMasterBarangGroup').html(groupOptions);
+
+                    // Render NUP options
+                    renderEditNups(item.selected_group_key, item.selected_master_ids || []);
+
                     $('#edit_satuan').val(item.satuan || 'Unit');
                     $('#edit_kondisi').val(item.kondisi || 'baik');
                     $('#edit_is_bisa_dipinjam').prop('checked', !!item.is_bisa_dipinjam);

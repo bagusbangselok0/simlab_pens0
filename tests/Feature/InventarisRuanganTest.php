@@ -95,16 +95,20 @@ class InventarisRuanganTest extends TestCase
 
     public function test_plp_can_create_inventaris_item(): void
     {
+        $master = \App\Models\InventarisBarang::create([
+            'kode_barang' => '3050204004',
+            'nup' => '1',
+            'nama_barang' => 'A.C Split (Panasonik)',
+            'merk' => 'Panasonic',
+            'tipe' => 'Inverter',
+        ]);
+
         $payload = [
             'lab_id' => $this->lab->id,
-            'kode_barang' => '3050204004',
-            'nama_barang' => 'A.C Split (Panasonik)',
-            'spesifikasi_merk_tipe' => 'Panasonic',
-            'tahun_perolehan' => 2012,
+            'inventaris_barang_ids' => [$master->id],
             'jumlah' => 1,
             'satuan' => 'Unit',
             'kondisi' => 'rusak_berat',
-            'nup' => '1',
             'is_bisa_dipinjam' => '1',
             'keterangan' => 'Kompresor rusak',
         ];
@@ -152,6 +156,56 @@ class InventarisRuanganTest extends TestCase
             'id' => $item->id,
             'kondisi' => 'baik',
             'spesifikasi_merk_tipe' => 'HP Core i5',
+        ]);
+    }
+
+    public function test_plp_can_update_inventaris_item_with_master_nups(): void
+    {
+        $master1 = \App\Models\InventarisBarang::create([
+            'kode_barang' => '3100102001',
+            'nup' => '1',
+            'nama_barang' => 'P.C Unit (Hp Pavilion)',
+            'merk' => 'HP',
+            'tipe' => 'Pavilion',
+        ]);
+        $master2 = \App\Models\InventarisBarang::create([
+            'kode_barang' => '3100102001',
+            'nup' => '2',
+            'nama_barang' => 'P.C Unit (Hp Pavilion)',
+            'merk' => 'HP',
+            'tipe' => 'Pavilion',
+        ]);
+
+        $item = InventarisRuangan::create([
+            'lab_id' => $this->lab->id,
+            'inventaris_barang_id' => $master1->id,
+            'kode_barang' => '3100102001',
+            'nup' => '1',
+            'nama_barang' => 'P.C Unit (Hp Pavilion)',
+            'spesifikasi_merk_tipe' => 'HP - Pavilion',
+            'jumlah' => 1,
+            'satuan' => 'Unit',
+            'kondisi' => 'rusak_ringan',
+        ]);
+
+        $updatePayload = [
+            'inventaris_barang_ids' => [$master1->id, $master2->id],
+            'jumlah' => 2,
+            'satuan' => 'Unit',
+            'kondisi' => 'baik',
+            'is_bisa_dipinjam' => '1',
+            'keterangan' => 'NUP 2 ditambahkan',
+        ];
+
+        $response = $this->actingAs($this->plp)->put(route('inventaris-ruangan.update', $item->id), $updatePayload);
+        $response->assertRedirect(route('inventaris-ruangan.index', ['lab_id' => $this->lab->id]));
+
+        $this->assertDatabaseHas('inventaris_ruangans', [
+            'id' => $item->id,
+            'nup' => '1, 2',
+            'jumlah' => 2,
+            'kondisi' => 'baik',
+            'is_bisa_dipinjam' => true,
         ]);
     }
 

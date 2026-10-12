@@ -144,6 +144,82 @@ class InventarisRuanganController extends Controller
     {
         $item = InventarisRuangan::findOrFail($id);
 
+        $assignedNupKeysOther = InventarisRuangan::query()
+            ->whereNotNull('nup')
+            ->where('id', '!=', $item->id)
+            ->get(['kode_barang', 'nama_barang', 'spesifikasi_merk_tipe', 'nup'])
+            ->flatMap(function ($other) {
+                return collect(preg_split('/\s*,\s*/', (string) $other->nup, -1, PREG_SPLIT_NO_EMPTY))
+                    ->map(fn ($nup) => implode('|', [$other->kode_barang, $other->nama_barang, $other->spesifikasi_merk_tipe, trim($nup)]));
+            })->all();
+
+        $allMasters = InventarisBarang::orderBy('nama_barang')->get();
+        $currentNups = $this->normalizeNupList($item->nup);
+
+        $availableMasters = $allMasters->filter(function ($master) use ($assignedNupKeysOther) {
+            $identity = $master->merk_tipe !== '-' ? $master->merk_tipe : $master->spesifikasi;
+            $key = implode('|', [$master->kode_barang, $master->nama_barang, $identity, trim((string) $master->nup)]);
+            return !in_array($key, $assignedNupKeysOther, true);
+        })->values();
+
+        $selectedGroupKey = null;
+        $selectedMasterIds = [];
+
+        if ($item->inventaris_barang_id) {
+            $linkedMaster = $allMasters->firstWhere('id', $item->inventaris_barang_id);
+            if ($linkedMaster) {
+                $selectedGroupKey = md5(implode('|', [$linkedMaster->kode_barang, $linkedMaster->nama_barang, $linkedMaster->merk, $linkedMaster->tipe]));
+            }
+        }
+
+        if (!$selectedGroupKey) {
+            $itemIdentity = $item->spesifikasi_merk_tipe;
+            foreach ($allMasters as $master) {
+                $masterIdentity = $master->merk_tipe !== '-' ? $master->merk_tipe : $master->spesifikasi;
+                $sameIdentity = ($master->kode_barang === $item->kode_barang
+                    && $master->nama_barang === $item->nama_barang
+                    && (empty($itemIdentity) || $masterIdentity === $itemIdentity || $master->merk_tipe === $itemIdentity));
+                if ($sameIdentity) {
+                    $selectedGroupKey = md5(implode('|', [$master->kode_barang, $master->nama_barang, $master->merk, $master->tipe]));
+                    break;
+                }
+            }
+        }
+
+        foreach ($availableMasters as $master) {
+            $gKey = md5(implode('|', [$master->kode_barang, $master->nama_barang, $master->merk, $master->tipe]));
+            if ($selectedGroupKey && $gKey === $selectedGroupKey) {
+                if (in_array(trim((string) $master->nup), $currentNups, true)) {
+                    $selectedMasterIds[] = $master->id;
+                }
+            }
+        }
+
+        if ($item->inventaris_barang_id && !in_array($item->inventaris_barang_id, $selectedMasterIds, true)) {
+            $selectedMasterIds[] = $item->inventaris_barang_id;
+        }
+
+        $groups = [];
+        $nups = [];
+
+        foreach ($availableMasters as $master) {
+            $gKey = md5(implode('|', [$master->kode_barang, $master->nama_barang, $master->merk, $master->tipe]));
+            if (!isset($groups[$gKey])) {
+                $label = ($master->kode_barang ?: 'Tanpa kode') . ' - ' . $master->nama_barang . ($master->merk_tipe !== '-' ? ' (' . $master->merk_tipe . ')' : '');
+                $groups[$gKey] = [
+                    'key' => $gKey,
+                    'label' => $label,
+                ];
+            }
+
+            $nups[] = [
+                'id' => $master->id,
+                'group_key' => $gKey,
+                'nup' => $master->nup ?: '-',
+                'is_selected' => in_array($master->id, $selectedMasterIds, true),
+            ];
+        }
+
         return response()->json([
             'data' => [
                 'id' => $item->id,
@@ -157,6 +233,10 @@ class InventarisRuanganController extends Controller
                 'kondisi' => $item->kondisi,
                 'is_bisa_dipinjam' => (bool) $item->is_bisa_dipinjam,
                 'keterangan' => $item->keterangan,
+                'selected_group_key' => $selectedGroupKey,
+                'selected_master_ids' => $selectedMasterIds,
+                'groups' => array_values($groups),
+                'nups' => $nups,
             ]
         ]);
     }
@@ -255,6 +335,67 @@ class InventarisRuanganController extends Controller
     public function update(Request $request, $id)
     {
         $inventaris = InventarisRuangan::findOrFail($id);
+
+        if ($request->has('inventaris_barang_ids')) {
+            $validated = $request->validate([
+                'inventaris_barang_ids' => 'required|array|min:1',
+                'inventaris_barang_ids.*' => 'integer|distinct|exists:inventaris_barangs,id',
+                'jumlah' => 'required|integer|min:1',
+                'satuan' => 'required|string|max:20',
+                'kondisi' => 'required|in:baik,rusak_ringan,rusak_berat',
+                'is_bisa_dipinjam' => 'nullable|boolean',
+                'keterangan' => 'nullable|string',
+            ]);
+
+            $validated['is_bisa_dipinjam'] = $request->has('is_bisa_dipinjam');
+
+            $masters = InventarisBarang::whereIn('id', $validated['inventaris_barang_ids'])->get();
+            $master = $masters->first();
+            $sameIdentity = $masters->every(fn ($item) => $item->kode_barang === $master->kode_barang
+                && $item->nama_barang === $master->nama_barang
+                && $item->merk === $master->merk
+                && $item->tipe === $master->tipe);
+
+            if ($masters->count() !== count($validated['inventaris_barang_ids']) || !$sameIdentity) {
+                return back()->withInput()->withErrors([
+                    'inventaris_barang_ids' => 'NUP yang dipilih harus berasal dari barang yang sama.',
+                ]);
+            }
+
+            $identity = $master->merk_tipe !== '-' ? $master->merk_tipe : $master->spesifikasi;
+            $selectedNups = $masters->pluck('nup')->map(fn ($nup) => trim((string) $nup))->filter()->unique()->values()->all();
+
+            $assignedNupKeys = InventarisRuangan::whereNotNull('nup')
+                ->where('id', '!=', $inventaris->id)
+                ->get(['kode_barang', 'nama_barang', 'spesifikasi_merk_tipe', 'nup'])
+                ->flatMap(function ($item) {
+                    return collect(preg_split('/\s*,\s*/', (string) $item->nup, -1, PREG_SPLIT_NO_EMPTY))
+                        ->map(fn ($nup) => implode('|', [$item->kode_barang, $item->nama_barang, $item->spesifikasi_merk_tipe, trim($nup)]));
+                })->all();
+            $selectedKeys = array_map(fn ($nup) => implode('|', [$master->kode_barang, $master->nama_barang, $identity, $nup]), $selectedNups);
+            if (count(array_intersect($selectedKeys, $assignedNupKeys)) > 0) {
+                return back()->withInput()->withErrors([
+                    'inventaris_barang_ids' => 'Salah satu NUP sudah ditempatkan di ruangan lain.',
+                ]);
+            }
+
+            $inventaris->update([
+                'inventaris_barang_id' => $master->id,
+                'kode_barang' => $master->kode_barang,
+                'nup' => implode(', ', $selectedNups),
+                'nama_barang' => $master->nama_barang,
+                'spesifikasi_merk_tipe' => $identity,
+                'tahun_perolehan' => $master->tgl_perolehan?->year,
+                'jumlah' => count($selectedNups),
+                'satuan' => $validated['satuan'],
+                'kondisi' => $validated['kondisi'],
+                'is_bisa_dipinjam' => $validated['is_bisa_dipinjam'],
+                'keterangan' => $validated['keterangan'] ?? null,
+            ]);
+
+            return redirect()->route('inventaris-ruangan.index', ['lab_id' => $inventaris->lab_id])
+                ->with('success', 'Data inventaris berhasil diperbarui.');
+        }
 
         $validated = $request->validate([
             'kode_barang' => 'nullable|string|max:50',
