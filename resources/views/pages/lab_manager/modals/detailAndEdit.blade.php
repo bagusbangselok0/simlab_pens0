@@ -22,7 +22,7 @@
                         </div>
                         <input type="hidden" name="lab_manager_id" id="lab_manager_id">
                         <div class="form-group mb-3">
-                            <label for="edit_lab_id" class="form-label">Pilih Laboratorium</label>
+                            <label for="edit_lab_id" class="form-label">Pilih Laboratorium / Ruangan</label>
                             <select name="lab_id" class="form-control" id="edit_lab_id" disabled>
                                 <option value="">-- Pilih Lab --</option>
                                 @foreach ($labs as $lab)
@@ -30,9 +30,9 @@
                                 @endforeach
                             </select>
                             <span class="text-danger" id="detailLabError"></span>
-                            </div>
+                        </div>
                         <div class="form-group mb-3">
-                            <label for="edit_plp_id" class="form-label">Pilih PLP</label>
+                            <label for="edit_plp_id" class="form-label">Pilih PLP (Wajib)</label>
                             <select name="plp_id" class="form-control" id="edit_plp_id" disabled>
                                 <option value="">-- Pilih PLP --</option>
                                 @foreach ($plps as $plp)
@@ -42,9 +42,9 @@
                             <span class="text-danger" id="plpError"></span>
                         </div>
                         <div class="form-group mb-3">
-                            <label for="edit_kalab_id" class="form-label">Pilih Kalab</label>
+                            <label for="edit_kalab_id" class="form-label">Pilih Kalab <small class="text-muted">(Kosongkan jika Ruang Teknisi / Bengkel)</small></label>
                             <select name="kalab_id" class="form-control" id="edit_kalab_id" disabled>
-                                <option value="">-- Pilih Kalab --</option>
+                                <option value="">-- Pilih Kalab (Opsional) --</option>
                                 @foreach ($kalabs as $kalab)
                                     <option value="{{ $kalab->id }}">{{ $kalab->nama_asli }}</option>
                                 @endforeach
@@ -52,12 +52,10 @@
                             <span class="text-danger" id="kalabError"></span>
                         </div>
 
-
                         <button type="submit" class="btn btn-success d-none" id="updateBtn">Update Data</button>
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
                     </form>
                 </div>
             </div>
         </div>
-
 </div>

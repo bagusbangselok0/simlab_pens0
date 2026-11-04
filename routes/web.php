@@ -12,6 +12,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\LabController;
 use App\Http\Controllers\LabManagerController;
 use App\Http\Controllers\PeminjamanController;
+use App\Http\Controllers\PeminjamanAlatController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PresensiController;
 use App\Http\Controllers\RegisterController;
@@ -77,6 +78,14 @@ Route::middleware('auth')->group(function () {
         Route::patch('/peminjaman/{id}/cancel', [PeminjamanController::class, 'cancel'])->name('peminjaman.cancel');
         Route::get('/peminjaman/cetak/{id}', [PeminjamanController::class, 'cetak'])->name('peminjaman.cetak');
 
+        // Fitur Peminjaman Alat
+        Route::get('/peminjaman-alat', [PeminjamanAlatController::class, 'index'])->name('peminjaman-alat.index');
+        Route::get('/peminjaman-alat/get-alat/{lab_id}', [PeminjamanAlatController::class, 'getAlatByLab'])->name('peminjaman-alat.get-alat');
+        Route::post('/peminjaman-alat/store', [PeminjamanAlatController::class, 'store'])->name('peminjaman-alat.store');
+        Route::get('/peminjaman-alat/{id}', [PeminjamanAlatController::class, 'show'])->name('peminjaman-alat.show');
+        Route::patch('/peminjaman-alat/{id}/cancel', [PeminjamanAlatController::class, 'cancel'])->name('peminjaman-alat.cancel');
+        Route::get('/peminjaman-alat/cetak/{id}', [PeminjamanAlatController::class, 'cetak'])->name('peminjaman-alat.cetak');
+
         // Fitur Presensi
         Route::get('/presensi', [PresensiController::class, 'index'])->name('presensi.index');
         Route::post('/presensi/store', [PresensiController::class, 'store'])->name('presensi.store');
@@ -102,6 +111,16 @@ Route::middleware('auth')->group(function () {
         Route::patch('/approval/{id}/approve', [ApprovalController::class, 'approve'])->name('approval.approve');
         Route::patch('/approval/{id}/reject', [ApprovalController::class, 'reject'])->name('approval.reject');
         Route::patch('/approval/{id}/rejection-note', [ApprovalController::class, 'rejectWithNote'])->name('approval.reject-with-note');
+    });
+
+    // ---------------------------------------------------------
+    // ROLE: PLP & ADMIN (Persetujuan Peminjaman Alat)
+    // ---------------------------------------------------------
+    Route::middleware('role:plp,admin')->group(function () {
+        Route::get('/approval-alat', [PeminjamanAlatController::class, 'approvalIndex'])->name('peminjaman-alat.approval');
+        Route::patch('/peminjaman-alat/{id}/approve', [PeminjamanAlatController::class, 'approve'])->name('peminjaman-alat.approve');
+        Route::patch('/peminjaman-alat/{id}/reject', [PeminjamanAlatController::class, 'reject'])->name('peminjaman-alat.reject');
+        Route::patch('/peminjaman-alat/{id}/kembalikan', [PeminjamanAlatController::class, 'kembalikan'])->name('peminjaman-alat.kembalikan');
     });
 
     // ---------------------------------------------------------

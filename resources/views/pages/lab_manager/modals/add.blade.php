@@ -12,7 +12,7 @@
                 <form id="addLabManagerForm" method="POST" action="javascript:void(0);">
                     @csrf
                     <div class="form-group mb-3">
-                        <label for="lab_id" class="form-label">Pilih Laboratorium</label>
+                        <label for="lab_id" class="form-label">Pilih Laboratorium / Ruangan</label>
                         <select name="lab_id" class="form-control" id="lab_id">
                             <option value="">-- Pilih Lab --</option>
                             @foreach ($labs as $lab)
@@ -22,7 +22,7 @@
                         <span class="text-danger" id="labError"></span>
                     </div>
                     <div class="form-group mb-3">
-                        <label for="plp_id" class="form-label">Pilih PLP</label>
+                        <label for="plp_id" class="form-label">Pilih PLP (Wajib)</label>
                         <select name="plp_id" class="form-control" id="plp_id">
                             <option value="">-- Pilih PLP --</option>
                             @foreach ($plps as $plp)
@@ -32,16 +32,15 @@
                         <span class="text-danger" id="plpError"></span>
                     </div>
                     <div class="form-group mb-3">
-                        <label for="kalab_id" class="form-label">Pilih Kalab</label>
+                        <label for="kalab_id" class="form-label">Pilih Kalab <small class="text-muted">(Kosongkan jika Ruang Teknisi / Bengkel)</small></label>
                         <select name="kalab_id" class="form-control" id="kalab_id">
-                            <option value="">-- Pilih Kalab --</option>
+                            <option value="">-- Pilih Kalab (Opsional) --</option>
                             @foreach ($kalabs as $kalab)
                                 <option value="{{ $kalab->id }}">{{ $kalab->nama_asli }}</option>
                             @endforeach
                         </select>
                         <span class="text-danger" id="kalabError"></span>
                     </div>
-
 
                     <button type="submit" class="btn btn-success">Tambah Data</button>
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>

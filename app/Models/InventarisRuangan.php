@@ -46,6 +46,11 @@ class InventarisRuangan extends Model
         return $this->belongsTo(inventarisBarang::class, 'inventaris_barang_id');
     }
 
+    public function peminjamanAlatDetails()
+    {
+        return $this->hasMany(PeminjamanAlatDetail::class, 'inventaris_ruangan_id');
+    }
+
     public function getKondisiLabelAttribute(): string
     {
         return match ($this->kondisi) {

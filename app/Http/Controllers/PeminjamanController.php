@@ -208,7 +208,7 @@ class PeminjamanController extends Controller
     public function index()
     {
         $title = 'Daftar Peminjaman Lab';
-        $labs = Lab::all(); // Untuk dropdown filter jika diperlukan
+        $labs = Lab::where('bisa_dipinjam_ruangan', true)->orderBy('nama_lab')->get(); // Hanya lab yang bisa dipinjam ruangannya
 
 
         if (request()->ajax()) {

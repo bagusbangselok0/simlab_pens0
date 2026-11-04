@@ -106,6 +106,13 @@
                         </a>
                     </li>
 
+                    <li class="sidebar-item @if (Route::currentRouteName() == 'peminjaman-alat.index') active @endif">
+                        <a href="{{ route('peminjaman-alat.index') }}" class="sidebar-link">
+                            <i class="bi bi-tools"></i>
+                            <span>Peminjaman Alat</span>
+                        </a>
+                    </li>
+
                     @if (Auth::user()->role_id === 1)
                         <li class="sidebar-item @if (Route::currentRouteName() == 'peminjaman.admin') active @endif">
                             <a href="{{ route('peminjaman.admin') }}" class="sidebar-link">
@@ -168,7 +175,16 @@
                     <li class="sidebar-item @if (Route::currentRouteName() == 'approval.index') active @endif">
                         <a href="{{ route('approval.index') }}" class="sidebar-link">
                             <i class="bi bi-check-circle"></i>
-                            <span>Approval</span>
+                            <span>Approval Lab</span>
+                        </a>
+                    </li>
+                @endif
+
+                @if (Auth::check() && in_array(Auth::user()->role_id, [1, 3]))
+                    <li class="sidebar-item @if (Route::currentRouteName() == 'peminjaman-alat.approval') active @endif">
+                        <a href="{{ route('peminjaman-alat.approval') }}" class="sidebar-link">
+                            <i class="bi bi-check2-square"></i>
+                            <span>Persetujuan Alat</span>
                         </a>
                     </li>
                 @endif

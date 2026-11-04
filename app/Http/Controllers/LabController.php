@@ -78,6 +78,7 @@ class LabController extends Controller
             'nama_lab' => $data['nama_lab'],
             'kode_lab' => $data['kode_lab'],
             'lokasi' => $data['lokasi'],
+            'bisa_dipinjam_ruangan' => $request->has('bisa_dipinjam_ruangan') ? $request->boolean('bisa_dipinjam_ruangan') : true,
             'created_at' => now(
                 date_default_timezone_set('Asia/Jakarta')
             ),
@@ -149,6 +150,7 @@ class LabController extends Controller
             'nama_lab' => $data['nama_lab'],
             'kode_lab' => $data['kode_lab'],
             'lokasi' => $data['lokasi'],
+            'bisa_dipinjam_ruangan' => $request->boolean('bisa_dipinjam_ruangan'),
             'updated_at' => now(
                 date_default_timezone_set('Asia/Jakarta')
             ),

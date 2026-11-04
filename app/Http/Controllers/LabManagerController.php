@@ -56,7 +56,6 @@ class LabManagerController extends Controller
         $messages = [
             'lab_id.required' => 'Harap pilih lab.',
             'plp_id.required' => 'Harap pilih PLP.',
-            'kalab_id.required' => 'Harap pilih kalab.',
             'lab_id.exists' => 'Laboratorium yang dipilih tidak valid.',
             'kalab_id.exists' => 'Kalab yang dipilih tidak valid.',
         ];
@@ -64,20 +63,22 @@ class LabManagerController extends Controller
         $request->validate([
             'lab_id' => 'required|exists:labs,id',
             'plp_id' => 'required|exists:users,id',
-            'kalab_id' => 'required|exists:users,id',
+            'kalab_id' => 'nullable|exists:users,id',
         ], $messages);
         // Cek apakah lab sudah memiliki penanggung jawab
         $existingLabManager = LabManager::where('lab_id', $request->lab_id)->first();
         if ($existingLabManager) {
             return response()->json(['message' => 'Laboratorium sudah memiliki penanggung jawab'], 422);
         }
-        // Cek apakah Kalab sudah menjadi penanggung jawab laboratorium lain
-        $existingKalab = LabManager::where('kalab_id', $request->kalab_id)->first();
-        if ($existingKalab) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Kalab sudah menjadi penanggung jawab laboratorium lain'
-            ], 422);
+        // Cek apakah Kalab sudah menjadi penanggung jawab laboratorium lain (jika kalab diisi)
+        if ($request->filled('kalab_id')) {
+            $existingKalab = LabManager::where('kalab_id', $request->kalab_id)->first();
+            if ($existingKalab) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Kalab sudah menjadi penanggung jawab laboratorium lain'
+                ], 422);
+            }
         }
 
         $labManager = LabManager::create([
@@ -114,7 +115,6 @@ class LabManagerController extends Controller
         $messages = [
             'lab_id.required' => 'Harap pilih lab.',
             'plp_id.required' => 'Harap pilih PLP.',
-            'kalab_id.required' => 'Harap pilih kalab.',
             'lab_id.exists' => 'Laboratorium yang dipilih tidak valid.',
             'kalab_id.exists' => 'Kalab yang dipilih tidak valid.',
         ];
@@ -122,14 +122,14 @@ class LabManagerController extends Controller
         $request->validate([
             'lab_id' => 'required|exists:labs,id',
             'plp_id' => 'required|exists:users,id',
-            'kalab_id' => 'required|exists:users,id',
+            'kalab_id' => 'nullable|exists:users,id',
         ], $messages);
 
         $labManager = LabManager::findOrFail($id);
         $labManager->update([
             'lab_id' => $request->lab_id,
             'plp_id' => $request->plp_id,
-            'kalab_id' => $request->kalab_id,
+            'kalab_id' => $request->kalab_id ?: null,
         ]);
 
         // cek apakah lab sudah memiliki penanggung jawab lain (kecuali dirinya sendiri)
@@ -140,14 +140,16 @@ class LabManagerController extends Controller
             return response()->json(['message' => 'Laboratorium sudah memiliki penanggung jawab lain'], 422);
         }
         // Cek apakah Kalab sudah menjadi penanggung jawab laboratorium lain (kecuali dirinya sendiri)
-        $existingKalab = LabManager::where('kalab_id', $request->kalab_id)
-            ->where('id', '!=', $id)
-            ->first();
-        if ($existingKalab) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Kalab sudah menjadi penanggung jawab laboratorium lain'
-            ], 422);
+        if ($request->filled('kalab_id')) {
+            $existingKalab = LabManager::where('kalab_id', $request->kalab_id)
+                ->where('id', '!=', $id)
+                ->first();
+            if ($existingKalab) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Kalab sudah menjadi penanggung jawab laboratorium lain'
+                ], 422);
+            }
         }
 
         if ($labManager) {

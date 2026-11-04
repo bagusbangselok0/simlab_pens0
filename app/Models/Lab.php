@@ -12,12 +12,23 @@ class Lab extends Model
         'nama_lab',
         'kode_lab',
         'lokasi',
+        'bisa_dipinjam_ruangan',
+    ];
+
+    protected $casts = [
+        'bisa_dipinjam_ruangan' => 'boolean',
     ];
 
     // Relasi ke PeminjamanLab
     public function peminjamanLabs()
     {
         return $this->hasMany(PeminjamanLab::class);
+    }
+
+    // Relasi ke PeminjamanAlat
+    public function peminjamanAlats()
+    {
+        return $this->hasMany(PeminjamanAlat::class);
     }
 
     // Relasi ke LabManager
