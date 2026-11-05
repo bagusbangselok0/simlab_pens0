@@ -195,7 +195,7 @@
                     { data: 'waktu_pinjam', name: 'waktu_pinjam' },
                     { data: 'rencana_kembali', name: 'rencana_kembali' },
                     { data: 'status', name: 'status' },
-                    { data: 'action', name: 'action', orderable: false, searchable: false },
+                    { data: 'action', name: 'action', orderable: false, searchable: false, class: 'text-nowrap' },
                 ]
             });
 
@@ -206,10 +206,14 @@
             // Tampilkan Detail
             $(document).on('click', '.detailBtn', function() {
                 const id = $(this).data('id');
+                const btn = $(this);
+                btn.prop('disabled', true);
+
                 $.ajax({
                     url: "{{ url('peminjaman-alat') }}/" + id,
                     type: "GET",
                     success: function(res) {
+                        btn.prop('disabled', false);
                         if (!res.success) return;
                         const data = res.data;
 
@@ -270,6 +274,14 @@
                         $('#modalActionButtons').html(actionBtns);
 
                         $('#detailModal').modal('show');
+                    },
+                    error: function(xhr) {
+                        btn.prop('disabled', false);
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Gagal Memuat Detail',
+                            text: xhr.responseJSON?.message || 'Tidak dapat memuat detail peminjaman (Error: ' + xhr.status + ').'
+                        });
                     }
                 });
             });

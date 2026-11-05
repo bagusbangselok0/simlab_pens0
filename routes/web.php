@@ -82,14 +82,20 @@ Route::middleware('auth')->group(function () {
         Route::get('/peminjaman-alat', [PeminjamanAlatController::class, 'index'])->name('peminjaman-alat.index');
         Route::get('/peminjaman-alat/get-alat/{lab_id}', [PeminjamanAlatController::class, 'getAlatByLab'])->name('peminjaman-alat.get-alat');
         Route::post('/peminjaman-alat/store', [PeminjamanAlatController::class, 'store'])->name('peminjaman-alat.store');
-        Route::get('/peminjaman-alat/{id}', [PeminjamanAlatController::class, 'show'])->name('peminjaman-alat.show');
         Route::patch('/peminjaman-alat/{id}/cancel', [PeminjamanAlatController::class, 'cancel'])->name('peminjaman-alat.cancel');
-        Route::get('/peminjaman-alat/cetak/{id}', [PeminjamanAlatController::class, 'cetak'])->name('peminjaman-alat.cetak');
 
         // Fitur Presensi
         Route::get('/presensi', [PresensiController::class, 'index'])->name('presensi.index');
         Route::post('/presensi/store', [PresensiController::class, 'store'])->name('presensi.store');
         Route::get('/presensi/riwayat', [PresensiController::class, 'riwayat'])->name('presensi.riwayat');
+    });
+
+    // ---------------------------------------------------------
+    // ROLE: MAHASISWA, PLP & ADMIN (Detail & Cetak Peminjaman Alat)
+    // ---------------------------------------------------------
+    Route::middleware('role:mahasiswa,plp,admin')->group(function () {
+        Route::get('/peminjaman-alat/{id}', [PeminjamanAlatController::class, 'show'])->name('peminjaman-alat.show');
+        Route::get('/peminjaman-alat/cetak/{id}', [PeminjamanAlatController::class, 'cetak'])->name('peminjaman-alat.cetak');
     });
 
     // ---------------------------------------------------------

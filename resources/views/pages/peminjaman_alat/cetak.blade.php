@@ -67,7 +67,8 @@
             font-size: 10.5pt;
         }
 
-        .items-table th, .items-table td {
+        .items-table th,
+        .items-table td {
             border: 1px solid #333;
             padding: 6px 8px;
         }
@@ -137,7 +138,8 @@
 
     <div class="title">
         FORM BUKTI PEMINJAMAN ALAT LABORATORIUM<br>
-        <span style="font-size: 10.5pt; font-weight: normal; text-decoration: none;">Nomor: {{ $peminjaman->kode_peminjaman }}</span>
+        <span style="font-size: 10.5pt; font-weight: normal; text-decoration: none;">Nomor:
+            {{ $peminjaman->kode_peminjaman }}</span>
     </div>
 
     <p style="margin-bottom: 5px;">Saya yang bertanda tangan di bawah ini:</p>
@@ -183,7 +185,8 @@
         </tr>
     </table>
 
-    <p style="margin-top: 10px; margin-bottom: 3px;">Mengajukan peminjaman alat laboratorium dengan rincian sebagai berikut:</p>
+    <p style="margin-top: 10px; margin-bottom: 3px;">Mengajukan peminjaman alat laboratorium dengan rincian sebagai
+        berikut:</p>
     <table class="items-table">
         <thead>
             <tr>
@@ -226,32 +229,44 @@
     </table>
 
     <p class="footer-note">
-        <strong>Pernyataan:</strong> Saya menyatakan bertanggung jawab penuh atas pemeliharaan dan keutuhan alat-alat laboratorium tersebut di atas selama masa peminjaman, serta bersedia mengembalikan tepat waktu dalam kondisi baik dan lengkap sesuai peraturan yang berlaku di SIMLAB Politeknik Elektronika Negeri Surabaya.
+        <strong>Pernyataan:</strong> Saya menyatakan bertanggung jawab penuh atas pemeliharaan dan keutuhan alat-alat
+        laboratorium tersebut di atas selama masa peminjaman, serta bersedia mengembalikan tepat waktu dalam kondisi
+        baik dan lengkap sesuai peraturan yang berlaku di SIMLAB Politeknik Elektronika Negeri Surabaya.
     </p>
 
     <table class="signature-table">
         <tr>
             <td>
+                <br>
+                <div style="padding-bottom:10px;"></div>
                 Menyetujui,<br>
-                <strong>Pranata Lab Pendidikan (PLP)</strong><br>
-                @if ($peminjaman->ttd_plp_file && file_exists(storage_path('app/public/' . $peminjaman->ttd_plp_file)))
-                    <img src="data:image/png;base64,{{ base64_encode(file_get_contents(storage_path('app/public/' . $peminjaman->ttd_plp_file))) }}" class="signature-img"><br>
+                <strong>Pranata Laboratorium Pendidikan</strong><br>
+                @if ($peminjaman->ttd_plp_file && file_exists(storage_path('app/public/signatures/' . $peminjaman->ttd_plp_file)))
+                    <img src="data:image/png;base64,{{ base64_encode(file_get_contents(storage_path('app/public/signatures/' . $peminjaman->ttd_plp_file))) }}"
+                        class="signature-img"><br>
                 @else
                     <div style="height: 70px;"></div>
                 @endif
-                <u><strong>{{ $peminjaman->plp ? ($peminjaman->plp->nama_asli ?? $peminjaman->plp->name) : '(............................................)' }}</strong></u><br>
-                NIP/NIPPPK: {{ $peminjaman->plp->nip ?? '-' }}
+                <u><strong>{{ $peminjaman->plp ? $peminjaman->plp->full_name : '(............................................)' }}</strong></u><br>
+                NIP. {{ $peminjaman->plp->nip ?? '-' }}
             </td>
             <td>
-                Sumenep, {{ Carbon\Carbon::parse($peminjaman->created_at)->locale('id')->translatedFormat('d F Y') }}<br>
+                <div style="text-align:end;padding-bottom:10px">
+                    Sumenep,
+                    {{ Carbon\Carbon::parse($peminjaman->created_at)->locale('id')->translatedFormat('d F Y') }}<br>
+                </div>
+                Mengetahui,<br>
                 <strong>Peminjam (Mahasiswa)</strong><br>
-                @if ($peminjaman->ttd_mahasiswa_file && file_exists(storage_path('app/public/' . $peminjaman->ttd_mahasiswa_file)))
-                    <img src="data:image/png;base64,{{ base64_encode(file_get_contents(storage_path('app/public/' . $peminjaman->ttd_mahasiswa_file))) }}" class="signature-img"><br>
+                @if (
+                    $peminjaman->ttd_mahasiswa_file &&
+                        file_exists(storage_path('app/public/signatures/' . $peminjaman->ttd_mahasiswa_file)))
+                    <img src="data:image/png;base64,{{ base64_encode(file_get_contents(storage_path('app/public/signatures/' . $peminjaman->ttd_mahasiswa_file))) }}"
+                        class="signature-img"><br>
                 @else
                     <div style="height: 70px;"></div>
                 @endif
                 <u><strong>{{ $peminjaman->mahasiswa->nama_asli }}</strong></u><br>
-                NRP: {{ $peminjaman->mahasiswa->nrp }}
+                NRP. {{ $peminjaman->mahasiswa->nrp }}
             </td>
         </tr>
     </table>
@@ -259,4 +274,3 @@
 </body>
 
 </html>
-

@@ -56,6 +56,11 @@ class PeminjamanAlat extends Model
         return $this->hasMany(PeminjamanAlatDetail::class, 'peminjaman_alat_id');
     }
 
+    public function getFullNameAttribute()
+    {
+        return $this->gelar_depan . ' ' . $this->nama_asli . ', ' . $this->gelar_belakang;
+    }
+
     public function getStatusBadgeAttribute(): string
     {
         return match ($this->status) {
@@ -69,4 +74,3 @@ class PeminjamanAlat extends Model
         };
     }
 }
-

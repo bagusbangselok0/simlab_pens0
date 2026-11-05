@@ -32,6 +32,29 @@ class InventarisBarangController extends Controller
             $labs = Lab::whereIn('id', $managedLabIds)->orderBy('nama_lab')->get();
         }
 
+        // Query matcher untuk barang yang sudah ada di DIR
+        $subQueryAssigned = function ($sub) {
+            $sub->selectRaw(1)
+                ->from('inventaris_ruangans as ir')
+                ->where(function ($w) {
+                    $w->whereColumn('ir.inventaris_barang_id', 'inventaris_barangs.id')
+                      ->orWhere(function ($match) {
+                          $match->whereColumn('ir.kode_barang', 'inventaris_barangs.kode_barang')
+                                ->whereColumn('ir.nama_barang', 'inventaris_barangs.nama_barang')
+                                ->where(function ($nq) {
+                                    $nq->whereColumn('ir.nup', 'inventaris_barangs.nup')
+                                       ->orWhereRaw("ir.nup LIKE CONCAT(inventaris_barangs.nup, ',%')")
+                                       ->orWhereRaw("ir.nup LIKE CONCAT(inventaris_barangs.nup, ' ,%')")
+                                       ->orWhereRaw("ir.nup LIKE CONCAT('%, ', inventaris_barangs.nup, ',%')")
+                                       ->orWhereRaw("ir.nup LIKE CONCAT('%,', inventaris_barangs.nup, ',%')")
+                                       ->orWhereRaw("ir.nup LIKE CONCAT('%, ', inventaris_barangs.nup, ' ,%')")
+                                       ->orWhereRaw("ir.nup LIKE CONCAT('%, ', inventaris_barangs.nup)")
+                                       ->orWhereRaw("ir.nup LIKE CONCAT('%,', inventaris_barangs.nup)");
+                                });
+                      });
+                });
+        };
+
         // Handle AJAX DataTables request
         if ($request->ajax()) {
             $query = InventarisBarang::with('inventarisRuangan.lab');
@@ -39,9 +62,9 @@ class InventarisBarangController extends Controller
             // Filter status penempatan (unassigned / assigned)
             if ($request->filled('status') && $request->status !== '') {
                 if ($request->status === 'unassigned') {
-                    $query->whereDoesntHave('inventarisRuangan');
+                    $query->whereNotExists($subQueryAssigned);
                 } elseif ($request->status === 'assigned') {
-                    $query->whereHas('inventarisRuangan');
+                    $query->whereExists($subQueryAssigned);
                 }
             }
 
@@ -111,7 +134,7 @@ class InventarisBarangController extends Controller
                 })
                 ->addColumn('action', function ($item) {
                     $html = '<button type="button" class="btn btn-sm btn-info text-white me-1 btnFoto" data-id="' . $item->id . '" title="Lihat Foto Barang"><i class="bi bi-image"></i></button>';
-                    if (!$item->inventarisRuangan) {
+                    if (!$item->assigned_dir) {
                         $html .= '<button type="button" class="btn btn-sm btn-success me-1 btnAssign" data-id="' . $item->id . '" title="Tempatkan ke Ruangan (DIR)"><i class="bi bi-door-open-fill"></i></button>';
                     }
                     $html .= '<button type="button" class="btn btn-sm btn-warning me-1 btnEdit" data-id="' . $item->id . '" title="Edit Master"><i class="bi bi-pencil-square"></i></button>';
@@ -124,7 +147,7 @@ class InventarisBarangController extends Controller
 
         // Ringkasan Statistik
         $totalItems = InventarisBarang::count();
-        $assignedCount = InventarisBarang::whereHas('inventarisRuangan')->count();
+        $assignedCount = InventarisBarang::whereExists($subQueryAssigned)->count();
         $stats = [
             'total_item' => $totalItems,
             'unassigned' => $totalItems - $assignedCount,
@@ -158,7 +181,7 @@ class InventarisBarangController extends Controller
                 'tgl_perolehan' => $item->tgl_perolehan ? $item->tgl_perolehan->format('Y-m-d') : '',
                 'spesifikasi' => $item->spesifikasi,
                 'keterangan' => $item->keterangan,
-                'has_dir' => $item->inventarisRuangan ? true : false,
+                'has_dir' => $item->assigned_dir ? true : false,
             ]
         ]);
     }

@@ -237,7 +237,7 @@
         let currentLabItems = [];
         let rowIndex = 0;
 
-        // Fungsi membuat elemen option untuk dropdown inventaris
+        // Fungsi membuat elemen option untuk dropdown inventaris (per setiap NUP)
         function buildInventarisOptionsHtml() {
             const labId = $('#lab_id').val();
             if (!labId) {
@@ -248,11 +248,16 @@
                 return '<option value="">-- Tidak ada alat inventaris yang bisa dipinjam di ruangan ini (Gunakan Input Manual) --</option>';
             }
 
-            let html = '<option value="">-- Pilih Alat dari Inventaris --</option>';
+            let html = '<option value="">-- Pilih Alat & NUP dari Inventaris --</option>';
             currentLabItems.forEach(item => {
-                const nupStr = item.nup ? ` (NUP: ${item.nup})` : '';
+                const nupStr = (item.nup && item.nup !== '-') ? ` (NUP: ${item.nup})` : '';
                 const spekStr = item.spesifikasi_merk_tipe ? ` [${item.spesifikasi_merk_tipe}]` : '';
-                html += `<option value="${item.id}" data-satuan="${item.satuan || 'Unit'}" data-spek="${item.spesifikasi_merk_tipe || ''}">${item.nama_barang}${nupStr}${spekStr}</option>`;
+                const statusStr = item.is_dipinjam ? ' - [Sedang Dipinjam]' : '';
+                const disabledAttr = item.is_dipinjam ? 'disabled' : '';
+
+                html += `<option value="${item.unique_id}" data-id="${item.inventaris_ruangan_id}" data-nup="${item.nup}" data-satuan="${item.satuan || 'Unit'}" data-spek="${item.spesifikasi_merk_tipe || ''}" ${disabledAttr}>
+                    ${item.nama_barang}${nupStr}${spekStr}${statusStr}
+                </option>`;
             });
             return html;
         }
@@ -263,7 +268,7 @@
             $('.select-inventaris').each(function() {
                 const index = $(this).data('index');
                 $(this).html(optionsHtml);
-                // Reset satuan dan jumlah jika belum ada yang terpilih
+                $(`#nup_${index}`).val('');
                 $(`#satuan_${index}`).val('Unit');
                 $(`#jumlah_${index}`).val(1);
             });
@@ -287,6 +292,7 @@
                             <select name="items[${index}][inventaris_ruangan_id]" class="form-select form-select-sm select-inventaris" data-index="${index}">
                                 ${optionsHtml}
                             </select>
+                            <input type="hidden" name="items[${index}][nup]" id="nup_${index}" class="input-nup" value="">
                         </div>
                         <div class="box-manual d-none" id="boxManual_${index}">
                             <div class="input-group input-group-sm">
@@ -332,7 +338,7 @@
                     { data: 'waktu_pinjam', name: 'waktu_pinjam' },
                     { data: 'rencana_kembali', name: 'rencana_kembali' },
                     { data: 'status', name: 'status' },
-                    { data: 'action', name: 'action', orderable: false, searchable: false },
+                    { data: 'action', name: 'action', orderable: false, searchable: false, class: 'text-nowrap' },
                 ]
             });
 
@@ -394,6 +400,10 @@
                     $(`#boxInventaris_${index}`).addClass('d-none');
                     $(`#boxManual_${index}`).removeClass('d-none');
 
+                    // Reset pilihan inventaris & NUP
+                    $(`#boxInventaris_${index} select`).val('');
+                    $(`#nup_${index}`).val('');
+
                     // Input Manual: Jumlah dan Satuan bisa diedit bebas
                     inputJumlah.prop('readonly', false).removeClass('bg-light').val(1).removeAttr('title');
                     inputSatuan.prop('readonly', false).removeClass('bg-light').val('Unit').removeAttr('title');
@@ -407,9 +417,11 @@
 
                     const selected = $(`#boxInventaris_${index} select`).find(':selected');
                     const satuan = selected.data('satuan');
+                    const nup = selected.data('nup');
                     if (satuan) {
                         inputSatuan.val(satuan);
                     }
+                    $(`#nup_${index}`).val(nup && nup !== '-' ? nup : '');
                 }
             });
 
@@ -417,8 +429,36 @@
             $(document).on('change', '.select-inventaris', function() {
                 const index = $(this).data('index');
                 const selected = $(this).find(':selected');
+                const val = $(this).val();
+
+                // Cek duplikasi NUP pada baris lain
+                if (val) {
+                    let duplicate = false;
+                    $('.select-inventaris').not(this).each(function() {
+                        if ($(this).val() === val) {
+                            duplicate = true;
+                            return false;
+                        }
+                    });
+                    if (duplicate) {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Alat & NUP Sudah Dipilih',
+                            text: 'Unit alat dengan NUP ini sudah dipilih pada baris lain. Setiap baris harus memilih NUP yang berbeda.',
+                        });
+                        $(this).val('');
+                        $(`#nup_${index}`).val('');
+                        $(`#satuan_${index}`).val('Unit');
+                        return;
+                    }
+                }
+
+                const nup = selected.data('nup');
                 const satuan = selected.data('satuan');
                 const spek = selected.data('spek');
+
+                // Simpan NUP individual yang dipilih ke hidden input
+                $(`#nup_${index}`).val(nup && nup !== '-' ? nup : '');
 
                 if (satuan) {
                     $(`#satuan_${index}`).val(satuan);
@@ -492,10 +532,14 @@
             // Tampilkan Detail Modal
             $(document).on('click', '.detailBtn', function() {
                 const id = $(this).data('id');
+                const btn = $(this);
+                btn.prop('disabled', true);
+
                 $.ajax({
                     url: "{{ url('peminjaman-alat') }}/" + id,
                     type: "GET",
                     success: function(res) {
+                        btn.prop('disabled', false);
                         if (!res.success) return;
                         const data = res.data;
 
@@ -571,6 +615,14 @@
                         }
 
                         $('#detailModal').modal('show');
+                    },
+                    error: function(xhr) {
+                        btn.prop('disabled', false);
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Gagal Memuat Detail',
+                            text: xhr.responseJSON?.message || 'Tidak dapat memuat detail peminjaman (Error: ' + xhr.status + ').'
+                        });
                     }
                 });
             });

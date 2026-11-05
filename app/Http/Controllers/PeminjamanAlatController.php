@@ -87,17 +87,99 @@ class PeminjamanAlatController extends Controller
     }
 
     /**
-     * Ambil daftar alat inventaris yang bisa dipinjam berdasarkan ruangan (AJAX).
+     * Parsing string NUP (koma atau rentang angka seperti 1-5) menjadi array NUP individual.
+     */
+    private function parseNupList(?string $nupStr): array
+    {
+        if (empty($nupStr)) {
+            return [];
+        }
+
+        $result = [];
+        $parts = preg_split('/\s*,\s*/', trim($nupStr), -1, PREG_SPLIT_NO_EMPTY);
+
+        foreach ($parts as $part) {
+            $part = trim($part);
+            if (preg_match('/^(\d+)\s*[-–]\s*(\d+)$/', $part, $matches)) {
+                $start = (int) $matches[1];
+                $end = (int) $matches[2];
+                $padLen = max(strlen($matches[1]), strlen($matches[2]));
+                if ($start <= $end && ($end - $start) < 200) {
+                    for ($i = $start; $i <= $end; $i++) {
+                        $result[] = str_pad($i, $padLen, '0', STR_PAD_LEFT);
+                    }
+                    continue;
+                }
+            }
+            $result[] = $part;
+        }
+
+        return array_values(array_unique($result));
+    }
+
+    /**
+     * Ambil daftar alat inventaris per NUP (1 NUP = 1 unit) berdasarkan ruangan (AJAX).
      */
     public function getAlatByLab($labId)
     {
-        $items = InventarisRuangan::where('lab_id', $labId)
+        $rawItems = InventarisRuangan::where('lab_id', $labId)
             ->where('is_bisa_dipinjam', true)
             ->where('kondisi', '!=', 'rusak_berat')
             ->orderBy('nama_barang')
-            ->get(['id', 'nama_barang', 'kode_barang', 'nup', 'satuan', 'spesifikasi_merk_tipe', 'kondisi']);
+            ->get();
 
-        return response()->json($items);
+        // Cari NUP yang sedang dalam peminjaman aktif di lab ini
+        $borrowedUnits = PeminjamanAlatDetail::whereHas('peminjamanAlat', function ($q) use ($labId) {
+            $q->where('lab_id', $labId)
+              ->whereIn('status', ['pending_plp', 'disetujui', 'sedang_dipinjam']);
+        })
+        ->whereNotNull('inventaris_ruangan_id')
+        ->whereNotNull('nup')
+        ->get(['inventaris_ruangan_id', 'nup'])
+        ->map(fn($row) => $row->inventaris_ruangan_id . '__' . trim($row->nup))
+        ->toArray();
+
+        $expandedItems = [];
+
+        foreach ($rawItems as $item) {
+            $nups = $this->parseNupList($item->nup);
+
+            if (count($nups) > 0) {
+                foreach ($nups as $singleNup) {
+                    $key = $item->id . '__' . $singleNup;
+                    $isBorrowed = in_array($key, $borrowedUnits);
+
+                    $expandedItems[] = [
+                        'unique_id' => $key,
+                        'inventaris_ruangan_id' => $item->id,
+                        'nama_barang' => $item->nama_barang,
+                        'kode_barang' => $item->kode_barang,
+                        'nup' => $singleNup,
+                        'satuan' => $item->satuan ?? 'Unit',
+                        'spesifikasi_merk_tipe' => $item->spesifikasi_merk_tipe,
+                        'kondisi' => $item->kondisi,
+                        'is_dipinjam' => $isBorrowed,
+                    ];
+                }
+            } else {
+                $key = $item->id . '__none';
+                $isBorrowed = in_array($key, $borrowedUnits);
+
+                $expandedItems[] = [
+                    'unique_id' => $key,
+                    'inventaris_ruangan_id' => $item->id,
+                    'nama_barang' => $item->nama_barang,
+                    'kode_barang' => $item->kode_barang,
+                    'nup' => '-',
+                    'satuan' => $item->satuan ?? 'Unit',
+                    'spesifikasi_merk_tipe' => $item->spesifikasi_merk_tipe,
+                    'kondisi' => $item->kondisi,
+                    'is_dipinjam' => $isBorrowed,
+                ];
+            }
+        }
+
+        return response()->json($expandedItems);
     }
 
     /**
@@ -141,8 +223,10 @@ class PeminjamanAlatController extends Controller
             'items.min' => 'Harap masukkan minimal satu alat yang ingin dipinjam.',
         ]);
 
-        // Cek validasi per item
+        // Cek validasi per item & duplikasi NUP
         $itemsData = $request->input('items', []);
+        $selectedUnits = [];
+
         foreach ($itemsData as $index => $item) {
             $isManual = (bool) ($item['is_manual'] ?? false);
             if ($isManual) {
@@ -159,6 +243,18 @@ class PeminjamanAlatController extends Controller
                         'message' => 'Harap pilih alat dari inventaris pada baris ke-' . ($index + 1) . '.',
                     ], 422);
                 }
+
+                $rawId = $item['inventaris_ruangan_id'];
+                $nupVal = $item['nup'] ?? '';
+                $unitKey = $rawId . '|' . $nupVal;
+
+                if (in_array($unitKey, $selectedUnits, true)) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Alat dengan NUP yang sama dipilih lebih dari satu kali pada baris pengajuan Anda.',
+                    ], 422);
+                }
+                $selectedUnits[] = $unitKey;
             }
         }
 
@@ -225,14 +321,28 @@ class PeminjamanAlatController extends Controller
                         'kondisi_pinjam' => 'baik',
                     ]);
                 } else {
-                    $dirItem = InventarisRuangan::findOrFail($item['inventaris_ruangan_id']);
+                    $rawId = $item['inventaris_ruangan_id'];
+                    $selectedNup = !empty($item['nup']) ? trim($item['nup']) : null;
+
+                    if (str_contains($rawId, '__')) {
+                        [$dirId, $embeddedNup] = explode('__', $rawId, 2);
+                        if (!$selectedNup || $selectedNup === '-') {
+                            $selectedNup = ($embeddedNup !== 'none') ? $embeddedNup : null;
+                        }
+                    } else {
+                        $dirId = $rawId;
+                    }
+
+                    $dirItem = InventarisRuangan::findOrFail($dirId);
+                    $finalNup = ($selectedNup && $selectedNup !== '-') ? $selectedNup : $dirItem->nup;
+
                     PeminjamanAlatDetail::create([
                         'peminjaman_alat_id' => $peminjaman->id,
                         'inventaris_ruangan_id' => $dirItem->id,
                         'nama_alat' => $dirItem->nama_barang,
                         'kode_barang' => $dirItem->kode_barang,
-                        'nup' => $dirItem->nup,
-                        'jumlah' => 1, // Default pasti 1 per NUP dari inventaris
+                        'nup' => $finalNup, // Single NUP spesifik yang dipilih peminjam
+                        'jumlah' => 1,      // Pasti 1 per NUP
                         'satuan' => $dirItem->satuan ?? 'Unit',
                         'is_manual' => false,
                         'spesifikasi' => $dirItem->spesifikasi_merk_tipe ?? ($item['spesifikasi'] ?? null),
