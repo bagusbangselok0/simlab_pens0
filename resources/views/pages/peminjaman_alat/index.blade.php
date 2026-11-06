@@ -31,16 +31,13 @@
             display: none !important;
         }
 
-        /* Base Card Styling (Light Mode Default) */
+        /* Base Card Styling (Mobile) */
         #tableItems tr.alat-item-row {
             display: flex;
             flex-wrap: wrap;
-            background-color: #ffffff;
-            border: 1px solid #dee2e6;
             border-radius: 0.75rem;
             padding: 0.85rem;
             margin-bottom: 0.85rem;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
             position: relative;
             transition: background-color 0.2s ease, border-color 0.2s ease;
         }
@@ -54,17 +51,6 @@
         .alat-col-header {
             width: 100% !important;
             margin-bottom: 0.5rem;
-        }
-
-        /* Header dalam kartu (Alat #X dan tombol Hapus) */
-        .alat-card-header {
-            background-color: #f1f5f9;
-            border: 1px solid #e2e8f0;
-        }
-
-        /* Label di dalam kartu */
-        .alat-card-label {
-            color: #64748b;
         }
 
         .alat-col-sumber {
@@ -93,12 +79,6 @@
             margin-bottom: 0.25rem;
         }
 
-        /* Readonly inputs di Light Mode */
-        .alat-input-readonly {
-            background-color: #f8fafc !important;
-            color: #64748b;
-        }
-
         /* Ukuran input dan select nyaman disentuh di layar sentuh HP */
         #addPeminjamanAlatModal .form-control,
         #addPeminjamanAlatModal .form-select {
@@ -108,67 +88,98 @@
     }
 
     /* ---------------------------------------------------------
-       DARK MODE ADAPTATION (html[data-bs-theme="dark"] & body.dark)
+       LIGHT MODE (Default & Eksplisit html[data-bs-theme="light"])
        --------------------------------------------------------- */
-    html[data-bs-theme="dark"] #tableItems tr.alat-item-row,
-    body.dark #tableItems tr.alat-item-row,
-    body.theme-dark #tableItems tr.alat-item-row {
+    #tableItems tr.alat-item-row,
+    html:not([data-bs-theme="dark"]) #tableItems tr.alat-item-row,
+    html[data-bs-theme="light"] #tableItems tr.alat-item-row {
+        background-color: #ffffff !important;
+        border: 1px solid #e2e8f0 !important;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05) !important;
+    }
+
+    .alat-card-header,
+    html:not([data-bs-theme="dark"]) .alat-card-header,
+    html[data-bs-theme="light"] .alat-card-header {
+        background-color: #f8fafc !important;
+        border: 1px solid #e2e8f0 !important;
+    }
+
+    .alat-card-label,
+    html:not([data-bs-theme="dark"]) .alat-card-label,
+    html[data-bs-theme="light"] .alat-card-label {
+        color: #475569 !important;
+    }
+
+    .alat-input-readonly,
+    html:not([data-bs-theme="dark"]) .alat-input-readonly,
+    html[data-bs-theme="light"] .alat-input-readonly {
+        background-color: #f1f5f9 !important;
+        color: #334155 !important;
+        border: 1px solid #cbd5e1 !important;
+    }
+
+    #btnTambahBarisBawah,
+    html:not([data-bs-theme="dark"]) #btnTambahBarisBawah,
+    html[data-bs-theme="light"] #btnTambahBarisBawah {
+        border: 1px dashed #435ebe !important;
+        color: #435ebe !important;
+        background-color: #f8fafc !important;
+    }
+    #btnTambahBarisBawah:hover,
+    html:not([data-bs-theme="dark"]) #btnTambahBarisBawah:hover,
+    html[data-bs-theme="light"] #btnTambahBarisBawah:hover {
+        background-color: #435ebe !important;
+        color: #ffffff !important;
+    }
+
+    /* ---------------------------------------------------------
+       DARK MODE (HANYA saat html[data-bs-theme="dark"])
+       --------------------------------------------------------- */
+    html[data-bs-theme="dark"] #tableItems tr.alat-item-row {
         background-color: #1e1e2d !important;
-        border-color: #35354f !important;
+        border: 1px solid #35354f !important;
         box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3) !important;
     }
 
-    html[data-bs-theme="dark"] .alat-card-header,
-    body.dark .alat-card-header,
-    body.theme-dark .alat-card-header {
+    html[data-bs-theme="dark"] .alat-card-header {
         background-color: #151521 !important;
         border: 1px solid #35354f !important;
     }
 
-    html[data-bs-theme="dark"] .alat-card-label,
-    body.dark .alat-card-label,
-    body.theme-dark .alat-card-label {
+    html[data-bs-theme="dark"] .alat-card-label {
         color: #9899ac !important;
     }
 
-    html[data-bs-theme="dark"] .alat-input-readonly,
-    body.dark .alat-input-readonly,
-    body.theme-dark .alat-input-readonly {
+    html[data-bs-theme="dark"] .alat-input-readonly {
         background-color: #151521 !important;
         color: #9899ac !important;
-        border-color: #35354f !important;
+        border: 1px solid #35354f !important;
     }
 
     /* Header tabel desktop di dark mode */
-    html[data-bs-theme="dark"] #tableItems thead.table-light th,
-    body.dark #tableItems thead.table-light th,
-    body.theme-dark #tableItems thead.table-light th {
+    html[data-bs-theme="dark"] #tableItems thead.table-light th {
         background-color: #1b1b29 !important;
         color: #c2c2d9 !important;
         border-color: #35354f !important;
     }
 
     /* Alert ketentuan di Dark Mode */
-    html[data-bs-theme="dark"] #addPeminjamanAlatModal .alert-light-primary,
-    body.dark #addPeminjamanAlatModal .alert-light-primary,
-    body.theme-dark #addPeminjamanAlatModal .alert-light-primary {
+    html[data-bs-theme="dark"] #addPeminjamanAlatModal .alert-light-primary {
         background-color: rgba(67, 94, 190, 0.15) !important;
         color: #b7c3ef !important;
         border: 1px solid rgba(67, 94, 190, 0.3) !important;
     }
 
     /* Tombol tambah baris bawah di Dark Mode */
-    html[data-bs-theme="dark"] #btnTambahBarisBawah,
-    body.dark #btnTambahBarisBawah,
-    body.theme-dark #btnTambahBarisBawah {
-        border-color: #435ebe;
-        color: #b7c3ef;
+    html[data-bs-theme="dark"] #btnTambahBarisBawah {
+        border: 1px dashed #435ebe !important;
+        color: #b7c3ef !important;
+        background-color: rgba(67, 94, 190, 0.1) !important;
     }
-    html[data-bs-theme="dark"] #btnTambahBarisBawah:hover,
-    body.dark #btnTambahBarisBawah:hover,
-    body.theme-dark #btnTambahBarisBawah:hover {
-        background-color: #435ebe;
-        color: #ffffff;
+    html[data-bs-theme="dark"] #btnTambahBarisBawah:hover {
+        background-color: #435ebe !important;
+        color: #ffffff !important;
     }
 </style>
     <section class="section">
@@ -534,6 +545,14 @@
         }
 
         $(document).ready(function() {
+            // Sinkronisasi class body dengan tema aktif
+            const currentTheme = document.documentElement.getAttribute('data-bs-theme') || localStorage.getItem('theme') || 'light';
+            if (currentTheme === 'light') {
+                $('body').removeClass('dark theme-dark').addClass('light');
+            } else {
+                $('body').removeClass('light theme-light').addClass('dark');
+            }
+
             // Inisialisasi DataTable
             const table = $('#peminjamanAlatTable').DataTable({
                 processing: true,
