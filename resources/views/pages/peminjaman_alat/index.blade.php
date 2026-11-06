@@ -1,12 +1,182 @@
 @extends('layouts.app')
 
 @section('content')
+<style>
+    /* =========================================================
+       Responsive Mobile Styling & Dark/Light Theme Integration
+       ========================================================= */
+    @media (max-width: 767.98px) {
+        #addPeminjamanAlatModal .modal-dialog {
+            margin: 0.5rem auto;
+            max-width: calc(100% - 1rem);
+        }
+
+        #addPeminjamanAlatModal .modal-body {
+            padding: 1rem 0.75rem;
+        }
+
+        /* Nonaktifkan overflow table-responsive pada mobile agar layout card mengalir vertikal */
+        #addPeminjamanAlatModal .table-responsive {
+            overflow: visible !important;
+            margin-bottom: 0.5rem !important;
+        }
+
+        #tableItems,
+        #tableItems tbody {
+            display: block;
+            width: 100% !important;
+        }
+
+        #tableItems thead {
+            display: none !important;
+        }
+
+        /* Base Card Styling (Light Mode Default) */
+        #tableItems tr.alat-item-row {
+            display: flex;
+            flex-wrap: wrap;
+            background-color: #ffffff;
+            border: 1px solid #dee2e6;
+            border-radius: 0.75rem;
+            padding: 0.85rem;
+            margin-bottom: 0.85rem;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+            position: relative;
+            transition: background-color 0.2s ease, border-color 0.2s ease;
+        }
+
+        #tableItems tr.alat-item-row > td {
+            display: block;
+            padding: 0.25rem 0;
+            border: none;
+        }
+
+        .alat-col-header {
+            width: 100% !important;
+            margin-bottom: 0.5rem;
+        }
+
+        /* Header dalam kartu (Alat #X dan tombol Hapus) */
+        .alat-card-header {
+            background-color: #f1f5f9;
+            border: 1px solid #e2e8f0;
+        }
+
+        /* Label di dalam kartu */
+        .alat-card-label {
+            color: #64748b;
+        }
+
+        .alat-col-sumber {
+            width: 100% !important;
+            margin-bottom: 0.5rem;
+        }
+
+        .alat-col-nama {
+            width: 100% !important;
+            margin-bottom: 0.5rem;
+        }
+
+        .alat-col-jumlah {
+            width: calc(50% - 0.35rem) !important;
+            margin-right: 0.7rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .alat-col-satuan {
+            width: calc(50% - 0.35rem) !important;
+            margin-bottom: 0.5rem;
+        }
+
+        .alat-col-keterangan {
+            width: 100% !important;
+            margin-bottom: 0.25rem;
+        }
+
+        /* Readonly inputs di Light Mode */
+        .alat-input-readonly {
+            background-color: #f8fafc !important;
+            color: #64748b;
+        }
+
+        /* Ukuran input dan select nyaman disentuh di layar sentuh HP */
+        #addPeminjamanAlatModal .form-control,
+        #addPeminjamanAlatModal .form-select {
+            font-size: 14.5px;
+            min-height: 40px;
+        }
+    }
+
+    /* ---------------------------------------------------------
+       DARK MODE ADAPTATION (html[data-bs-theme="dark"] & body.dark)
+       --------------------------------------------------------- */
+    html[data-bs-theme="dark"] #tableItems tr.alat-item-row,
+    body.dark #tableItems tr.alat-item-row,
+    body.theme-dark #tableItems tr.alat-item-row {
+        background-color: #1e1e2d !important;
+        border-color: #35354f !important;
+        box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3) !important;
+    }
+
+    html[data-bs-theme="dark"] .alat-card-header,
+    body.dark .alat-card-header,
+    body.theme-dark .alat-card-header {
+        background-color: #151521 !important;
+        border: 1px solid #35354f !important;
+    }
+
+    html[data-bs-theme="dark"] .alat-card-label,
+    body.dark .alat-card-label,
+    body.theme-dark .alat-card-label {
+        color: #9899ac !important;
+    }
+
+    html[data-bs-theme="dark"] .alat-input-readonly,
+    body.dark .alat-input-readonly,
+    body.theme-dark .alat-input-readonly {
+        background-color: #151521 !important;
+        color: #9899ac !important;
+        border-color: #35354f !important;
+    }
+
+    /* Header tabel desktop di dark mode */
+    html[data-bs-theme="dark"] #tableItems thead.table-light th,
+    body.dark #tableItems thead.table-light th,
+    body.theme-dark #tableItems thead.table-light th {
+        background-color: #1b1b29 !important;
+        color: #c2c2d9 !important;
+        border-color: #35354f !important;
+    }
+
+    /* Alert ketentuan di Dark Mode */
+    html[data-bs-theme="dark"] #addPeminjamanAlatModal .alert-light-primary,
+    body.dark #addPeminjamanAlatModal .alert-light-primary,
+    body.theme-dark #addPeminjamanAlatModal .alert-light-primary {
+        background-color: rgba(67, 94, 190, 0.15) !important;
+        color: #b7c3ef !important;
+        border: 1px solid rgba(67, 94, 190, 0.3) !important;
+    }
+
+    /* Tombol tambah baris bawah di Dark Mode */
+    html[data-bs-theme="dark"] #btnTambahBarisBawah,
+    body.dark #btnTambahBarisBawah,
+    body.theme-dark #btnTambahBarisBawah {
+        border-color: #435ebe;
+        color: #b7c3ef;
+    }
+    html[data-bs-theme="dark"] #btnTambahBarisBawah:hover,
+    body.dark #btnTambahBarisBawah:hover,
+    body.theme-dark #btnTambahBarisBawah:hover {
+        background-color: #435ebe;
+        color: #ffffff;
+    }
+</style>
     <section class="section">
         <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
+            <div class="card-header d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-2">
                 <h5 class="card-title mb-0">Daftar Peminjaman Alat Laboratorium</h5>
                 <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addPeminjamanAlatModal" id="btnTambahPeminjaman">
-                    <i class="bi bi-plus-circle"></i> + Ajukan Peminjaman Alat
+                    <i class="bi bi-plus-circle me-1"></i> Ajukan Peminjaman Alat
                 </button>
             </div>
             <div class="card-body">
@@ -91,8 +261,8 @@
                             </button>
                         </div>
 
-                        <div class="table-responsive mb-3">
-                            <table class="table table-bordered table-sm align-middle" id="tableItems">
+                        <div class="table-responsive mb-2">
+                            <table class="table table-bordered table-sm align-middle mb-0" id="tableItems">
                                 <thead class="table-light">
                                     <tr class="text-center">
                                         <th style="width: 17%;">Sumber Alat</th>
@@ -109,6 +279,13 @@
                             </table>
                         </div>
 
+                        <!-- Tombol Tambah Baris Khusus Mobile (Mudah dijangkau di bawah item) -->
+                        <div class="d-md-none text-center mb-3">
+                            <button type="button" class="btn btn-outline-primary w-100 py-2 fw-semibold" id="btnTambahBarisBawah">
+                                <i class="bi bi-plus-circle me-1"></i> + Tambah Baris Alat
+                            </button>
+                        </div>
+
                         <div class="alert alert-light-primary color-primary mb-3">
                             <div class="d-flex align-items-center">
                                 <i class="bi bi-info-circle-fill fs-4 me-2"></i>
@@ -123,10 +300,12 @@
                             </div>
                         </div>
 
-                        <div class="text-end">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
-                            <button type="submit" class="btn btn-success" id="btnSubmitPeminjaman">
-                                <i class="bi bi-send"></i> Kirim Pengajuan ke PLP
+                        <div class="d-flex flex-column-reverse flex-sm-row justify-content-between gap-2 pt-2 border-top">
+                            <button type="button" class="btn btn-secondary w-100 w-sm-auto" data-bs-dismiss="modal">
+                                <i class="bi bi-x-circle me-1"></i> Batal / Tutup
+                            </button>
+                            <button type="submit" class="btn btn-success w-100 w-sm-auto" id="btnSubmitPeminjaman">
+                                <i class="bi bi-send me-1"></i> Kirim Pengajuan ke PLP
                             </button>
                         </div>
                     </form>
@@ -274,20 +453,41 @@
             });
         }
 
+        function updateRowNumbers() {
+            $('#tbodyItems tr.alat-item-row').each(function(idx) {
+                $(this).find('.alat-number-badge').html('<i class="bi bi-tools me-1"></i>Alat #' + (idx + 1));
+            });
+        }
+
         // Fungsi menambah baris alat ke form pengajuan
         function addAlatRow() {
             const index = rowIndex++;
             const optionsHtml = buildInventarisOptionsHtml();
 
             const rowHtml = `
-                <tr id="itemRow_${index}">
-                    <td>
+                <tr id="itemRow_${index}" class="alat-item-row">
+                    <!-- Mobile Card Header (Hanya tampil di layar Mobile < 768px) -->
+                    <td class="alat-col-header d-md-none p-0 border-0 mb-2">
+                        <div class="d-flex justify-content-between align-items-center alat-card-header p-2 rounded">
+                            <span class="badge bg-primary alat-number-badge"><i class="bi bi-tools me-1"></i>Alat</span>
+                            <button type="button" class="btn btn-sm btn-outline-danger btn-remove-row py-0 px-2" data-index="${index}">
+                                <i class="bi bi-trash me-1"></i>Hapus
+                            </button>
+                        </div>
+                    </td>
+
+                    <!-- Sumber Alat -->
+                    <td class="alat-col-sumber">
+                        <label class="d-md-none form-label small fw-bold alat-card-label mb-1">Sumber Alat:</label>
                         <select name="items[${index}][is_manual]" class="form-select form-select-sm select-sumber" data-index="${index}">
                             <option value="0">Dari Inventaris</option>
                             <option value="1">Input Manual</option>
                         </select>
                     </td>
-                    <td>
+
+                    <!-- Nama Alat / Pilihan Inventaris -->
+                    <td class="alat-col-nama">
+                        <label class="d-md-none form-label small fw-bold alat-card-label mb-1">Nama Alat / Inventaris:</label>
                         <div class="box-inventaris" id="boxInventaris_${index}">
                             <select name="items[${index}][inventaris_ruangan_id]" class="form-select form-select-sm select-inventaris" data-index="${index}">
                                 ${optionsHtml}
@@ -296,24 +496,33 @@
                         </div>
                         <div class="box-manual d-none" id="boxManual_${index}">
                             <div class="input-group input-group-sm">
-                                <span class="input-group-text bg-warning text-dark fw-bold">Input Manual</span>
+                                <span class="input-group-text bg-warning text-dark fw-bold">Manual</span>
                                 <input type="text" name="items[${index}][nama_alat]" class="form-control" placeholder="Ketik nama alat lengkap...">
                             </div>
                         </div>
                     </td>
-                    <td>
-                        <!-- Default inventaris: jumlah 1 & readonly -->
-                        <input type="number" name="items[${index}][jumlah]" class="form-control form-control-sm text-center input-jumlah bg-light" id="jumlah_${index}" value="1" min="1" readonly required title="Jumlah terkunci 1 per NUP untuk alat inventaris">
+
+                    <!-- Jumlah -->
+                    <td class="alat-col-jumlah">
+                        <label class="d-md-none form-label small fw-bold alat-card-label mb-1">Jumlah:</label>
+                        <input type="number" name="items[${index}][jumlah]" class="form-control form-control-sm text-center input-jumlah bg-light alat-input-readonly" id="jumlah_${index}" value="1" min="1" readonly required title="Jumlah terkunci 1 per NUP untuk alat inventaris">
                     </td>
-                    <td>
-                        <!-- Default inventaris: satuan readonly -->
-                        <input type="text" name="items[${index}][satuan]" class="form-control form-control-sm input-satuan bg-light" id="satuan_${index}" value="Unit" placeholder="Unit/Pcs" readonly title="Satuan otomatis mengikuti master inventaris">
+
+                    <!-- Satuan -->
+                    <td class="alat-col-satuan">
+                        <label class="d-md-none form-label small fw-bold alat-card-label mb-1">Satuan:</label>
+                        <input type="text" name="items[${index}][satuan]" class="form-control form-control-sm input-satuan bg-light alat-input-readonly" id="satuan_${index}" value="Unit" placeholder="Unit/Pcs" readonly title="Satuan otomatis mengikuti master inventaris">
                     </td>
-                    <td>
-                        <input type="text" name="items[${index}][keterangan]" class="form-control form-control-sm input-keterangan" id="keterangan_${index}" placeholder="Catatan/spek...">
+
+                    <!-- Keterangan / Spesifikasi -->
+                    <td class="alat-col-keterangan">
+                        <label class="d-md-none form-label small fw-bold alat-card-label mb-1">Keterangan / Spesifikasi:</label>
+                        <input type="text" name="items[${index}][keterangan]" class="form-control form-control-sm input-keterangan" id="keterangan_${index}" placeholder="Catatan/spek tambahan (opsional)...">
                     </td>
-                    <td class="text-center">
-                        <button type="button" class="btn btn-sm btn-outline-danger btn-remove-row" data-index="${index}">
+
+                    <!-- Tombol Hapus Desktop (Hanya tampil di Desktop >= 768px) -->
+                    <td class="alat-col-aksi text-center d-none d-md-table-cell">
+                        <button type="button" class="btn btn-sm btn-outline-danger btn-remove-row" data-index="${index}" title="Hapus Baris">
                             <i class="bi bi-trash"></i>
                         </button>
                     </td>
@@ -321,6 +530,7 @@
             `;
 
             $('#tbodyItems').append(rowHtml);
+            updateRowNumbers();
         }
 
         $(document).ready(function() {
@@ -375,17 +585,18 @@
                 }
             });
 
-            $('#btnTambahBarisAlat').on('click', function() {
+            $('#btnTambahBarisAlat, #btnTambahBarisBawah').on('click', function() {
                 addAlatRow();
             });
 
             // Hapus baris alat
             $(document).on('click', '.btn-remove-row', function() {
-                if ($('#tbodyItems tr').length <= 1) {
+                if ($('#tbodyItems tr.alat-item-row').length <= 1) {
                     Swal.fire('Info', 'Minimal harus ada satu alat dalam pengajuan.', 'info');
                     return;
                 }
-                $(this).closest('tr').remove();
+                $(this).closest('tr.alat-item-row').remove();
+                updateRowNumbers();
             });
 
             // Toggle antara Pilihan Inventaris dan Input Manual
@@ -405,15 +616,15 @@
                     $(`#nup_${index}`).val('');
 
                     // Input Manual: Jumlah dan Satuan bisa diedit bebas
-                    inputJumlah.prop('readonly', false).removeClass('bg-light').val(1).removeAttr('title');
-                    inputSatuan.prop('readonly', false).removeClass('bg-light').val('Unit').removeAttr('title');
+                    inputJumlah.prop('readonly', false).removeClass('bg-light alat-input-readonly').val(1).removeAttr('title');
+                    inputSatuan.prop('readonly', false).removeClass('bg-light alat-input-readonly').val('Unit').removeAttr('title');
                 } else {
                     $(`#boxInventaris_${index}`).removeClass('d-none');
                     $(`#boxManual_${index}`).addClass('d-none');
 
                     // Dari Inventaris: Jumlah terkunci 1 dan Satuan diambil dari inventaris
-                    inputJumlah.prop('readonly', true).addClass('bg-light').val(1).attr('title', 'Jumlah terkunci 1 per NUP untuk alat inventaris');
-                    inputSatuan.prop('readonly', true).addClass('bg-light').attr('title', 'Satuan otomatis mengikuti master inventaris');
+                    inputJumlah.prop('readonly', true).addClass('bg-light alat-input-readonly').val(1).attr('title', 'Jumlah terkunci 1 per NUP untuk alat inventaris');
+                    inputSatuan.prop('readonly', true).addClass('bg-light alat-input-readonly').attr('title', 'Satuan otomatis mengikuti master inventaris');
 
                     const selected = $(`#boxInventaris_${index} select`).find(':selected');
                     const satuan = selected.data('satuan');

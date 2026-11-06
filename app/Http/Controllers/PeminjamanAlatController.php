@@ -42,13 +42,23 @@ class PeminjamanAlatController extends Controller
                     return $row->lab ? e($row->lab->nama_lab) : '<span class="text-muted">-</span>';
                 })
                 ->addColumn('daftar_alat', function ($row) {
+                    $details = $row->details;
+                    $total = $details->count();
+                    $shown = $details->take(2);
+                    $remaining = $total - 2;
+
                     $html = '<ul class="list-unstyled mb-0">';
-                    foreach ($row->details as $d) {
+                    foreach ($shown as $d) {
                         $badge = $d->is_manual
                             ? ' <span class="badge bg-warning text-dark" style="font-size:0.7rem;">Input Manual</span>'
                             : '';
                         $html .= '<li>• ' . e($d->nama_alat) . ' (' . $d->jumlah . ' ' . e($d->satuan) . ')' . $badge . '</li>';
                     }
+
+                    if ($remaining > 0) {
+                        $html .= '<li class="text-muted fst-italic" style="font-size:0.8rem;">• .... (+' . $remaining . ' alat lainnya)</li>';
+                    }
+
                     $html .= '</ul>';
                     return $html;
                 })
@@ -504,13 +514,23 @@ class PeminjamanAlatController extends Controller
                     return $row->lab ? e($row->lab->nama_lab) : '<span class="text-muted">-</span>';
                 })
                 ->addColumn('daftar_alat', function ($row) {
+                    $details = $row->details;
+                    $total = $details->count();
+                    $shown = $details->take(2);
+                    $remaining = $total - 2;
+
                     $html = '<ul class="list-unstyled mb-0">';
-                    foreach ($row->details as $d) {
+                    foreach ($shown as $d) {
                         $badge = $d->is_manual
                             ? ' <span class="badge bg-warning text-dark" style="font-size:0.7rem;">Input Manual</span>'
                             : '';
                         $html .= '<li>• ' . e($d->nama_alat) . ' (' . $d->jumlah . ' ' . e($d->satuan) . ')' . $badge . '</li>';
                     }
+
+                    if ($remaining > 0) {
+                        $html .= '<li class="text-muted fst-italic" style="font-size:0.8rem;">• .... (+' . $remaining . ' alat lainnya)</li>';
+                    }
+
                     $html .= '</ul>';
                     return $html;
                 })
