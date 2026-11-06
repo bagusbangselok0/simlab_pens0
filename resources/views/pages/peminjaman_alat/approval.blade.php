@@ -1,17 +1,222 @@
 @extends('layouts.app')
 
 @section('content')
+<style>
+    /* =========================================================
+       Responsive Mobile Styling & Theme Integration for Approval
+       ========================================================= */
+
+    /* Touch & Smooth Scrolling */
+    .table-responsive {
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* Base Styling for Mobile Detail Equipment Cards */
+    .detail-mobile-card {
+        border-radius: 0.75rem;
+        padding: 0.85rem;
+        margin-bottom: 0.75rem;
+        position: relative;
+        transition: background-color 0.2s ease, border-color 0.2s ease;
+    }
+
+    /* ---------------------------------------------------------
+       LIGHT MODE (Default & Explicit html[data-bs-theme="light"])
+       --------------------------------------------------------- */
+    html:not([data-bs-theme="dark"]) .detail-mobile-card,
+    html[data-bs-theme="light"] .detail-mobile-card {
+        background-color: #ffffff;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+    }
+
+    html:not([data-bs-theme="dark"]) .detail-spek-box,
+    html[data-bs-theme="light"] .detail-spek-box {
+        background-color: #f8fafc;
+        border: 1px solid #e2e8f0;
+        color: #475569;
+    }
+
+    /* ---------------------------------------------------------
+       DARK MODE (Explicit html[data-bs-theme="dark"])
+       --------------------------------------------------------- */
+    html[data-bs-theme="dark"] .detail-mobile-card {
+        background-color: #1e1e2d !important;
+        border: 1px solid #35354f !important;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25) !important;
+        color: #e2e8f0 !important;
+    }
+
+    html[data-bs-theme="dark"] .detail-spek-box {
+        background-color: #151521 !important;
+        border: 1px solid #35354f !important;
+        color: #cbd5e1 !important;
+    }
+
+    html[data-bs-theme="dark"] thead.table-light,
+    html[data-bs-theme="dark"] thead.table-light th {
+        background-color: #151521 !important;
+        color: #e2e8f0 !important;
+        border-color: #35354f !important;
+    }
+
+    html[data-bs-theme="dark"] .table-bordered {
+        border-color: #35354f !important;
+    }
+
+    html[data-bs-theme="dark"] .table-bordered th,
+    html[data-bs-theme="dark"] .table-bordered td {
+        border-color: #35354f !important;
+    }
+
+    /* ---------------------------------------------------------
+       MOBILE BREAKPOINT (< 768px)
+       --------------------------------------------------------- */
+    @media (max-width: 767.98px) {
+        /* Dialog Modal Full-Width & Margin */
+        #detailModal .modal-dialog,
+        #rejectModal .modal-dialog,
+        #returnModal .modal-dialog {
+            margin: 0.5rem auto !important;
+            max-width: calc(100% - 1rem) !important;
+        }
+
+        #detailModal .modal-body,
+        #rejectModal .modal-body,
+        #returnModal .modal-body {
+            padding: 1rem 0.85rem !important;
+        }
+
+        #detailModal .modal-header,
+        #rejectModal .modal-header,
+        #returnModal .modal-header,
+        #detailModal .modal-footer,
+        #rejectModal .modal-footer,
+        #returnModal .modal-footer {
+            padding: 0.85rem 1rem !important;
+        }
+
+        /* Responsive Key-Value Info Table */
+        .table-detail-info {
+            border: none !important;
+            margin-bottom: 1rem !important;
+        }
+
+        .table-detail-info tbody {
+            display: block;
+            width: 100%;
+        }
+
+        .table-detail-info tr {
+            display: flex;
+            flex-direction: column;
+            padding: 0.45rem 0.15rem;
+            border-bottom: 1px solid #e2e8f0;
+            border-top: none !important;
+            border-left: none !important;
+            border-right: none !important;
+        }
+
+        .table-detail-info tr:last-child {
+            border-bottom: none;
+        }
+
+        html[data-bs-theme="dark"] .table-detail-info tr {
+            border-bottom: 1px solid #35354f !important;
+        }
+
+        .table-detail-info th {
+            width: 100% !important;
+            border: none !important;
+            padding: 0 0 0.2rem 0 !important;
+            font-size: 0.78rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #64748b;
+        }
+
+        html[data-bs-theme="dark"] .table-detail-info th {
+            color: #94a3b8 !important;
+        }
+
+        .table-detail-info td {
+            width: 100% !important;
+            border: none !important;
+            padding: 0 0 0.25rem 0 !important;
+            font-size: 0.95rem;
+            color: #1e293b;
+        }
+
+        html[data-bs-theme="dark"] .table-detail-info td {
+            color: #e2e8f0 !important;
+        }
+
+        /* Filter Status on Card Header */
+        .filter-status-container {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.5rem;
+        }
+
+        .filter-status-container select {
+            flex-grow: 1;
+        }
+
+        /* DataTables Controls on Mobile */
+        .dataTables_wrapper .dataTables_length {
+            margin-bottom: 0.5rem;
+        }
+
+        .dataTables_wrapper .dataTables_filter {
+            width: 100%;
+            margin-bottom: 0.75rem;
+            text-align: left !important;
+        }
+
+        .dataTables_wrapper .dataTables_filter label {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            gap: 0.5rem;
+        }
+
+        .dataTables_wrapper .dataTables_filter input {
+            flex-grow: 1;
+            width: 100% !important;
+            margin-left: 0 !important;
+        }
+
+        .dataTables_wrapper .dataTables_info,
+        .dataTables_wrapper .dataTables_paginate {
+            text-align: center !important;
+            margin-top: 0.5rem;
+        }
+
+        .dataTables_wrapper .dataTables_paginate .pagination {
+            justify-content: center !important;
+            flex-wrap: wrap;
+            gap: 2px;
+        }
+    }
+</style>
+
     <div class="page-content">
         <section class="row">
             <div class="col-12">
                 <div class="card">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <h5 class="card-title mb-0">Daftar Persetujuan Peminjaman Alat Laboratorium</h5>
+                    <div class="card-header d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
+                        <div>
+                            <h5 class="card-title mb-1">Daftar Persetujuan Peminjaman Alat Laboratorium</h5>
+                            <p class="text-muted mb-0 small">Tinjau, setujui, tolak, atau proses pengembalian alat laboratorium.</p>
+                        </div>
 
                         {{-- Filter Status --}}
-                        <div class="d-flex align-items-center gap-2">
-                            <label for="filterStatus" class="form-label mb-0 fw-bold">Status:</label>
-                            <select class="form-select form-select-sm w-auto" id="filterStatus">
+                        <div class="filter-status-container">
+                            <label for="filterStatus" class="form-label mb-0 fw-bold text-nowrap"><i class="bi bi-funnel"></i> Status:</label>
+                            <select class="form-select form-select-sm" id="filterStatus" style="min-width: 180px;">
                                 <option value="all">Semua Status</option>
                                 <option value="pending_plp" selected>Menunggu PLP</option>
                                 <option value="disetujui">Disetujui</option>
@@ -47,7 +252,7 @@
 
     <!-- Modal Detail Peminjaman Alat untuk PLP -->
     <div class="modal fade" id="detailModal" tabindex="-1" role="dialog" aria-labelledby="detailModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable" role="document">
             <div class="modal-content">
                 <div class="modal-header bg-info text-white">
                     <h5 class="modal-title text-white" id="detailModalLabel">
@@ -56,9 +261,9 @@
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <table class="table table-bordered mb-3">
+                    <table class="table table-bordered mb-3 table-detail-info">
                         <tr>
-                            <th style="width: 30%;">Kode Peminjaman</th>
+                            <th style="width: 32%;">Kode Peminjaman</th>
                             <td id="dKode" class="fw-bold"></td>
                         </tr>
                         <tr>
@@ -99,9 +304,11 @@
                         </tr>
                     </table>
 
-                    <h6 class="fw-bold"><i class="bi bi-tools"></i> Rincian Alat yang Dipinjam:</h6>
-                    <div class="table-responsive">
-                        <table class="table table-bordered table-striped table-sm">
+                    <h6 class="fw-bold mt-3 mb-2"><i class="bi bi-tools"></i> Rincian Alat yang Dipinjam:</h6>
+                    
+                    {{-- Desktop Table View (>= 768px) --}}
+                    <div class="table-responsive d-none d-md-block">
+                        <table class="table table-bordered table-striped table-sm" id="tableDetailItems">
                             <thead class="table-light text-center">
                                 <tr>
                                     <th>No</th>
@@ -117,10 +324,13 @@
                             <tbody id="detailItemsBody"></tbody>
                         </table>
                     </div>
+
+                    {{-- Mobile Card View (< 768px) --}}
+                    <div class="d-md-none" id="detailItemsMobile"></div>
                 </div>
-                <div class="modal-footer">
-                    <div id="modalActionButtons"></div>
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                <div class="modal-footer d-flex flex-column-reverse flex-sm-row justify-content-end gap-2">
+                    <button type="button" class="btn btn-secondary w-100 w-sm-auto" data-bs-dismiss="modal">Tutup</button>
+                    <div id="modalActionButtons" class="d-flex flex-column flex-sm-row gap-2 w-100 w-sm-auto"></div>
                 </div>
             </div>
         </div>
@@ -128,7 +338,7 @@
 
     <!-- Modal Tolak Peminjaman -->
     <div class="modal fade" id="rejectModal" tabindex="-1" role="dialog" aria-hidden="true">
-        <div class="modal-dialog" role="document">
+        <div class="modal-dialog modal-dialog-scrollable" role="document">
             <div class="modal-content">
                 <div class="modal-header bg-danger text-white">
                     <h5 class="modal-title text-white"><i class="bi bi-x-circle"></i> Tolak Peminjaman Alat</h5>
@@ -142,9 +352,9 @@
                         <span class="text-danger" id="rejectError"></span>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-                    <button type="button" class="btn btn-danger" id="btnSubmitReject">Tolak Pengajuan</button>
+                <div class="modal-footer d-flex flex-column-reverse flex-sm-row justify-content-end gap-2">
+                    <button type="button" class="btn btn-secondary w-100 w-sm-auto" data-bs-dismiss="modal">Batal</button>
+                    <button type="button" class="btn btn-danger w-100 w-sm-auto" id="btnSubmitReject">Tolak Pengajuan</button>
                 </div>
             </div>
         </div>
@@ -152,7 +362,7 @@
 
     <!-- Modal Konfirmasi Pengembalian Alat -->
     <div class="modal fade" id="returnModal" tabindex="-1" role="dialog" aria-hidden="true">
-        <div class="modal-dialog" role="document">
+        <div class="modal-dialog modal-dialog-scrollable" role="document">
             <div class="modal-content">
                 <div class="modal-header bg-primary text-white">
                     <h5 class="modal-title text-white"><i class="bi bi-arrow-return-left"></i> Konfirmasi Pengembalian Alat</h5>
@@ -165,9 +375,9 @@
                         <textarea class="form-control" id="catatan_pengembalian" rows="3" placeholder="Contoh: Alat telah dikembalikan lengkap dalam keadaan baik."></textarea>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-                    <button type="button" class="btn btn-success" id="btnSubmitReturn">Konfirmasi Selesai</button>
+                <div class="modal-footer d-flex flex-column-reverse flex-sm-row justify-content-end gap-2">
+                    <button type="button" class="btn btn-secondary w-100 w-sm-auto" data-bs-dismiss="modal">Batal</button>
+                    <button type="button" class="btn btn-success w-100 w-sm-auto" id="btnSubmitReturn">Konfirmasi Selesai</button>
                 </div>
             </div>
         </div>
@@ -240,36 +450,71 @@
                             $('#rowWaktuKembali').hide();
                         }
 
-                        // Render items
+                        // Render items (Desktop Table & Mobile Cards)
                         let itemsHtml = '';
-                        data.items.forEach((item, idx) => {
-                            const badgeSumber = item.is_manual
-                                ? '<span class="badge bg-warning text-dark"><i class="bi bi-pencil-square"></i> Input Manual</span>'
-                                : '<span class="badge bg-success"><i class="bi bi-box-seam"></i> Inventaris DIR</span>';
+                        let itemsMobileHtml = '';
 
-                            itemsHtml += `
-                                <tr>
-                                    <td class="text-center">${idx + 1}</td>
-                                    <td class="fw-bold">${item.nama_alat}</td>
-                                    <td>${item.kode_barang} / ${item.nup}</td>
-                                    <td>${item.lokasi_lab}</td>
-                                    <td class="text-center">${item.jumlah}</td>
-                                    <td>${item.satuan}</td>
-                                    <td><small>${item.keterangan !== '-' ? item.keterangan : (item.spesifikasi !== '-' ? item.spesifikasi : '-')}</small></td>
-                                    <td class="text-center">${badgeSumber}</td>
-                                </tr>
-                            `;
-                        });
+                        if (data.items && data.items.length > 0) {
+                            data.items.forEach((item, idx) => {
+                                const badgeSumber = item.is_manual
+                                    ? '<span class="badge bg-warning text-dark"><i class="bi bi-pencil-square"></i> Input Manual</span>'
+                                    : '<span class="badge bg-success"><i class="bi bi-box-seam"></i> Inventaris DIR</span>';
+
+                                const spekKet = (item.keterangan && item.keterangan !== '-') 
+                                    ? item.keterangan 
+                                    : ((item.spesifikasi && item.spesifikasi !== '-') ? item.spesifikasi : '-');
+
+                                // Desktop Table
+                                itemsHtml += `
+                                    <tr>
+                                        <td class="text-center">${idx + 1}</td>
+                                        <td class="fw-bold">${item.nama_alat}</td>
+                                        <td><code>${item.kode_barang}</code> / NUP: <strong>${item.nup}</strong></td>
+                                        <td>${item.lokasi_lab}</td>
+                                        <td class="text-center"><span class="badge bg-light-primary text-primary fw-bold">${item.jumlah}</span></td>
+                                        <td>${item.satuan}</td>
+                                        <td><small>${spekKet}</small></td>
+                                        <td class="text-center">${badgeSumber}</td>
+                                    </tr>
+                                `;
+
+                                // Mobile Card
+                                itemsMobileHtml += `
+                                    <div class="detail-mobile-card mb-2 p-3 rounded">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <span class="badge bg-primary px-2 py-1"><i class="bi bi-tools"></i> Alat #${idx + 1}</span>
+                                            ${badgeSumber}
+                                        </div>
+                                        <h6 class="fw-bold mb-2">${item.nama_alat}</h6>
+                                        <div class="small mb-2 d-flex flex-column gap-1">
+                                            <div><i class="bi bi-upc-scan text-muted me-1"></i> <span class="text-muted">Kode:</span> <code>${item.kode_barang}</code> &bull; <span class="text-muted">NUP:</span> <strong>${item.nup}</strong></div>
+                                            <div><i class="bi bi-geo-alt text-muted me-1"></i> <span class="text-muted">Ruang Asal:</span> <strong>${item.lokasi_lab}</strong></div>
+                                            <div><i class="bi bi-layers text-muted me-1"></i> <span class="text-muted">Jumlah:</span> <span class="badge bg-info text-dark">${item.jumlah} ${item.satuan}</span></div>
+                                        </div>
+                                        ${spekKet !== '-' ? `
+                                            <div class="p-2 rounded detail-spek-box small">
+                                                <strong><i class="bi bi-info-circle me-1"></i> Catatan/Spek:</strong> ${spekKet}
+                                            </div>
+                                        ` : ''}
+                                    </div>
+                                `;
+                            });
+                        } else {
+                            itemsHtml = '<tr><td colspan="8" class="text-center text-muted py-3">Tidak ada data alat.</td></tr>';
+                            itemsMobileHtml = '<div class="text-center text-muted py-3">Tidak ada data alat.</div>';
+                        }
+
                         $('#detailItemsBody').html(itemsHtml);
+                        $('#detailItemsMobile').html(itemsMobileHtml);
 
                         // Actions di modal
                         let actionBtns = '';
                         if (data.status === 'pending_plp') {
-                            actionBtns += `<button class="btn btn-success approveBtn me-1" data-id="${data.id}"><i class="bi bi-check-circle"></i> Setujui</button>`;
-                            actionBtns += `<button class="btn btn-danger rejectBtn me-1" data-id="${data.id}"><i class="bi bi-x-circle"></i> Tolak</button>`;
+                            actionBtns += `<button class="btn btn-success approveBtn w-100 w-sm-auto" data-id="${data.id}"><i class="bi bi-check-circle"></i> Setujui</button>`;
+                            actionBtns += `<button class="btn btn-danger rejectBtn w-100 w-sm-auto" data-id="${data.id}"><i class="bi bi-x-circle"></i> Tolak</button>`;
                         }
                         if (['disetujui', 'sedang_dipinjam', 'selesai'].includes(data.status)) {
-                            actionBtns += `<a href="{{ url('peminjaman-alat/cetak') }}/${data.id}" target="_blank" class="btn btn-secondary me-1"><i class="bi bi-printer"></i> Cetak PDF</a>`;
+                            actionBtns += `<a href="{{ url('peminjaman-alat/cetak') }}/${data.id}" target="_blank" class="btn btn-secondary w-100 w-sm-auto"><i class="bi bi-printer"></i> Cetak PDF</a>`;
                         }
                         $('#modalActionButtons').html(actionBtns);
 
@@ -389,4 +634,3 @@
         });
     </script>
 @endsection
-
