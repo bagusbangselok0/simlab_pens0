@@ -2,6 +2,7 @@
 
 namespace App\Channels;
 
+use App\Models\Setting;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -17,8 +18,14 @@ class WhatsAppChannel
      */
     public function send($notifiable, Notification $notification)
     {
-        // Jika fitur WA dinonaktifkan, skip pengiriman
-        if (!config('services.fonnte.enabled', false)) {
+        // Jika fitur WA dinonaktifkan, skip pengiriman (Setting DB atau .env)
+        $waEnabled = Setting::boolean(
+            Setting::WA_ENABLED,
+            'global',
+            (bool) config('services.fonnte.enabled', false)
+        );
+
+        if (!$waEnabled) {
             return;
         }
 
@@ -40,17 +47,19 @@ class WhatsAppChannel
             return;
         }
 
-        $token = config('services.fonnte.token');
+        $token = Setting::get(Setting::WA_TOKEN, 'global', config('services.fonnte.token'));
 
         if (empty($token)) {
-            Log::error('WhatsAppChannel: FONNTE_TOKEN belum dikonfigurasi di .env');
+            Log::error('WhatsAppChannel: FONNTE_TOKEN belum dikonfigurasi di Pengaturan Gateway atau .env');
             return;
         }
+
+        $apiUrl = Setting::get(Setting::WA_API_URL, 'global', 'https://api.fonnte.com/send');
 
         try {
             $response = Http::withHeaders([
                 'Authorization' => $token,
-            ])->post('https://api.fonnte.com/send', [
+            ])->post($apiUrl, [
                 'target' => $phoneNumber,
                 'message' => $message,
             ]);

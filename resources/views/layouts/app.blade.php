@@ -11,9 +11,146 @@
     <link rel="shortcut icon" href="{{ asset('images/logo/SIMLAB_logo1.png') }}" type="image/png" />
     @include('layouts.styles')
     @yield('styles')
+
+    @php
+        $globalDefaultMode    = \App\Models\Setting::get(\App\Models\Setting::THEME_DEFAULT_MODE, 'global', 'light');
+        $globalAccentColor    = \App\Models\Setting::get(\App\Models\Setting::THEME_ACCENT_COLOR, 'global', '#435ebe');
+        $globalSidebarDefault = \App\Models\Setting::get(\App\Models\Setting::THEME_SIDEBAR_DEFAULT, 'global', 'expanded');
+
+        $cleanHex = ltrim($globalAccentColor, '#');
+        if (strlen($cleanHex) === 6) {
+            $r = hexdec(substr($cleanHex, 0, 2));
+            $g = hexdec(substr($cleanHex, 2, 2));
+            $b = hexdec(substr($cleanHex, 4, 2));
+        } else {
+            $r = 67; $g = 94; $b = 190;
+        }
+    @endphp
+
+    <style id="dynamic-accent-style">
+        :root,
+        :root[data-bs-theme="light"],
+        :root[data-bs-theme="dark"],
+        html,
+        html[data-bs-theme="light"],
+        html[data-bs-theme="dark"],
+        body {
+            --bs-primary: {{ $globalAccentColor }};
+            --bs-primary-rgb: {{ $r }}, {{ $g }}, {{ $b }};
+            --bs-link-color: {{ $globalAccentColor }};
+            --bs-link-hover-color: {{ $globalAccentColor }};
+        }
+        .btn-primary {
+            --bs-btn-bg: {{ $globalAccentColor }} !important;
+            --bs-btn-border-color: {{ $globalAccentColor }} !important;
+            --bs-btn-hover-bg: {{ $globalAccentColor }} !important;
+            --bs-btn-hover-border-color: {{ $globalAccentColor }} !important;
+            --bs-btn-active-bg: {{ $globalAccentColor }} !important;
+            --bs-btn-active-border-color: {{ $globalAccentColor }} !important;
+            --bs-btn-disabled-bg: {{ $globalAccentColor }} !important;
+            --bs-btn-disabled-border-color: {{ $globalAccentColor }} !important;
+            background-color: {{ $globalAccentColor }} !important;
+            border-color: {{ $globalAccentColor }} !important;
+            color: #ffffff !important;
+        }
+        .btn-primary:hover, .btn-primary:focus, .btn-primary:active {
+            filter: brightness(0.92);
+        }
+        .btn-outline-primary {
+            --bs-btn-color: {{ $globalAccentColor }} !important;
+            --bs-btn-border-color: {{ $globalAccentColor }} !important;
+            --bs-btn-hover-bg: {{ $globalAccentColor }} !important;
+            --bs-btn-hover-border-color: {{ $globalAccentColor }} !important;
+            --bs-btn-active-bg: {{ $globalAccentColor }} !important;
+            --bs-btn-active-border-color: {{ $globalAccentColor }} !important;
+            color: {{ $globalAccentColor }} !important;
+            border-color: {{ $globalAccentColor }} !important;
+        }
+        .btn-outline-primary:hover, .btn-outline-primary:active, .btn-check:checked + .btn-outline-primary {
+            background-color: {{ $globalAccentColor }} !important;
+            border-color: {{ $globalAccentColor }} !important;
+            color: #ffffff !important;
+        }
+        .sidebar-wrapper .menu .sidebar-item.active > .sidebar-link {
+            background-color: {{ $globalAccentColor }} !important;
+            color: #ffffff !important;
+        }
+        .sidebar-wrapper .menu .sidebar-item.active > .sidebar-link i,
+        .sidebar-wrapper .menu .sidebar-item.active > .sidebar-link svg {
+            color: #ffffff !important;
+            fill: #ffffff !important;
+        }
+        .sidebar-wrapper .menu .submenu .submenu-item.active > a,
+        .sidebar-wrapper .menu .submenu .submenu-item.active > .submenu-link,
+        .submenu-item.active > a,
+        .submenu-item.active > .submenu-link,
+        html[data-bs-theme=dark] .sidebar-wrapper .menu .submenu .submenu-item.active > a,
+        html[data-bs-theme=dark] .sidebar-wrapper .menu .submenu .submenu-item.active > .submenu-link {
+            color: {{ $globalAccentColor }} !important;
+            font-weight: 700 !important;
+        }
+        .sidebar-wrapper .menu .submenu .submenu-item a:hover,
+        .sidebar-wrapper .menu .submenu .submenu-item .submenu-link:hover {
+            color: {{ $globalAccentColor }} !important;
+        }
+        .nav-pills .nav-link.active,
+        .nav-pills .show > .nav-link {
+            background-color: {{ $globalAccentColor }} !important;
+            color: #ffffff !important;
+        }
+        .badge.bg-primary,
+        .bg-primary {
+            background-color: {{ $globalAccentColor }} !important;
+            color: #ffffff !important;
+        }
+        .text-primary,
+        a.text-primary {
+            color: {{ $globalAccentColor }} !important;
+        }
+        .border-primary {
+            border-color: {{ $globalAccentColor }} !important;
+        }
+        .form-check-input:checked,
+        .form-switch .form-check-input:checked,
+        .sidebar-wrapper .sidebar-header .theme-toggle .form-check-input:checked {
+            background-color: {{ $globalAccentColor }} !important;
+            border-color: {{ $globalAccentColor }} !important;
+        }
+        .form-control:focus,
+        .form-select:focus {
+            border-color: {{ $globalAccentColor }} !important;
+            box-shadow: 0 0 0 0.25rem rgba({{ $r }}, {{ $g }}, {{ $b }}, 0.25) !important;
+        }
+        .page-item.active .page-link {
+            background-color: {{ $globalAccentColor }} !important;
+            border-color: {{ $globalAccentColor }} !important;
+            color: #ffffff !important;
+        }
+    </style>
 </head>
 
 <body>
+    <script>
+        (function() {
+            const defaultMode = "{{ $globalDefaultMode }}";
+            let storedTheme = localStorage.getItem('theme');
+            let activeTheme = storedTheme;
+
+            if (!activeTheme) {
+                if (defaultMode === 'system') {
+                    activeTheme = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+                } else {
+                    activeTheme = defaultMode;
+                }
+            }
+
+            document.documentElement.setAttribute('data-bs-theme', activeTheme);
+            if (document.body) {
+                document.body.classList.remove('dark', 'light', 'theme-dark', 'theme-light');
+                document.body.classList.add(activeTheme);
+            }
+        })();
+    </script>
     <script src="{{ asset('mazer/static/js/initTheme.js') }}"></script>
     @include('layouts.loading')
 
@@ -259,7 +396,7 @@
 
     <script>
     (function () {
-        const VAPID_PUBLIC_KEY = '{{ config('services.vapid.public_key') }}';
+        const VAPID_PUBLIC_KEY = '{{ \App\Models\Setting::get(\App\Models\Setting::VAPID_PUBLIC_KEY, 'global', config('services.vapid.public_key')) }}';
         const SUBSCRIBE_URL    = '{{ route('notifications.push.subscribe') }}';
         const UNSUBSCRIBE_URL  = '{{ route('notifications.push.unsubscribe') }}';
         const CSRF_TOKEN       = '{{ csrf_token() }}';

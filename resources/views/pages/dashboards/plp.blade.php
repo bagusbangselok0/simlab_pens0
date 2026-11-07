@@ -115,17 +115,21 @@
             border: 1px solid rgba(0,0,0,0.06);
             border-radius: 14px;
             background: var(--bs-card-bg, #ffffff);
+            text-decoration: none;
+            color: inherit;
         }
 
         .quick-action-card:hover {
             transform: translateY(-4px);
             box-shadow: 0 10px 24px rgba(0,0,0,0.08);
+            color: inherit;
         }
 
         .dashboard-section-card {
             border: 0;
             border-radius: 18px;
             box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+            background: var(--bs-card-bg, #ffffff);
         }
 
         .dashboard-section-card .card-header {
@@ -137,6 +141,7 @@
             border: 0;
             border-radius: 18px;
             box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+            background: var(--bs-card-bg, #ffffff);
             transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
 
@@ -161,6 +166,36 @@
             line-height: 1.1;
         }
 
+        /* Nav Pills Custom Tabs */
+        .nav-pills-custom .nav-link {
+            color: var(--bs-secondary-color, #64748b);
+            background: transparent;
+            border: 1px solid var(--bs-border-color, rgba(0, 0, 0, 0.12));
+            transition: all 0.2s ease;
+        }
+
+        .nav-pills-custom .nav-link:hover {
+            color: #4f46e5;
+            background-color: rgba(79, 70, 229, 0.08);
+        }
+
+        .nav-pills-custom .nav-link.active {
+            color: #ffffff !important;
+            background-color: #4f46e5 !important;
+            border-color: #4f46e5 !important;
+            box-shadow: 0 2px 8px rgba(79, 70, 229, 0.35);
+        }
+
+        [data-bs-theme="dark"] .nav-pills-custom .nav-link {
+            border-color: rgba(255, 255, 255, 0.12);
+            color: #a5b4fc;
+        }
+
+        [data-bs-theme="dark"] .nav-pills-custom .nav-link.active {
+            background-color: #4f46e5 !important;
+            color: #ffffff !important;
+        }
+
         .icon-bg-purple { background-color: #f0edff; color: #6f42c1; }
         .icon-bg-blue   { background-color: #e7f1ff; color: #0d6efd; }
         .icon-bg-teal   { background-color: #e0fbf6; color: #0d9488; }
@@ -169,6 +204,26 @@
         .icon-bg-green  { background-color: #e8f8ee; color: #198754; }
         .icon-bg-gray   { background-color: #f1f3f5; color: #6c757d; }
         .icon-bg-indigo { background-color: #eef2ff; color: #4f46e5; }
+
+        /* Dark Mode Fine-Tuning */
+        [data-bs-theme="dark"] .quick-action-card,
+        [data-bs-theme="dark"] .dashboard-section-card,
+        [data-bs-theme="dark"] .dashboard-stat-card {
+            background-color: #1e1e2d;
+            border-color: rgba(255, 255, 255, 0.08);
+        }
+
+        [data-bs-theme="dark"] thead.table-light,
+        [data-bs-theme="dark"] thead.table-light th {
+            background-color: #151521 !important;
+            color: #e2e8f0 !important;
+            border-color: #35354f !important;
+        }
+
+        [data-bs-theme="dark"] .table {
+            color: #e2e8f0;
+            border-color: #35354f;
+        }
 
         @media (max-width: 575.98px) {
             .icon-box-shape {
@@ -204,10 +259,10 @@
             <div class="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-3">
                 <div>
                     <span class="dashboard-chip mb-3">
-                        <i class="bi bi-shield-check me-2"></i>Area Persetujuan PLP
+                        <i class="bi bi-shield-check me-2"></i>Area Persetujuan & Operasional PLP
                     </span>
                     <h3 class="fw-bold mb-2">Halo, {{ $user->full_name }} 👋</h3>
-                    <p class="mb-0 text-white-50">Pantau peminjaman laboratorium, tindaklanjuti pengajuan, dan pastikan proses berjalan lancar.</p>
+                    <p class="mb-0 text-white-50">Kelola persetujuan ruang laboratorium, verifikasi peminjaman & pengembalian alat, dan pantau presensi secara terpadu.</p>
                 </div>
                 <div class="d-flex flex-wrap gap-2">
                     <span id="dashboard-date" class="dashboard-chip dashboard-chip-soft">
@@ -240,42 +295,72 @@
         <div class="col-12">
             <div class="card dashboard-section-card">
                 <div class="card-header pb-2 pt-3 px-3 px-sm-4">
-                    <h5 class="card-title d-flex align-items-center mb-0 fs-6 fs-sm-5">
-                        <i class="bi bi-lightning-charge-fill text-warning me-2"></i>Aksi Cepat
+                    <h5 class="card-title d-flex align-items-center mb-0 fs-6 fs-sm-5 fw-bold">
+                        <i class="bi bi-lightning-charge-fill text-warning me-2"></i>Aksi Cepat PLP
                     </h5>
                 </div>
                 <div class="card-body">
-                    <div class="row g-2 g-sm-3">
-                        <div class="col-6 col-md-4">
-                            <a href="{{ route('approval.index') }}" class="btn btn-outline-warning w-100 text-start py-2.5 px-2 px-sm-3 d-flex align-items-center quick-action-card">
-                                <div class="icon-box-shape icon-bg-amber me-2 me-sm-3">
-                                    <i class="bi bi-check2-square"></i>
+                    <div class="row row-cols-2 row-cols-lg-4 g-2 g-sm-3">
+                        {{-- 1. Persetujuan Ruang Lab --}}
+                        <div class="col">
+                            <a href="{{ route('approval.index') }}" class="btn btn-outline-warning w-100 text-start py-2.5 px-2 px-sm-3 d-flex align-items-center quick-action-card h-100">
+                                <div class="icon-box-shape icon-bg-amber me-2 me-sm-3 position-relative">
+                                    <i class="bi bi-door-open-fill"></i>
                                 </div>
                                 <div class="text-truncate">
-                                    <h6 class="mb-0 fw-bold text-truncate">Approval Peminjaman</h6>
-                                    <small class="text-muted text-truncate d-none d-sm-block">Persetujuan PLP</small>
+                                    <h6 class="mb-0 fw-bold text-truncate">Approval Lab</h6>
+                                    <small class="text-muted text-truncate d-block">
+                                        @if($pending_plp > 0)
+                                            <span class="badge bg-warning text-dark px-1.5 py-0.5 rounded-pill">{{ $pending_plp }} Menunggu</span>
+                                        @else
+                                            Persetujuan Ruang
+                                        @endif
+                                    </small>
                                 </div>
                             </a>
                         </div>
-                        <div class="col-6 col-md-4">
-                            <a href="{{ route('presensi.monitoring') }}" class="btn btn-outline-success w-100 text-start py-2.5 px-2 px-sm-3 d-flex align-items-center quick-action-card">
+
+                        {{-- 2. Persetujuan Alat Lab --}}
+                        <div class="col">
+                            <a href="{{ route('peminjaman-alat.approval') }}" class="btn btn-outline-primary w-100 text-start py-2.5 px-2 px-sm-3 d-flex align-items-center quick-action-card h-100">
+                                <div class="icon-box-shape icon-bg-purple me-2 me-sm-3 position-relative">
+                                    <i class="bi bi-tools"></i>
+                                </div>
+                                <div class="text-truncate">
+                                    <h6 class="mb-0 fw-bold text-truncate">Approval Alat</h6>
+                                    <small class="text-muted text-truncate d-block">
+                                        @if($pending_alat_plp > 0)
+                                            <span class="badge bg-danger text-white px-1.5 py-0.5 rounded-pill">{{ $pending_alat_plp }} Menunggu</span>
+                                        @else
+                                            Persetujuan Alat
+                                        @endif
+                                    </small>
+                                </div>
+                            </a>
+                        </div>
+
+                        {{-- 3. Monitoring Presensi --}}
+                        <div class="col">
+                            <a href="{{ route('presensi.monitoring') }}" class="btn btn-outline-success w-100 text-start py-2.5 px-2 px-sm-3 d-flex align-items-center quick-action-card h-100">
                                 <div class="icon-box-shape icon-bg-green me-2 me-sm-3">
                                     <i class="bi bi-display-fill"></i>
                                 </div>
                                 <div class="text-truncate">
-                                    <h6 class="mb-0 fw-bold text-truncate">Monitoring Presensi</h6>
-                                    <small class="text-muted text-truncate d-none d-sm-block">Pantau Presensi Lab</small>
+                                    <h6 class="mb-0 fw-bold text-truncate">Monitoring</h6>
+                                    <small class="text-muted text-truncate d-block">Presensi Lab</small>
                                 </div>
                             </a>
                         </div>
-                        <div class="col-12 col-md-4">
-                            <a href="{{ route('profile.index') }}" class="btn btn-outline-primary w-100 text-start py-2.5 px-2 px-sm-3 d-flex align-items-center quick-action-card">
-                                <div class="icon-box-shape icon-bg-purple me-2 me-sm-3">
-                                    <i class="bi bi-person-gear"></i>
+
+                        {{-- 4. Profil & TTD Digital --}}
+                        <div class="col">
+                            <a href="{{ route('profile.index') }}" class="btn btn-outline-secondary w-100 text-start py-2.5 px-2 px-sm-3 d-flex align-items-center quick-action-card h-100">
+                                <div class="icon-box-shape icon-bg-indigo me-2 me-sm-3">
+                                    <i class="bi bi-pen-fill"></i>
                                 </div>
                                 <div class="text-truncate">
                                     <h6 class="mb-0 fw-bold text-truncate">Profil & TTD</h6>
-                                    <small class="text-muted text-truncate d-none d-sm-block">Tanda Tangan Digital</small>
+                                    <small class="text-muted text-truncate d-block">Tanda Tangan Digital</small>
                                 </div>
                             </a>
                         </div>
@@ -287,9 +372,11 @@
 
     {{-- ===== KARTU STATISTIK SISTEM ===== --}}
     <h6 class="mb-3 text-muted fw-bold d-flex align-items-center">
-        <i class="bi bi-speedometer2 me-2 text-primary"></i>Ringkasan Statistik Peminjaman
+        <i class="bi bi-speedometer2 me-2 text-primary"></i>Ringkasan Statistik Laboratorium & Peralatan
     </h6>
-    <section class="row">
+
+    {{-- BARIS 1: OVERVIEW KAMPUS & TOTAL PENGAJUAN --}}
+    <section class="row mb-1">
         <div class="col-6 col-lg-3 col-md-6 mb-3">
             <div class="card mb-0 h-100 dashboard-stat-card">
                 <div class="card-body">
@@ -325,11 +412,12 @@
                 <div class="card-body">
                     <div class="d-flex align-items-center gap-3">
                         <div class="dashboard-stat-icon icon-bg-indigo">
-                            <i class="bi bi-file-earmark-text-fill"></i>
+                            <i class="bi bi-door-open-fill"></i>
                         </div>
                         <div>
-                            <h6 class="text-muted font-semibold stat-title mb-1">Total Peminjaman</h6>
+                            <h6 class="text-muted font-semibold stat-title mb-1">Peminjaman Ruang</h6>
                             <h4 class="font-extrabold stat-val mb-0 dashboard-stat-number">{{ $total_peminjaman_by_plp }}</h4>
+                            <small class="text-muted" style="font-size: 0.7rem;">Lab Kelolaan Anda</small>
                         </div>
                     </div>
                 </div>
@@ -340,17 +428,23 @@
                 <div class="card-body">
                     <div class="d-flex align-items-center gap-3">
                         <div class="dashboard-stat-icon icon-bg-blue">
-                            <i class="bi bi-calendar2-event-fill"></i>
+                            <i class="bi bi-tools"></i>
                         </div>
                         <div>
-                            <h6 class="text-muted font-semibold stat-title mb-1">Aktif Hari Ini</h6>
-                            <h4 class="font-extrabold stat-val mb-0 dashboard-stat-number">{{ $peminjaman_hari_ini }}</h4>
+                            <h6 class="text-muted font-semibold stat-title mb-1">Peminjaman Alat</h6>
+                            <h4 class="font-extrabold stat-val mb-0 dashboard-stat-number">{{ $total_alat_plp }}</h4>
+                            <small class="text-muted" style="font-size: 0.7rem;">Inventaris & DIR</small>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-6 col-lg-4 col-md-4 mb-3">
+    </section>
+
+    {{-- BARIS 2: ANTREAN PERSETUJUAN & STATUS OPERASIONAL --}}
+    <section class="row mb-3">
+        {{-- Pending Ruang Lab --}}
+        <div class="col-6 col-lg-3 col-md-6 mb-3">
             <div class="card mb-0 h-100 dashboard-stat-card {{ $pending_plp > 0 ? 'highlight-pending-card' : '' }}">
                 <div class="card-body">
                     <div class="d-flex align-items-center gap-3">
@@ -358,14 +452,53 @@
                             <i class="bi bi-hourglass-split"></i>
                         </div>
                         <div>
-                            <h6 class="text-muted font-semibold stat-title mb-1">Menunggu Approval</h6>
+                            <h6 class="text-muted font-semibold stat-title mb-1">Pending Lab</h6>
                             <h4 class="font-extrabold stat-val mb-0 dashboard-stat-number">{{ $pending_plp }}</h4>
+                            <small class="text-muted" style="font-size: 0.7rem;">Menunggu Approval</small>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-6 col-lg-4 col-md-4 mb-3">
+
+        {{-- Pending Alat Lab --}}
+        <div class="col-6 col-lg-3 col-md-6 mb-3">
+            <div class="card mb-0 h-100 dashboard-stat-card {{ $pending_alat_plp > 0 ? 'highlight-pending-card' : '' }}">
+                <div class="card-body">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="dashboard-stat-icon icon-bg-red">
+                            <i class="bi bi-wrench-adjustable-circle"></i>
+                        </div>
+                        <div>
+                            <h6 class="text-muted font-semibold stat-title mb-1">Pending Alat</h6>
+                            <h4 class="font-extrabold stat-val mb-0 dashboard-stat-number">{{ $pending_alat_plp }}</h4>
+                            <small class="text-muted" style="font-size: 0.7rem;">Menunggu Approval</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- Alat Sedang Dipinjam --}}
+        <div class="col-6 col-lg-3 col-md-6 mb-3">
+            <div class="card mb-0 h-100 dashboard-stat-card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="dashboard-stat-icon icon-bg-blue">
+                            <i class="bi bi-box-seam"></i>
+                        </div>
+                        <div>
+                            <h6 class="text-muted font-semibold stat-title mb-1">Alat Dipinjam</h6>
+                            <h4 class="font-extrabold stat-val mb-0 dashboard-stat-number">{{ $dipinjam_alat_plp }}</h4>
+                            <small class="text-muted" style="font-size: 0.7rem;">Sedang Digunakan</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- Total Selesai --}}
+        <div class="col-6 col-lg-3 col-md-6 mb-3">
             <div class="card mb-0 h-100 dashboard-stat-card">
                 <div class="card-body">
                     <div class="d-flex align-items-center gap-3">
@@ -373,23 +506,9 @@
                             <i class="bi bi-check-circle-fill"></i>
                         </div>
                         <div>
-                            <h6 class="text-muted font-semibold stat-title mb-1">Peminjaman Selesai</h6>
-                            <h4 class="font-extrabold stat-val mb-0 dashboard-stat-number">{{ $selesai_plp }}</h4>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-12 col-lg-4 col-md-4 mb-3">
-            <div class="card mb-0 h-100 dashboard-stat-card">
-                <div class="card-body">
-                    <div class="d-flex align-items-center gap-3">
-                        <div class="dashboard-stat-icon icon-bg-red">
-                            <i class="bi bi-x-circle-fill"></i>
-                        </div>
-                        <div>
-                            <h6 class="text-muted font-semibold stat-title mb-1">Peminjaman Ditolak</h6>
-                            <h4 class="font-extrabold stat-val mb-0 dashboard-stat-number">{{ $tolak_plp }}</h4>
+                            <h6 class="text-muted font-semibold stat-title mb-1">Total Selesai</h6>
+                            <h4 class="font-extrabold stat-val mb-0 dashboard-stat-number">{{ $selesai_plp + $selesai_alat_plp }}</h4>
+                            <small class="text-muted" style="font-size: 0.7rem;">{{ $selesai_plp }} Lab &bull; {{ $selesai_alat_plp }} Alat</small>
                         </div>
                     </div>
                 </div>
@@ -402,7 +521,7 @@
         <div class="col-12">
             <div class="card mb-0 dashboard-section-card">
                 <div class="card-header pt-3 pb-0">
-                    <h5 class="card-title fs-6 fs-sm-5 mb-0">Peminjaman per Laboratorium</h5>
+                    <h5 class="card-title fs-6 fs-sm-5 mb-0 fw-bold">Peminjaman per Laboratorium</h5>
                 </div>
                 <div class="card-body">
                     <div id="chart-peminjaman-dosen"></div>
@@ -417,7 +536,7 @@
         <div class="col-12 col-lg-5 mb-3">
             <div class="card mb-0 h-100 dashboard-section-card">
                 <div class="card-header pt-3 pb-2">
-                    <h5 class="card-title fs-6 fs-sm-5 mb-0">Informasi Laboratorium</h5>
+                    <h5 class="card-title fs-6 fs-sm-5 mb-0 fw-bold">Informasi Laboratorium</h5>
                 </div>
                 <div class="card-body p-0">
                     <div class="table-responsive">
@@ -455,62 +574,148 @@
             </div>
         </div>
 
-        {{-- Pengajuan Terbaru --}}
+        {{-- Pengajuan Terbaru dengan Dual Tabs (Ruang Lab vs Alat Lab) --}}
         <div class="col-12 col-lg-7 mb-3">
             <div class="card mb-0 h-100 dashboard-section-card">
-                <div class="card-header d-flex justify-content-between align-items-center pt-3 pb-2">
-                    <h5 class="card-title fs-6 fs-sm-5 mb-0">Peminjaman Terbaru di Lab Anda</h5>
-                    <a href="{{ route('approval.index') }}" class="btn btn-sm btn-primary rounded-pill">Kelola</a>
+                <div class="card-header d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center pt-3 pb-2 gap-2">
+                    <h5 class="card-title fs-6 fs-sm-5 mb-0 fw-bold">Pengajuan Terbaru di Lab Anda</h5>
+                    <ul class="nav nav-pills nav-pills-custom" id="recentLoanTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active py-1 px-3 rounded-pill fw-semibold small"
+                                id="tab-recent-lab-btn" data-bs-toggle="pill" data-bs-target="#tab-recent-lab" type="button" role="tab"
+                                aria-controls="tab-recent-lab" aria-selected="true">
+                                <i class="bi bi-door-open me-1"></i> Ruang Lab
+                            </button>
+                        </li>
+                        <li class="nav-item ms-1" role="presentation">
+                            <button class="nav-link py-1 px-3 rounded-pill fw-semibold small"
+                                id="tab-recent-alat-btn" data-bs-toggle="pill" data-bs-target="#tab-recent-alat" type="button" role="tab"
+                                aria-controls="tab-recent-alat" aria-selected="false">
+                                <i class="bi bi-tools me-1"></i> Alat Lab
+                                @if($pending_alat_plp > 0)
+                                    <span class="badge bg-danger ms-1 rounded-pill" style="font-size: 0.65rem;">{{ $pending_alat_plp }}</span>
+                                @endif
+                            </button>
+                        </li>
+                    </ul>
                 </div>
                 <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0" style="font-size: 0.9rem;">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Mahasiswa</th>
-                                    <th>Laboratorium</th>
-                                    <th>Waktu Mulai</th>
-                                    <th>Status</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @forelse ($pengajuan_terbaru_plp as $item)
-                                    <tr>
-                                        <td>
-                                            <span class="fw-semibold text-truncate d-inline-block" style="max-width: 140px;">{{ $item->mahasiswa->full_name ?? '-' }}</span>
-                                        </td>
-                                        <td><small>{{ $item->lab->nama_lab ?? '-' }}</small></td>
-                                        <td>
-                                            <small>{{ $item->waktu_mulai ? $item->waktu_mulai->format('d/m/Y') : '-' }}</small><br>
-                                            <small class="text-muted">{{ $item->waktu_mulai ? $item->waktu_mulai->format('H:i') : '' }}</small>
-                                        </td>
-                                        <td>
-                                            @if ($item->status == 'pending_plp')
-                                                <span class="badge bg-warning text-dark">Menunggu PLP</span>
-                                            @elseif ($item->status == 'pending_kalab')
-                                                <span class="badge bg-info">Menunggu Kalab</span>
-                                            @elseif ($item->status == 'disetujui')
-                                                <span class="badge bg-success">Disetujui</span>
-                                            @elseif ($item->status == 'ditolak')
-                                                <span class="badge bg-danger">Ditolak</span>
-                                            @elseif ($item->status == 'kadaluarsa')
-                                                <span class="badge bg-secondary">Kadaluarsa</span>
-                                            @elseif ($item->status == 'dibatalkan')
-                                                <span class="badge bg-danger">Dibatalkan Sistem</span>
-                                            @elseif ($item->status == 'selesai')
-                                                <span class="badge bg-success">Selesai</span>
-                                            @elseif ($item->status == 'dibatalkan_mahasiswa')
-                                                <span class="badge bg-danger">Dibatalkan Mahasiswa</span>
-                                            @endif
-                                        </td>
-                                    </tr>
-                                @empty
-                                    <tr>
-                                        <td colspan="4" class="text-center text-muted py-3">Belum ada pengajuan peminjaman.</td>
-                                    </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
+                    <div class="tab-content" id="recentLoanTabContent">
+                        {{-- TAB: TERBARU RUANG LAB --}}
+                        <div class="tab-pane fade show active" id="tab-recent-lab" role="tabpanel" aria-labelledby="tab-recent-lab-btn">
+                            <div class="p-2 px-3 border-bottom d-flex justify-content-between align-items-center bg-body-tertiary">
+                                <small class="text-muted fw-semibold">5 Pengajuan Ruang Lab Terakhir</small>
+                                <a href="{{ route('approval.index') }}" class="btn btn-sm btn-primary rounded-pill px-3 py-0" style="font-size: 0.8rem;">
+                                    Kelola Semua <i class="bi bi-arrow-right ms-1"></i>
+                                </a>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0" style="font-size: 0.88rem;">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Mahasiswa</th>
+                                            <th>Laboratorium</th>
+                                            <th>Waktu Mulai</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @forelse ($pengajuan_terbaru_plp as $item)
+                                            <tr>
+                                                <td>
+                                                    <span class="fw-semibold text-truncate d-inline-block" style="max-width: 140px;">{{ $item->mahasiswa->full_name ?? '-' }}</span>
+                                                </td>
+                                                <td><small>{{ $item->lab->nama_lab ?? '-' }}</small></td>
+                                                <td>
+                                                    <small>{{ $item->waktu_mulai ? $item->waktu_mulai->format('d/m/Y') : '-' }}</small><br>
+                                                    <small class="text-muted">{{ $item->waktu_mulai ? $item->waktu_mulai->format('H:i') : '' }}</small>
+                                                </td>
+                                                <td>
+                                                    @if ($item->status == 'pending_plp')
+                                                        <span class="badge bg-warning text-dark">Menunggu PLP</span>
+                                                    @elseif ($item->status == 'pending_kalab')
+                                                        <span class="badge bg-info">Menunggu Kalab</span>
+                                                    @elseif ($item->status == 'disetujui')
+                                                        <span class="badge bg-success">Disetujui</span>
+                                                    @elseif ($item->status == 'ditolak')
+                                                        <span class="badge bg-danger">Ditolak</span>
+                                                    @elseif ($item->status == 'kadaluarsa')
+                                                        <span class="badge bg-secondary">Kadaluarsa</span>
+                                                    @elseif ($item->status == 'dibatalkan')
+                                                        <span class="badge bg-danger">Dibatalkan Sistem</span>
+                                                    @elseif ($item->status == 'selesai')
+                                                        <span class="badge bg-success">Selesai</span>
+                                                    @elseif ($item->status == 'dibatalkan_mahasiswa')
+                                                        <span class="badge bg-danger">Dibatalkan Mahasiswa</span>
+                                                    @endif
+                                                </td>
+                                            </tr>
+                                        @empty
+                                            <tr>
+                                                <td colspan="4" class="text-center text-muted py-3">Belum ada pengajuan peminjaman ruang lab.</td>
+                                            </tr>
+                                        @endforelse
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        {{-- TAB: TERBARU ALAT LAB --}}
+                        <div class="tab-pane fade" id="tab-recent-alat" role="tabpanel" aria-labelledby="tab-recent-alat-btn">
+                            <div class="p-2 px-3 border-bottom d-flex justify-content-between align-items-center bg-body-tertiary">
+                                <small class="text-muted fw-semibold">5 Pengajuan Alat Lab Terakhir</small>
+                                <a href="{{ route('peminjaman-alat.approval') }}" class="btn btn-sm btn-primary rounded-pill px-3 py-0" style="font-size: 0.8rem;">
+                                    Kelola Semua <i class="bi bi-arrow-right ms-1"></i>
+                                </a>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0" style="font-size: 0.88rem;">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Mahasiswa</th>
+                                            <th>Laboratorium</th>
+                                            <th>Rincian Alat</th>
+                                            <th>Jadwal Pinjam</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @forelse ($pengajuan_alat_terbaru_plp as $alatItem)
+                                            <tr>
+                                                <td>
+                                                    <span class="fw-semibold text-truncate d-inline-block" style="max-width: 130px;">
+                                                        {{ $alatItem->mahasiswa->nama_asli ?? ($alatItem->mahasiswa->full_name ?? '-') }}
+                                                    </span><br>
+                                                    <small class="text-muted">{{ $alatItem->kode_peminjaman }}</small>
+                                                </td>
+                                                <td><small>{{ $alatItem->lab->nama_lab ?? '-' }}</small></td>
+                                                <td>
+                                                    <ul class="list-unstyled mb-0" style="font-size: 0.8rem;">
+                                                        @foreach ($alatItem->details->take(2) as $d)
+                                                            <li>• {{ $d->nama_alat }} (<strong>{{ $d->jumlah }} {{ $d->satuan }}</strong>)</li>
+                                                        @endforeach
+                                                        @if ($alatItem->details->count() > 2)
+                                                            <li class="text-muted fst-italic">+{{ $alatItem->details->count() - 2 }} alat lainnya</li>
+                                                        @endif
+                                                    </ul>
+                                                </td>
+                                                <td>
+                                                    <small>{{ $alatItem->waktu_pinjam ? $alatItem->waktu_pinjam->format('d/m/Y') : '-' }}</small><br>
+                                                    <small class="text-muted">Kembali: {{ $alatItem->rencana_kembali ? $alatItem->rencana_kembali->format('d/m/Y') : '-' }}</small>
+                                                </td>
+                                                <td>
+                                                    {!! $alatItem->status_badge !!}
+                                                </td>
+                                            </tr>
+                                        @empty
+                                            <tr>
+                                                <td colspan="5" class="text-center text-muted py-3">Belum ada pengajuan peminjaman alat lab.</td>
+                                            </tr>
+                                        @endforelse
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -553,7 +758,7 @@
 
         const chartBar = new ApexCharts(document.querySelector('#chart-peminjaman-dosen'), {
             series: [{
-                name: 'Jumlah Peminjaman',
+                name: 'Jumlah Peminjaman Ruang',
                 data: labCounts,
             }],
             chart: {
@@ -563,7 +768,7 @@
                     show: false
                 },
             },
-            colors: ['#435ebe'],
+            colors: ['#4f46e5'],
             plotOptions: {
                 bar: {
                     borderRadius: 6,

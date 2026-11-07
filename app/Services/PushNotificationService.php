@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\PushSubscription;
+use App\Models\Setting;
 use Minishlink\WebPush\WebPush;
 use Minishlink\WebPush\Subscription;
 use Illuminate\Support\Facades\Log;
@@ -21,12 +22,18 @@ class PushNotificationService
      */
     public function sendToUser(int $userId, string $title, string $message, string $url = '/', string $icon = '/images/logo/SIMLAB_logo1.png'): void
     {
-        $publicKey  = config('services.vapid.public_key');
-        $privateKey = config('services.vapid.private_key');
-        $subject    = config('services.vapid.subject', 'mailto:admin@simlab.com');
+        // Cek apakah push notification diaktifkan
+        $pushEnabled = Setting::boolean(Setting::PUSH_ENABLED, 'global', true);
+        if (!$pushEnabled) {
+            return;
+        }
+
+        $publicKey  = Setting::get(Setting::VAPID_PUBLIC_KEY, 'global', config('services.vapid.public_key'));
+        $privateKey = Setting::get(Setting::VAPID_PRIVATE_KEY, 'global', config('services.vapid.private_key'));
+        $subject    = Setting::get(Setting::VAPID_SUBJECT, 'global', config('services.vapid.subject', 'mailto:admin@simlab.com'));
 
         if (empty($publicKey) || empty($privateKey)) {
-            Log::warning('PushNotificationService: VAPID keys belum dikonfigurasi di .env, push notification dilewati.');
+            Log::warning('PushNotificationService: VAPID keys belum dikonfigurasi di Pengaturan Gateway atau .env, push notification dilewati.');
             return;
         }
 

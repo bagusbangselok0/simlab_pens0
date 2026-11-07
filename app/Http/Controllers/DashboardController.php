@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Lab;
 use App\Models\LabManager;
+use App\Models\PeminjamanAlat;
 use App\Models\PeminjamanLab;
 use App\Models\PresensiLab;
 use App\Models\User;
@@ -36,6 +37,23 @@ class DashboardController extends Controller
 
         $pinjaman_lab_terakhir = PeminjamanLab::where('mahasiswa_id', Auth::id())->latest()->first();
 
+        // Statistik peminjaman alat mahasiswa yang login
+        $jml_alat_pengajuan_mhs = PeminjamanAlat::where('mahasiswa_id', Auth::id())->count();
+        $jml_alat_pending_mhs   = PeminjamanAlat::where('mahasiswa_id', Auth::id())->where('status', 'pending_plp')->count();
+        $jml_alat_approved_mhs  = PeminjamanAlat::where('mahasiswa_id', Auth::id())->whereIn('status', ['disetujui', 'sedang_dipinjam', 'selesai'])->count();
+        $jml_alat_rejected_mhs  = PeminjamanAlat::where('mahasiswa_id', Auth::id())->where('status', 'ditolak')->count();
+
+        $pinjaman_alat_terakhir = PeminjamanAlat::with(['lab', 'details'])
+            ->where('mahasiswa_id', Auth::id())
+            ->latest()
+            ->first();
+
+        // Total gabungan mahasiswa (Lab + Alat)
+        $total_mhs_pengajuan = $jml_pengajuan_mhs + $jml_alat_pengajuan_mhs;
+        $total_mhs_pending   = $jml_pending_mhs + $jml_alat_pending_mhs;
+        $total_mhs_approved  = $jml_approved_mhs + $jml_alat_approved_mhs;
+        $total_mhs_rejected  = $jml_rejected_mhs + $jml_alat_rejected_mhs;
+
         // ====================================================
         // Statistik khusus Admin (semua peminjaman di sistem)
         // ====================================================
@@ -44,6 +62,18 @@ class DashboardController extends Controller
         $approved_admin    = PeminjamanLab::where('status', 'disetujui')->count();
         $rejected_admin    = PeminjamanLab::where('status', 'ditolak')->count();
         $kadaluarsa_admin  = PeminjamanLab::where('status', 'kadaluarsa')->count();
+
+        // Statistik Peminjaman Alat Sistem (Admin)
+        $total_alat_admin      = PeminjamanAlat::count();
+        $pending_alat_admin    = PeminjamanAlat::where('status', 'pending_plp')->count();
+        $dipinjam_alat_admin   = PeminjamanAlat::whereIn('status', ['disetujui', 'sedang_dipinjam'])->count();
+        $selesai_alat_admin    = PeminjamanAlat::where('status', 'selesai')->count();
+        $rejected_alat_admin   = PeminjamanAlat::where('status', 'ditolak')->count();
+
+        $pengajuan_alat_terbaru_admin = PeminjamanAlat::with(['mahasiswa', 'lab', 'details'])
+            ->latest()
+            ->take(5)
+            ->get();
 
         // ====================================================
         // Statistik khusus Kalab (fokus pada lab tanggung jawab Kalab)
@@ -135,6 +165,29 @@ class DashboardController extends Controller
         $pengajuan_terbaru_plp = PeminjamanLab::whereHas('labManager', function ($query) {
             $query->where('plp_id', Auth::id());
         })->latest()->take(5)->get();
+
+        // Statistik peminjaman alat khusus PLP
+        $managedLabIdsPlp = LabManager::where('plp_id', Auth::id())->pluck('lab_id')->toArray();
+        $alatQueryPlp = PeminjamanAlat::where(function ($q) use ($managedLabIdsPlp) {
+            $q->where('plp_id', Auth::id())
+              ->orWhereIn('lab_id', $managedLabIdsPlp)
+              ->orWhereHas('details.inventarisRuangan', function ($sub) use ($managedLabIdsPlp) {
+                  $sub->whereIn('lab_id', $managedLabIdsPlp);
+              })
+              ->orWhereNull('plp_id');
+        });
+
+        $total_alat_plp = (clone $alatQueryPlp)->count();
+        $pending_alat_plp = (clone $alatQueryPlp)->where('status', 'pending_plp')->count();
+        $dipinjam_alat_plp = (clone $alatQueryPlp)->whereIn('status', ['disetujui', 'sedang_dipinjam'])->count();
+        $selesai_alat_plp = (clone $alatQueryPlp)->where('status', 'selesai')->count();
+        $tolak_alat_plp = (clone $alatQueryPlp)->where('status', 'ditolak')->count();
+
+        $pengajuan_alat_terbaru_plp = (clone $alatQueryPlp)
+            ->with(['mahasiswa', 'lab', 'details'])
+            ->latest()
+            ->take(5)
+            ->get();
 
         // Peminjaman per lab (untuk chart bar admin/plp)
         $peminjaman_per_lab = Lab::withCount('peminjamanLabs')->get();
@@ -277,6 +330,15 @@ class DashboardController extends Controller
             'jml_approved_mhs',
             'jml_rejected_mhs',
             'pinjaman_lab_terakhir',
+            'jml_alat_pengajuan_mhs',
+            'jml_alat_pending_mhs',
+            'jml_alat_approved_mhs',
+            'jml_alat_rejected_mhs',
+            'pinjaman_alat_terakhir',
+            'total_mhs_pengajuan',
+            'total_mhs_pending',
+            'total_mhs_approved',
+            'total_mhs_rejected',
             'labs',
             'lab_managers',
             'total_peminjaman',
@@ -284,6 +346,12 @@ class DashboardController extends Controller
             'approved_admin',
             'rejected_admin',
             'kadaluarsa_admin',
+            'total_alat_admin',
+            'pending_alat_admin',
+            'dipinjam_alat_admin',
+            'selesai_alat_admin',
+            'rejected_alat_admin',
+            'pengajuan_alat_terbaru_admin',
             'peminjaman_per_lab',
             'pengajuan_terbaru',
             'peminjaman_hari_ini',
@@ -305,6 +373,12 @@ class DashboardController extends Controller
             'tolak_plp',
             'pending_plp',
             'pengajuan_terbaru_plp',
+            'total_alat_plp',
+            'pending_alat_plp',
+            'dipinjam_alat_plp',
+            'selesai_alat_plp',
+            'tolak_alat_plp',
+            'pengajuan_alat_terbaru_plp',
             'presensi_hari_ini',
             'total_jadwal_hari_ini',
             'presensi_menunggu',

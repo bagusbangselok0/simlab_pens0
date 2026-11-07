@@ -10,10 +10,10 @@
 
 Melalui Simlab:
 
-- **Mahasiswa** dapat dengan mudah mengajukan izin peminjaman ruangan dan peralatan lab secara daring, memantau riwayat pengajuan, mengajukan presensi kehadiran di lab, serta mengunduh surat izin peminjaman resmi.
-- **PLP & Kalab** dapat meninjau, menyetujui, atau menolak permohonan peminjaman bertingkat, mengelola inventaris peralatan lab, memantau kehadiran mahasiswa secara _real-time_, dan mencetak laporan Daftar Inventaris Ruangan (DIR).
-- **Satpam** memiliki modul khusus untuk mengonfirmasi kehadiran (_check-in_ & _check-out_) mahasiswa yang sedang meminjam lab dan mencetak bukti fisik presensi.
-- **Admin** memiliki kendali penuh terhadap manajemen master data (pengguna, lab, pejabat pengelola lab, setting auto-approval), verifikasi pendaftaran akun mahasiswa baru, verifikasi keabsahan tanda tangan digital pejabat, pembuatan link reset password sekali pakai, rekap ekspor data peminjaman, serta pemantauan sistem secara menyeluruh.
+- **Mahasiswa** dapat mengajukan izin peminjaman ruangan laboratorium maupun peminjaman peralatan/instrumen inventaris secara daring, memantau riwayat pengajuan secara bertahap via *stepper timeline*, mengajukan presensi kehadiran di lab, serta mengunduh surat bukti izin peminjaman resmi berformat PDF.
+- **PLP & Kalab** dapat meninjau, menyetujui, atau menolak permohonan peminjaman ruangan dan peralatan, mengelola inventaris master barang dan Daftar Inventaris Ruangan (DIR), memantau kehadiran mahasiswa secara _real-time_, serta mengesahkan proses serah terima dan pengembalian alat.
+- **Satpam** memiliki modul khusus untuk mengonfirmasi kehadiran (_check-in_ & _check-out_) mahasiswa yang sedang beraktivitas di laboratorium dan mencetak bukti fisik presensi.
+- **Admin** memiliki kendali penuh terhadap manajemen master data (pengguna, lab, pejabat pengelola lab, setting auto-approval), verifikasi pendaftaran akun mahasiswa baru, verifikasi keabsahan tanda tangan digital pejabat, pembuatan link reset password sekali pakai, rekap ekspor data peminjaman, serta pengawasan sistem secara menyeluruh.
 
 Dokumen surat peminjaman lab dicetak dalam format **Flattened PDF** (dokumen dan tanda tangan digital dikunci menjadi citra utuh beresolusi tinggi via `Imagick` & `Ghostscript`), sehingga isi surat dan tanda tangan tidak dapat dimanipulasi, diekstrak, maupun disalahgunakan.
 
@@ -23,55 +23,117 @@ Dokumen surat peminjaman lab dicetak dalam format **Flattened PDF** (dokumen dan
 
 ### 1. 👥 Multi-Role Access Control (5 Role Pengguna)
 
-- **Admin:** Manajemen pengguna, master laboratorium, pejabat pengelola lab (_Lab Manager_), verifikasi akun mahasiswa baru, verifikasi tanda tangan digital pejabat, pengaturan sistem (_Auto-Approval Kalab_ per lab), rekap dan ekspor data peminjaman (Excel & PDF), serta manajemen inventaris master.
-- **Dosen / Kepala Laboratorium (Kalab):** Persetujuan peminjaman tahap akhir (_Kalab Approval_), monitoring presensi lab binaan, pengelolaan Daftar Inventaris Ruangan (DIR), dan ekspor DIR ke PDF.
-- **PLP (Pranata Laboratorium Pendidikan):** Persetujuan peminjaman tahap awal (_PLP Approval_), monitoring presensi lab, pengelolaan master barang inventaris (CRUD, import massal Excel, penempatan barang ke ruangan), dan pengelolaan DIR.
+- **Admin:** Manajemen pengguna, master laboratorium, pejabat pengelola lab (_Lab Manager_), verifikasi akun mahasiswa baru, verifikasi tanda tangan digital, pengaturan sistem (_Auto-Approval Kalab_ per lab), rekap dan ekspor data peminjaman (Excel & PDF), pengawasan seluruh pengajuan peminjaman ruang & alat, serta manajemen inventaris master.
+- **Dosen / Kepala Laboratorium (Kalab):** Persetujuan peminjaman ruang lab tahap akhir (_Kalab Approval_), monitoring presensi lab binaan, pengelolaan Daftar Inventaris Ruangan (DIR), dan ekspor DIR ke PDF.
+- **PLP (Pranata Laboratorium Pendidikan):** Persetujuan peminjaman ruang lab tahap awal (_PLP Approval_), **verifikasi dan persetujuan peminjaman alat laboratorium**, konfirmasi pengembalian & pemeriksaan kondisi alat, pengelolaan inventaris barang (CRUD, import massal Excel, penempatan barang ke ruangan), dan pengelolaan DIR.
 - **Satpam:** Dashboard konfirmasi presensi masuk dan keluar mahasiswa peminjam lab, penugasan satpam piket, dan pencetakan bukti fisik presensi.
-- **Mahasiswa:** Pengajuan izin peminjaman ruang dan alat lab, pengajuan presensi masuk & keluar lab ke petugas satpam, unduh surat peminjaman PDF resmi ber-TTD, dan penerimaan notifikasi _real-time_.
+- **Mahasiswa:** Pengajuan izin peminjaman ruangan lab dan **peminjaman alat laboratorium (per NUP DIR / Manual)**, pemantauan status bertahap (_interactive timeline stepper_), pengajuan presensi masuk & keluar lab ke petugas satpam, serta unduh lembar bukti peminjaman PDF resmi ber-TTD.
 
-### 2. 📝 Alur Peminjaman Lab & Auto-Approval Bertingkat
+---
+
+### 2. 🛠️ Sistem Peminjaman Alat Laboratorium (Equipment Loan Management)
+
+Fitur terpadu yang memfasilitasi mahasiswa dalam meminjam alat ukur, instrumen praktikum, dan perlengkapan inventaris lab dengan alur kerja terstruktur:
+
+- **Pemilihan Alat Berbasis DIR & NUP Spesifik:**
+  - Mengambil data alat langsung dari Daftar Inventaris Ruangan (DIR) pada laboratorium yang dipilih.
+  - Setiap nomor inventaris (NUP) ditampilkan sebagai unit individual terpisah.
+  - Jumlah alat terkunci otomatis sebesar **1 unit per NUP**, dan satuan otomatis mengikuti data inventaris aset.
+- **Opsi Input Manual Fleksibel:**
+  - Menyediakan opsi *Input Manual* untuk peralatan/komponen habis pakai atau instrumen pendukung yang belum tercatat pada buku induk inventaris DIR.
+- **Pencegahan Konflik & Double-Booking NUP:**
+  - Sistem secara otomatis memfilter dan mendeteksi ketersediaan fisik alat; NUP yang sedang dipinjam atau menunggu persetujuan tidak dapat dipilih oleh mahasiswa lain.
+- **Formulir Repeater Multi-Item Ramah Mobile:**
+  - Mahasiswa dapat meminjam beberapa alat sekaligus dalam satu formulir pengajuan.
+  - Tata letak otomatis beradaptasi menjadi *Mobile Card Items* (`.alat-item-row`) pada layar sentuh dengan dukungan tema **Dark & Light Mode**.
+- **Alur Persetujuan & Siklus Hidup Peminjaman Alat:**
+  ```text
+  [Mahasiswa Ajukan] -> pending_plp -> disetujui (Siap Diambil di Lab) -> sedang_dipinjam -> selesai (Verifikasi Kembali)
+                                    \-> ditolak (dengan Catatan Penolakan Wajib)
+  ```
+- **Pemeriksaan Kondisi & Pengembalian:**
+  - PLP mencatat konfirmasi serah terima kembali dan catatan kondisi fisik alat saat dikembalikan oleh mahasiswa.
+- **Cetak Surat Bukti Peminjaman Alat (PDF):**
+  - Dilengkapi fitur ekspor PDF bukti peminjaman alat resmi berisikan kode peminjaman unik, rincian daftar alat, NUP, ruang asal, spesifikasi, dan stempel tanda tangan digital mahasiswa & PLP.
+
+---
+
+### 3. 🏢 Alur Peminjaman Ruang Lab & Auto-Approval Bertingkat
 
 - **Alur Persetujuan Bertingkat:** Normalnya melalui verifikasi PLP (`pending_plp`), lalu dilanjutkan ke Kalab (`pending_kalab`), hingga berstatus `disetujui`.
 - **Per-Lab Kalab Auto-Approval:** Admin dapat mengaktifkan fitur auto-approval Kalab per laboratorium. Jika aktif, setelah PLP menyetujui permohonan, sistem langsung mengesahkan status peminjaman menjadi `disetujui` secara otomatis (syarat: Kalab telah terdaftar dan tanda tangan digitalnya sudah disetujui Admin).
 - **Auto-Cancel & Expiration:** Scheduler otomatis membatalkan (_auto-cancel_) pengajuan peminjaman yang tidak diproses selama 24 jam atau jika waktu peminjaman yang diminta telah lewat. Peminjaman aktif yang telah melewati batas waktu selesai otomatis dialihkan menjadi `kadaluarsa`.
 
-### 3. ⏱️ Presensi & Monitoring Kehadiran Laboratorium
+---
+
+### 4. ⏱️ Presensi & Monitoring Kehadiran Laboratorium
 
 - Mahasiswa mengajukan presensi masuk (_check-in_) dan keluar (_check-out_) dengan memilih petugas satpam yang sedang bertugas.
 - Satpam menerima notifikasi dan memvalidasi presensi melalui menu khusus konfirmasi presensi.
 - Satpam, PLP, Dosen, dan Admin dapat memonitor kehadiran di lab secara _real-time_ dan mencetak bukti presensi.
 
-### 4. 📦 Manajemen Inventaris Barang & DIR (Daftar Inventaris Ruangan)
+---
 
-- **Master Inventaris Barang:** Pencatatan aset laboratorium secara terperinci (kode barang, nama, merk, kondisi, spesifikasi, tanggal pengadaan).
+### 5. 📦 Manajemen Inventaris Barang & DIR (Daftar Inventaris Ruangan)
+
+- **Master Inventaris Barang:** Pencatatan aset laboratorium secara terperinci (kode barang, NUP, nama barang, merk/tipe, kondisi, sumber dana, tanggal perolehan/buku).
 - **Import Massal Excel (.xlsx):** Kemudahan impor data inventaris massal dengan template Excel yang dapat langsung diunduh dari aplikasi (didukung `Shuchkin\SimpleXLSX`).
-- **Penempatan & Mutasi Barang:** Fitur penempatan barang dari master inventaris ke ruangan laboratorium tertentu.
+- **Penempatan & Mutasi Barang:** Fitur penempatan barang dari master inventaris ke ruangan laboratorium tertentu secara parsial per NUP.
 - **Daftar Inventaris Ruangan (DIR):** Laporan inventaris per laboratorium lengkap dengan fitur cetak / ekspor ke PDF resmi berformat standar.
 
-### 5. 🔒 Flattened & Secure PDF Export
+---
 
-- Surat peminjaman yang disahkan dikonversi menjadi gambar utuh (_flattened PDF_) beresolusi 200 DPI menggunakan `Imagick` & `Ghostscript`.
-- Seluruh teks dan berkas tanda tangan digital terkunci rapat, tidak dapat diseleksi (_copy-paste_), dipisah, atau diekstrak, demi mencegah pemalsuan dokumen surat resmi.
+### 6. 📊 Dashboard Cerdas & Terpadu (Dual-Tab System)
 
-### 6. ✍️ Manajemen & Verifikasi Tanda Tangan Digital
+Dashboard untuk seluruh peran pengguna telah diselaraskan dengan integrasi peminjaman ruang lab dan alat:
 
-- Pengguna pejabat (Dosen, Kalab, PLP) dapat mengunggah berkas tanda tangan digital melalui halaman profil secara instan tanpa memuat ulang halaman (AJAX).
-- Tanda tangan yang diunggah berstatus `pending` dan wajib diverifikasi/disetujui oleh Administrator sebelum dapat dibubuhkan pada dokumen resmi.
+- **Dashboard Mahasiswa:**
+  - *Hero CTA Dropdown:* Pilihan cepat langsung membuat pengajuan *Pinjam Ruang Lab* atau *Pinjam Alat Lab*.
+  - *Interactive Stepper:* Tab alur peminjaman ruang (6 langkah) dan alur peminjaman alat (5 langkah: TTD $\rightarrow$ Pengajuan $\rightarrow$ Approval PLP $\rightarrow$ Ambil Alat $\rightarrow$ Selesai).
+  - *Spotlight Card:* Menampilkan sorotan status peminjaman ruang dan peminjaman alat aktif terkini.
+  - *Statistik:* Akumulasi peminjaman dengan rincian `X Lab • Y Alat`.
+- **Dashboard PLP:**
+  - *Quick Shortcuts:* Akses cepat ke halaman persetujuan ruang lab dan persetujuan alat lab dilengkapi *counter badge* pengajuan pending.
+  - *Antrean Approval & Fisik:* Menampilkan pengajuan alat yang menunggu persetujuan (*pulse warning highlight*) dan pemantauan jumlah alat yang sedang berada di luar / dipinjam.
+  - *Tabel Dual-Tab:* Tab riwayat 5 pengajuan ruang lab dan 5 pengajuan alat lab terbaru.
+- **Dashboard Admin:**
+  - Ringkasan statistik sistem terpadu (Total Pengajuan Ruang & Alat, Antrean Pending, Sedang Digunakan, Total Selesai).
+  - Navigasi cepat 6 modul utama SIMLAB dan tabel pengajuan sistem dual-tab.
 
-### 7. 🔔 Notifikasi Real-Time (Web Push & WhatsApp)
+---
+
+### 7. 🔒 Flattened & Secure PDF Export
+
+- Dokumen resmi surat peminjaman dikonversi menjadi gambar utuh (_flattened PDF_) beresolusi 200 DPI menggunakan `Imagick` & `Ghostscript`.
+- Seluruh teks dan berkas tanda tangan digital terkunci rapat, tidak dapat diseleksi (_copy-paste_), dipisah, atau diekstrak, demi mencegah pemalsuan dokumen resmi.
+
+---
+
+### 8. ✍️ Manajemen & Verifikasi Tanda Tangan Digital
+
+- Pengguna (Mahasiswa, PLP, Dosen/Kalab) mengunggah berkas tanda tangan digital melalui halaman profil secara instan tanpa memuat ulang halaman (AJAX).
+- Tanda tangan digital wajib diverifikasi dan disetujui oleh Administrator sebelum pengajuan peminjaman dapat diproses.
+
+---
+
+### 9. 🔔 Notifikasi Real-Time (Web Push & WhatsApp)
 
 - **Web Push API:** Notifikasi native browser/OS langsung ke perangkat pengguna yang bekerja di latar belakang tanpa dependensi Firebase/FCM.
 - **Integrasi WhatsApp:** Dukungan pengiriman notifikasi otomatis via Fonnte API (dapat diaktifkan/dinonaktifkan melalui konfigurasi `.env`).
 
-### 8. 📊 Rekapitulasi & Pelaporan Data
+---
+
+### 10. 📊 Rekapitulasi & Pelaporan Data
 
 - Admin dapat menyaring dan mengekspor seluruh rekap peminjaman lab ke format **Excel (.xlsx)** (didukung oleh `SimpleXLSXGen`) dan **PDF**.
-- Ekspor laporan Daftar Inventaris Ruangan (DIR) per lab ke PDF.
+- Ekspor laporan Daftar Inventaris Ruangan (DIR) per lab ke PDF resmi.
 
-### 9. 🔐 Keamanan & Pemulihan Akun
+---
+
+### 11. 🔐 Keamanan & Pemulihan Akun
 
 - **Verifikasi Registrasi Mahasiswa:** Mahasiswa yang mendaftar mandiri harus diverifikasi terlebih dahulu oleh Administrator sebelum dapat menggunakan akunnya.
-- **Admin-Assisted Password Reset:** Menghindari celah pengiriman email otomatis tanpa proteksi, pemulihan akun dilakukan melalui pembuatan token/link reset satu kali pakai yang digenerate oleh Admin dari dashboard untuk dibagikan ke pengguna (misal via WhatsApp).
+- **Admin-Assisted Password Reset:** Pemulihan akun dilakukan melalui pembuatan token/link reset satu kali pakai yang digenerate oleh Admin dari dashboard untuk dibagikan ke pengguna (misal via WhatsApp).
 
 ---
 
@@ -81,13 +143,30 @@ Dokumen surat peminjaman lab dicetak dalam format **Flattened PDF** (dokumen dan
 | ----------------------------- | ----------------------------------------------------------------- |
 | **Framework Backend**         | [Laravel 12](https://laravel.com/) (PHP 8.2+)                     |
 | **Database**                  | MySQL 8.0                                                         |
-| **Frontend**                  | Blade Templates, Vanilla CSS, Tailwind CSS / Vite, AJAX, Select2  |
+| **Frontend**                  | Blade Templates, Bootstrap 5 (Mazer Admin), Vanilla CSS, Vite, AJAX, Select2 |
 | **Data Tables**               | Yajra Laravel DataTables (`yajra/laravel-datatables-oracle`)      |
+| **Charts**                    | ApexCharts                                                        |
 | **PDF Generation & Security** | `barryvdh/laravel-dompdf`, `ext-imagick`, `ghostscript`           |
 | **Excel Handling**            | `shuchkin/simplexlsx` (Import), `shuchkin/simplexlsxgen` (Export) |
 | **Web Push Notification**     | `minishlink/web-push` (VAPID API)                                 |
 | **WhatsApp Gateway**          | Fonnte API (`App\Channels\WhatsAppChannel`)                       |
 | **Environment**               | Docker & Docker Compose / Local Server (XAMPP / Laragon / Native) |
+
+---
+
+## 🗄️ Struktur Entitas Basis Data Utama (Database Models)
+
+- `users`: Data pengguna (Mahasiswa, Dosen, PLP, Satpam, Admin) beserta path tanda tangan digital & status verifikasinya.
+- `roles` & `jabatans`: Pengaturan peran dan jabatan struktural pengelola lab.
+- `labs`: Data laboratorium kampus dan lokasinya.
+- `lab_managers`: Relasi penugasan Kepala Lab (Kalab) dan PLP penanggung jawab pada tiap laboratorium.
+- `peminjaman_lab`: Transaksi pengajuan peminjaman ruangan laboratorium.
+- `presensi_lab`: Pencatatan kehadiran mahasiswa di laboratorium yang diverifikasi Satpam.
+- `inventaris_barangs`: Master buku induk aset inventaris barang kampus.
+- `inventaris_ruangans`: Alokasi penempatan barang inventaris ke ruangan laboratorium tertentu (DIR).
+- `peminjaman_alats`: Master transaksi pengajuan peminjaman alat laboratorium.
+- `peminjaman_alat_details`: Rincian item alat yang dipinjam (relasi ke DIR, kode barang, NUP, nama alat, jumlah, satuan, spesifikasi, dan catatan kondisi).
+- `settings`: Konfigurasi sistem dinamis (Auto-Approval Kalab per lab).
 
 ---
 
@@ -329,6 +408,7 @@ php artisan db:seed --class=SettingsSeeder
 ## 🔧 Ringkasan Alur Kerja & Keamanan (Core Workflows)
 
 - **Keamanan Surat & Flat PDF:** Dokumen bukti peminjaman lab dikonversi menjadi citra utuh yang terproteksi (_flattened_). Hal ini mencegah duplikasi, modifikasi isi surat, dan ekstraksi gambar tanda tangan digital pejabat.
+- **Validasi Ketersediaan NUP Alat:** Sistem menjamin tidak ada tumpang tindih (_double-booking_) pada unit alat inventaris yang sama pada rentang waktu peminjaman.
 - **Verifikasi Tanda Tangan Digital:** Pengunggahan berkas tanda tangan baru secara otomatis menggantikan berkas lama di media penyimpanan lokal secara aman dan mengubah status verifikasi menjadi `pending` hingga diverifikasi oleh Admin.
 - **Protokol Reset Password Aman:** Menghindari celah reset email massal tanpa proteksi, reset kata sandi dikontrol oleh Admin yang menghasilkan tautan unik sekali pakai dengan batas kadaluarsa 60 menit.
 - **Presensi Tervalidasi Petugas:** Mahasiswa tidak dapat memalsukan jam masuk/keluar karena waktu presensi diverifikasi dan dicatat langsung oleh petugas Satpam yang bertugas saat itu.

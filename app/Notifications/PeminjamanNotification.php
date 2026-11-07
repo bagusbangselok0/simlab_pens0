@@ -4,6 +4,7 @@ namespace App\Notifications;
 
 use App\Channels\WhatsAppChannel;
 use App\Models\PeminjamanLab;
+use App\Models\Setting;
 use App\Models\User;
 use App\Services\PushNotificationService;
 use Illuminate\Bus\Queueable;
@@ -43,8 +44,15 @@ class PeminjamanNotification extends Notification
     {
         $channels = ['database'];
 
-        // Tambahkan WhatsApp channel jika diaktifkan
-        if (config('services.fonnte.enabled', false)) {
+        // Tambahkan WhatsApp channel jika diaktifkan di Setting
+        $waEnabled = Setting::boolean(
+            Setting::WA_ENABLED,
+            'global',
+            (bool) config('services.fonnte.enabled', false)
+        );
+        $waLabEnabled = Setting::boolean(Setting::WA_NOTIF_PEMINJAMAN_LAB, 'global', true);
+
+        if ($waEnabled && $waLabEnabled) {
             $channels[] = WhatsAppChannel::class;
         }
 
@@ -60,16 +68,21 @@ class PeminjamanNotification extends Notification
     {
         $data = $this->getNotificationData();
 
-        // Kirim browser push notification
-        try {
-            app(PushNotificationService::class)->sendToUser(
-                $notifiable->id,
-                $data['title'],
-                $data['message'],
-                $data['url'],
-            );
-        } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('PeminjamanNotification: Gagal kirim push — ' . $e->getMessage());
+        // Kirim browser push notification jika diaktifkan di Setting
+        $pushEnabled = Setting::boolean(Setting::PUSH_ENABLED, 'global', true);
+        $pushLabEnabled = Setting::boolean(Setting::PUSH_NOTIF_PEMINJAMAN_LAB, 'global', true);
+
+        if ($pushEnabled && $pushLabEnabled) {
+            try {
+                app(PushNotificationService::class)->sendToUser(
+                    $notifiable->id,
+                    $data['title'],
+                    $data['message'],
+                    $data['url'],
+                );
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error('PeminjamanNotification: Gagal kirim push — ' . $e->getMessage());
+            }
         }
 
         return [

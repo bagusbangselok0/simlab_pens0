@@ -301,10 +301,17 @@
                             <div class="d-flex align-items-center">
                                 <i class="bi bi-info-circle-fill fs-4 me-2"></i>
                                 <div>
-                                    <strong>Ketentuan Peminjaman Alat:</strong>
+                                    <strong>Ketentuan & Batasan Peminjaman Alat:</strong>
                                     <ul class="mb-0 ps-3">
+                                        <li>Maksimal <strong>{{ $maxItems }} item</strong> alat per formulir pengajuan.</li>
+                                        <li>Durasi peminjaman maksimal <strong>{{ $maxLoanDays }} hari</strong> kalender.</li>
+                                        <li>Setiap mahasiswa dapat memiliki maksimal <strong>{{ $maxActiveLoans }} peminjaman aktif</strong> secara bersamaan.</li>
                                         <li>Alat yang dipilih dari <strong>Inventaris</strong> memiliki jumlah <strong>1 unit per NUP</strong> (terkunci otomatis), dan satuannya mengikuti data inventaris.</li>
-                                        <li>Gunakan <strong>Input Manual</strong> jika alat belum tercatat di inventaris. Pada mode ini, Anda dapat menginputkan jumlah dan satuan secara bebas.</li>
+                                        @if ($allowManual)
+                                            <li>Gunakan <strong>Input Manual</strong> jika alat belum tercatat di inventaris. Pada mode ini, Anda dapat menginputkan jumlah dan satuan secara bebas.</li>
+                                        @else
+                                            <li>Opsi <strong>Input Manual</strong> saat ini <span class="text-danger fw-bold">dinonaktifkan</span> oleh Administrator. Anda hanya dapat memilih alat dari daftar inventaris laboratorium.</li>
+                                        @endif
                                         <li>Peminjaman alat memerlukan persetujuan langsung dari <strong>PLP</strong> penanggung jawab ruangan tersebut.</li>
                                     </ul>
                                 </div>
@@ -423,6 +430,11 @@
 
 @section('scripts')
     <script>
+        // Konfigurasi batasan dari Pengaturan Sistem
+        const maxItemsSetting = {{ (int) $maxItems }};
+        const maxLoanDaysSetting = {{ (int) $maxLoanDays }};
+        const allowManualSetting = {{ $allowManual ? 'true' : 'false' }};
+
         // Cache alat inventaris untuk ruangan yang sedang dipilih
         let currentLabItems = [];
         let rowIndex = 0;
@@ -472,8 +484,21 @@
 
         // Fungsi menambah baris alat ke form pengajuan
         function addAlatRow() {
+            if ($('#tbodyItems tr.alat-item-row').length >= maxItemsSetting) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Batas Maksimal Tercapai',
+                    text: `Maksimal alat yang dapat diajukan dalam satu formulir adalah ${maxItemsSetting} item.`,
+                });
+                return;
+            }
+
             const index = rowIndex++;
             const optionsHtml = buildInventarisOptionsHtml();
+
+            const sumberOptions = allowManualSetting
+                ? '<option value="0">Dari Inventaris</option><option value="1">Input Manual</option>'
+                : '<option value="0">Dari Inventaris</option>';
 
             const rowHtml = `
                 <tr id="itemRow_${index}" class="alat-item-row">
@@ -491,8 +516,7 @@
                     <td class="alat-col-sumber">
                         <label class="d-md-none form-label small fw-bold alat-card-label mb-1">Sumber Alat:</label>
                         <select name="items[${index}][is_manual]" class="form-select form-select-sm select-sumber" data-index="${index}">
-                            <option value="0">Dari Inventaris</option>
-                            <option value="1">Input Manual</option>
+                            ${sumberOptions}
                         </select>
                     </td>
 
@@ -708,6 +732,23 @@
             $('#addPeminjamanAlatForm').on('submit', function(e) {
                 e.preventDefault();
                 $('.error-text').text('');
+
+                // Validasi durasi pinjam di sisi klien
+                const waktuPinjam = $('#waktu_pinjam').val();
+                const rencanaKembali = $('#rencana_kembali').val();
+                if (waktuPinjam && rencanaKembali) {
+                    const start = new Date(waktuPinjam);
+                    const end = new Date(rencanaKembali);
+                    const diffDays = (end - start) / (1000 * 60 * 60 * 24);
+                    if (diffDays > maxLoanDaysSetting) {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Durasi Melebihi Batas',
+                            text: `Durasi peminjaman tidak boleh melebihi ${maxLoanDaysSetting} hari (rencana Anda: ${diffDays.toFixed(1)} hari).`,
+                        });
+                        return;
+                    }
+                }
 
                 const formData = $(this).serialize();
                 const submitBtn = $('#btnSubmitPeminjaman');

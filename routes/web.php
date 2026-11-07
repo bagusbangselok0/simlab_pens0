@@ -186,6 +186,18 @@ Route::middleware('auth')->group(function () {
         Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');
         Route::patch('/settings/labs/{lab}/auto-approve-kalab', [SettingsController::class, 'updateAutoApproveKalab'])
             ->name('settings.auto-approve-kalab');
+        Route::post('/settings/peminjaman-alat', [SettingsController::class, 'updateAlatSettings'])
+            ->name('settings.peminjaman-alat');
+        Route::post('/settings/notification-gateway', [SettingsController::class, 'updateNotificationSettings'])
+            ->name('settings.notification-gateway');
+        Route::post('/settings/notification-gateway/generate-vapid', [SettingsController::class, 'generateVapidKeys'])
+            ->name('settings.notification.generate-vapid');
+        Route::post('/settings/notification-gateway/test-wa', [SettingsController::class, 'testWhatsApp'])
+            ->name('settings.notification.test-wa');
+        Route::post('/settings/notification-gateway/test-push', [SettingsController::class, 'testWebPush'])
+            ->name('settings.notification.test-push');
+        Route::post('/settings/theme-loader', [SettingsController::class, 'updateThemeSettings'])
+            ->name('settings.theme-loader');
     });
 
     // ---------------------------------------------------------

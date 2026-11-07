@@ -7,7 +7,9 @@ use App\Models\Lab;
 use App\Models\LabManager;
 use App\Models\PeminjamanAlat;
 use App\Models\PeminjamanAlatDetail;
+use App\Models\Setting;
 use App\Models\User;
+use App\Notifications\PeminjamanAlatNotification;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -93,7 +95,20 @@ class PeminjamanAlatController extends Controller
                 ->make(true);
         }
 
-        return view('pages.peminjaman_alat.index', compact('title', 'labs'));
+        // Ambil pengaturan kebijakan batas peminjaman alat
+        $maxItems       = Setting::int(Setting::MAX_ITEMS_PER_REQUEST, 'global', 5);
+        $maxLoanDays    = Setting::int(Setting::MAX_LOAN_DAYS, 'global', 7);
+        $maxActiveLoans = Setting::int(Setting::MAX_ACTIVE_LOANS, 'global', 2);
+        $allowManual    = Setting::boolean(Setting::ALLOW_MANUAL_INPUT, 'global', true);
+
+        return view('pages.peminjaman_alat.index', compact(
+            'title',
+            'labs',
+            'maxItems',
+            'maxLoanDays',
+            'maxActiveLoans',
+            'allowManual'
+        ));
     }
 
     /**
@@ -233,8 +248,56 @@ class PeminjamanAlatController extends Controller
             'items.min' => 'Harap masukkan minimal satu alat yang ingin dipinjam.',
         ]);
 
-        // Cek validasi per item & duplikasi NUP
+        // 2a. Validasi Batas Maksimal Peminjaman Aktif Mahasiswa
+        $maxActiveLoans = Setting::int(Setting::MAX_ACTIVE_LOANS, 'global', 2);
+        $activeLoansCount = PeminjamanAlat::where('mahasiswa_id', $user->id)
+            ->whereIn('status', ['pending_plp', 'disetujui', 'sedang_dipinjam'])
+            ->count();
+
+        if ($activeLoansCount >= $maxActiveLoans) {
+            return response()->json([
+                'success' => false,
+                'message' => "Anda telah mencapai batas maksimal ({$maxActiveLoans}) peminjaman alat yang masih aktif/berjalan. Harap selesaikan pengembalian alat sebelumnya terlebih dahulu.",
+            ], 422);
+        }
+
+        // 2b. Validasi Batas Durasi Peminjaman
+        $maxLoanDays = Setting::int(Setting::MAX_LOAN_DAYS, 'global', 7);
+        $waktuPinjam = Carbon::parse($request->waktu_pinjam);
+        $rencanaKembali = Carbon::parse($request->rencana_kembali);
+        $diffDays = $waktuPinjam->floatDiffInDays($rencanaKembali);
+
+        if ($diffDays > $maxLoanDays) {
+            return response()->json([
+                'success' => false,
+                'message' => "Durasi peminjaman tidak boleh melebihi batas maksimal {$maxLoanDays} hari (rencana Anda: " . round($diffDays, 1) . " hari).",
+            ], 422);
+        }
+
+        // 2c. Validasi Batas Maksimal Alat per Pengajuan
+        $maxItems = Setting::int(Setting::MAX_ITEMS_PER_REQUEST, 'global', 5);
         $itemsData = $request->input('items', []);
+        if (count($itemsData) > $maxItems) {
+            return response()->json([
+                'success' => false,
+                'message' => "Jumlah alat yang diajukan (" . count($itemsData) . " item) melebihi batas maksimal yang diperbolehkan ({$maxItems} item per pengajuan).",
+            ], 422);
+        }
+
+        // 2d. Validasi Izin Opsi Input Manual
+        $allowManual = Setting::boolean(Setting::ALLOW_MANUAL_INPUT, 'global', true);
+        if (!$allowManual) {
+            foreach ($itemsData as $item) {
+                if (!empty($item['is_manual'])) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Opsi "Input Manual" sedang dinonaktifkan oleh Administrator. Mahasiswa hanya dapat meminjam alat yang terdaftar di Inventaris Ruangan.',
+                    ], 422);
+                }
+            }
+        }
+
+        // Cek validasi per item & duplikasi NUP
         $selectedUnits = [];
 
         foreach ($itemsData as $index => $item) {
@@ -363,6 +426,18 @@ class PeminjamanAlatController extends Controller
             }
 
             DB::commit();
+
+            // Kirim notifikasi pengajuan baru ke PLP ruangan
+            try {
+                if ($plpId) {
+                    $plpUser = User::find($plpId);
+                    if ($plpUser) {
+                        $plpUser->notify(new PeminjamanAlatNotification($peminjaman, 'create', $user));
+                    }
+                }
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error('PeminjamanAlatController: Gagal kirim notifikasi peminjaman baru - ' . $e->getMessage());
+            }
 
             return response()->json([
                 'success' => true,
@@ -598,6 +673,15 @@ class PeminjamanAlatController extends Controller
             'tgl_ttd_plp' => now(),
         ]);
 
+        // Notifikasi ke mahasiswa
+        try {
+            if ($peminjaman->mahasiswa) {
+                $peminjaman->mahasiswa->notify(new PeminjamanAlatNotification($peminjaman, 'disetujui', $user));
+            }
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('PeminjamanAlatController: Gagal kirim notifikasi approval - ' . $e->getMessage());
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'Peminjaman alat berhasil disetujui.'
@@ -631,6 +715,15 @@ class PeminjamanAlatController extends Controller
             'catatan_penolakan' => $request->catatan_penolakan,
         ]);
 
+        // Notifikasi ke mahasiswa
+        try {
+            if ($peminjaman->mahasiswa) {
+                $peminjaman->mahasiswa->notify(new PeminjamanAlatNotification($peminjaman, 'ditolak', $user, $request->catatan_penolakan));
+            }
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('PeminjamanAlatController: Gagal kirim notifikasi penolakan - ' . $e->getMessage());
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'Pengajuan peminjaman alat berhasil ditolak.'
@@ -656,6 +749,15 @@ class PeminjamanAlatController extends Controller
             'waktu_kembali' => now(),
             'kondisi_kembali_catatan' => $request->input('catatan', 'Alat telah dikembalikan dalam kondisi lengkap.'),
         ]);
+
+        // Notifikasi ke mahasiswa
+        try {
+            if ($peminjaman->mahasiswa) {
+                $peminjaman->mahasiswa->notify(new PeminjamanAlatNotification($peminjaman, 'selesai', Auth::user()));
+            }
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('PeminjamanAlatController: Gagal kirim notifikasi pengembalian - ' . $e->getMessage());
+        }
 
         return response()->json([
             'success' => true,
