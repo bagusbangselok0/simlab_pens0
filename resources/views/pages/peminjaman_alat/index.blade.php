@@ -1,192 +1,195 @@
 @extends('layouts.app')
 
 @section('content')
-<style>
-    /* =========================================================
-       Responsive Mobile Styling & Dark/Light Theme Integration
-       ========================================================= */
-    @media (max-width: 767.98px) {
-        #addPeminjamanAlatModal .modal-dialog {
-            margin: 0.5rem auto;
-            max-width: calc(100% - 1rem);
+    <style>
+        /* =========================================================
+                                           Responsive Mobile Styling & Dark/Light Theme Integration
+                                           ========================================================= */
+        @media (max-width: 767.98px) {
+            #addPeminjamanAlatModal .modal-dialog {
+                margin: 0.5rem auto;
+                max-width: calc(100% - 1rem);
+            }
+
+            #addPeminjamanAlatModal .modal-body {
+                padding: 1rem 0.75rem;
+            }
+
+            /* Nonaktifkan overflow table-responsive pada mobile agar layout card mengalir vertikal */
+            #addPeminjamanAlatModal .table-responsive {
+                overflow: visible !important;
+                margin-bottom: 0.5rem !important;
+            }
+
+            #tableItems,
+            #tableItems tbody {
+                display: block;
+                width: 100% !important;
+            }
+
+            #tableItems thead {
+                display: none !important;
+            }
+
+            /* Base Card Styling (Mobile) */
+            #tableItems tr.alat-item-row {
+                display: flex;
+                flex-wrap: wrap;
+                border-radius: 0.75rem;
+                padding: 0.85rem;
+                margin-bottom: 0.85rem;
+                position: relative;
+                transition: background-color 0.2s ease, border-color 0.2s ease;
+            }
+
+            #tableItems tr.alat-item-row>td {
+                display: block;
+                padding: 0.25rem 0;
+                border: none;
+            }
+
+            .alat-col-header {
+                width: 100% !important;
+                margin-bottom: 0.5rem;
+            }
+
+            .alat-col-sumber {
+                width: 100% !important;
+                margin-bottom: 0.5rem;
+            }
+
+            .alat-col-nama {
+                width: 100% !important;
+                margin-bottom: 0.5rem;
+            }
+
+            .alat-col-jumlah {
+                width: calc(50% - 0.35rem) !important;
+                margin-right: 0.7rem;
+                margin-bottom: 0.5rem;
+            }
+
+            .alat-col-satuan {
+                width: calc(50% - 0.35rem) !important;
+                margin-bottom: 0.5rem;
+            }
+
+            .alat-col-keterangan {
+                width: 100% !important;
+                margin-bottom: 0.25rem;
+            }
+
+            /* Ukuran input dan select nyaman disentuh di layar sentuh HP */
+            #addPeminjamanAlatModal .form-control,
+            #addPeminjamanAlatModal .form-select {
+                font-size: 14.5px;
+                min-height: 40px;
+            }
         }
 
-        #addPeminjamanAlatModal .modal-body {
-            padding: 1rem 0.75rem;
+        /* ---------------------------------------------------------
+                                           LIGHT MODE (Default & Eksplisit html[data-bs-theme="light"])
+                                           --------------------------------------------------------- */
+        #tableItems tr.alat-item-row,
+        html:not([data-bs-theme="dark"]) #tableItems tr.alat-item-row,
+        html[data-bs-theme="light"] #tableItems tr.alat-item-row {
+            background-color: #ffffff !important;
+            border: 1px solid #e2e8f0 !important;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05) !important;
         }
 
-        /* Nonaktifkan overflow table-responsive pada mobile agar layout card mengalir vertikal */
-        #addPeminjamanAlatModal .table-responsive {
-            overflow: visible !important;
-            margin-bottom: 0.5rem !important;
+        .alat-card-header,
+        html:not([data-bs-theme="dark"]) .alat-card-header,
+        html[data-bs-theme="light"] .alat-card-header {
+            background-color: #f8fafc !important;
+            border: 1px solid #e2e8f0 !important;
         }
 
-        #tableItems,
-        #tableItems tbody {
-            display: block;
-            width: 100% !important;
+        .alat-card-label,
+        html:not([data-bs-theme="dark"]) .alat-card-label,
+        html[data-bs-theme="light"] .alat-card-label {
+            color: #475569 !important;
         }
 
-        #tableItems thead {
-            display: none !important;
+        .alat-input-readonly,
+        html:not([data-bs-theme="dark"]) .alat-input-readonly,
+        html[data-bs-theme="light"] .alat-input-readonly {
+            background-color: #f1f5f9 !important;
+            color: #334155 !important;
+            border: 1px solid #cbd5e1 !important;
         }
 
-        /* Base Card Styling (Mobile) */
-        #tableItems tr.alat-item-row {
-            display: flex;
-            flex-wrap: wrap;
-            border-radius: 0.75rem;
-            padding: 0.85rem;
-            margin-bottom: 0.85rem;
-            position: relative;
-            transition: background-color 0.2s ease, border-color 0.2s ease;
+        #btnTambahBarisBawah,
+        html:not([data-bs-theme="dark"]) #btnTambahBarisBawah,
+        html[data-bs-theme="light"] #btnTambahBarisBawah {
+            border: 1px dashed #435ebe !important;
+            color: #435ebe !important;
+            background-color: #f8fafc !important;
         }
 
-        #tableItems tr.alat-item-row > td {
-            display: block;
-            padding: 0.25rem 0;
-            border: none;
+        #btnTambahBarisBawah:hover,
+        html:not([data-bs-theme="dark"]) #btnTambahBarisBawah:hover,
+        html[data-bs-theme="light"] #btnTambahBarisBawah:hover {
+            background-color: #435ebe !important;
+            color: #ffffff !important;
         }
 
-        .alat-col-header {
-            width: 100% !important;
-            margin-bottom: 0.5rem;
+        /* ---------------------------------------------------------
+                                           DARK MODE (HANYA saat html[data-bs-theme="dark"])
+                                           --------------------------------------------------------- */
+        html[data-bs-theme="dark"] #tableItems tr.alat-item-row {
+            background-color: #1e1e2d !important;
+            border: 1px solid #35354f !important;
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3) !important;
         }
 
-        .alat-col-sumber {
-            width: 100% !important;
-            margin-bottom: 0.5rem;
+        html[data-bs-theme="dark"] .alat-card-header {
+            background-color: #151521 !important;
+            border: 1px solid #35354f !important;
         }
 
-        .alat-col-nama {
-            width: 100% !important;
-            margin-bottom: 0.5rem;
+        html[data-bs-theme="dark"] .alat-card-label {
+            color: #9899ac !important;
         }
 
-        .alat-col-jumlah {
-            width: calc(50% - 0.35rem) !important;
-            margin-right: 0.7rem;
-            margin-bottom: 0.5rem;
+        html[data-bs-theme="dark"] .alat-input-readonly {
+            background-color: #151521 !important;
+            color: #9899ac !important;
+            border: 1px solid #35354f !important;
         }
 
-        .alat-col-satuan {
-            width: calc(50% - 0.35rem) !important;
-            margin-bottom: 0.5rem;
+        /* Header tabel desktop di dark mode */
+        html[data-bs-theme="dark"] #tableItems thead.table-light th {
+            background-color: #1b1b29 !important;
+            color: #c2c2d9 !important;
+            border-color: #35354f !important;
         }
 
-        .alat-col-keterangan {
-            width: 100% !important;
-            margin-bottom: 0.25rem;
+        /* Alert ketentuan di Dark Mode */
+        html[data-bs-theme="dark"] #addPeminjamanAlatModal .alert-light-primary {
+            background-color: rgba(67, 94, 190, 0.15) !important;
+            color: #b7c3ef !important;
+            border: 1px solid rgba(67, 94, 190, 0.3) !important;
         }
 
-        /* Ukuran input dan select nyaman disentuh di layar sentuh HP */
-        #addPeminjamanAlatModal .form-control,
-        #addPeminjamanAlatModal .form-select {
-            font-size: 14.5px;
-            min-height: 40px;
+        /* Tombol tambah baris bawah di Dark Mode */
+        html[data-bs-theme="dark"] #btnTambahBarisBawah {
+            border: 1px dashed #435ebe !important;
+            color: #b7c3ef !important;
+            background-color: rgba(67, 94, 190, 0.1) !important;
         }
-    }
 
-    /* ---------------------------------------------------------
-       LIGHT MODE (Default & Eksplisit html[data-bs-theme="light"])
-       --------------------------------------------------------- */
-    #tableItems tr.alat-item-row,
-    html:not([data-bs-theme="dark"]) #tableItems tr.alat-item-row,
-    html[data-bs-theme="light"] #tableItems tr.alat-item-row {
-        background-color: #ffffff !important;
-        border: 1px solid #e2e8f0 !important;
-        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05) !important;
-    }
-
-    .alat-card-header,
-    html:not([data-bs-theme="dark"]) .alat-card-header,
-    html[data-bs-theme="light"] .alat-card-header {
-        background-color: #f8fafc !important;
-        border: 1px solid #e2e8f0 !important;
-    }
-
-    .alat-card-label,
-    html:not([data-bs-theme="dark"]) .alat-card-label,
-    html[data-bs-theme="light"] .alat-card-label {
-        color: #475569 !important;
-    }
-
-    .alat-input-readonly,
-    html:not([data-bs-theme="dark"]) .alat-input-readonly,
-    html[data-bs-theme="light"] .alat-input-readonly {
-        background-color: #f1f5f9 !important;
-        color: #334155 !important;
-        border: 1px solid #cbd5e1 !important;
-    }
-
-    #btnTambahBarisBawah,
-    html:not([data-bs-theme="dark"]) #btnTambahBarisBawah,
-    html[data-bs-theme="light"] #btnTambahBarisBawah {
-        border: 1px dashed #435ebe !important;
-        color: #435ebe !important;
-        background-color: #f8fafc !important;
-    }
-    #btnTambahBarisBawah:hover,
-    html:not([data-bs-theme="dark"]) #btnTambahBarisBawah:hover,
-    html[data-bs-theme="light"] #btnTambahBarisBawah:hover {
-        background-color: #435ebe !important;
-        color: #ffffff !important;
-    }
-
-    /* ---------------------------------------------------------
-       DARK MODE (HANYA saat html[data-bs-theme="dark"])
-       --------------------------------------------------------- */
-    html[data-bs-theme="dark"] #tableItems tr.alat-item-row {
-        background-color: #1e1e2d !important;
-        border: 1px solid #35354f !important;
-        box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3) !important;
-    }
-
-    html[data-bs-theme="dark"] .alat-card-header {
-        background-color: #151521 !important;
-        border: 1px solid #35354f !important;
-    }
-
-    html[data-bs-theme="dark"] .alat-card-label {
-        color: #9899ac !important;
-    }
-
-    html[data-bs-theme="dark"] .alat-input-readonly {
-        background-color: #151521 !important;
-        color: #9899ac !important;
-        border: 1px solid #35354f !important;
-    }
-
-    /* Header tabel desktop di dark mode */
-    html[data-bs-theme="dark"] #tableItems thead.table-light th {
-        background-color: #1b1b29 !important;
-        color: #c2c2d9 !important;
-        border-color: #35354f !important;
-    }
-
-    /* Alert ketentuan di Dark Mode */
-    html[data-bs-theme="dark"] #addPeminjamanAlatModal .alert-light-primary {
-        background-color: rgba(67, 94, 190, 0.15) !important;
-        color: #b7c3ef !important;
-        border: 1px solid rgba(67, 94, 190, 0.3) !important;
-    }
-
-    /* Tombol tambah baris bawah di Dark Mode */
-    html[data-bs-theme="dark"] #btnTambahBarisBawah {
-        border: 1px dashed #435ebe !important;
-        color: #b7c3ef !important;
-        background-color: rgba(67, 94, 190, 0.1) !important;
-    }
-    html[data-bs-theme="dark"] #btnTambahBarisBawah:hover {
-        background-color: #435ebe !important;
-        color: #ffffff !important;
-    }
-</style>
+        html[data-bs-theme="dark"] #btnTambahBarisBawah:hover {
+            background-color: #435ebe !important;
+            color: #ffffff !important;
+        }
+    </style>
     <section class="section">
         <div class="card">
             <div class="card-header d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-2">
                 <h5 class="card-title mb-0">Daftar Peminjaman Alat Laboratorium</h5>
-                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addPeminjamanAlatModal" id="btnTambahPeminjaman">
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addPeminjamanAlatModal"
+                    id="btnTambahPeminjaman">
                     <i class="bi bi-plus-circle me-1"></i> Ajukan Peminjaman Alat
                 </button>
             </div>
@@ -214,50 +217,61 @@
     </section>
 
     <!-- Modal Ajukan Peminjaman Alat -->
-    <div class="modal fade" id="addPeminjamanAlatModal" tabindex="-1" role="dialog" aria-labelledby="addPeminjamanAlatModalLabel" aria-hidden="true">
+    <div class="modal fade" id="addPeminjamanAlatModal" tabindex="-1" role="dialog"
+        aria-labelledby="addPeminjamanAlatModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-xl" role="document">
             <div class="modal-content">
                 <div class="modal-header bg-primary text-white">
                     <h5 class="modal-title text-white" id="addPeminjamanAlatModalLabel">
                         <i class="bi bi-tools"></i> Form Pengajuan Peminjaman Alat Lab
                     </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <form id="addPeminjamanAlatForm" method="POST" action="javascript:void(0);">
                         @csrf
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label for="lab_id" class="form-label fw-bold">Pilih Ruangan / Lab Asal Alat <span class="text-danger">*</span></label>
+                                <label for="lab_id" class="form-label fw-bold">Pilih Ruangan / Lab Asal Alat <span
+                                        class="text-danger">*</span></label>
                                 <select name="lab_id" id="lab_id" class="form-select" required>
                                     <option value="">-- Pilih Ruangan / Lab Terlebih Dahulu --</option>
                                     @foreach ($labs as $lab)
-                                        <option value="{{ $lab->id }}">{{ $lab->nama_lab }} ({{ $lab->lokasi }})</option>
+                                        <option value="{{ $lab->id }}">{{ $lab->nama_lab }} ({{ $lab->lokasi }})
+                                        </option>
                                     @endforeach
                                 </select>
                                 <span class="text-danger error-text" id="labIdError"></span>
                                 <small class="text-muted d-block mt-1">
-                                    <i class="bi bi-info-circle"></i> Memilih ruangan akan otomatis memuat daftar alat inventaris yang tersedia di ruangan tersebut.
+                                    <i class="bi bi-info-circle"></i> Memilih ruangan akan otomatis memuat daftar alat
+                                    inventaris yang tersedia di ruangan tersebut.
                                 </small>
                             </div>
 
                             <div class="col-md-6 mb-3">
-                                <label for="keperluan" class="form-label fw-bold">Tujuan / Keperluan Peminjaman <span class="text-danger">*</span></label>
-                                <textarea name="keperluan" id="keperluan" rows="2" class="form-control" placeholder="Contoh: Praktikum Mandiri / Tugas Akhir Pembuatan Robot" required></textarea>
+                                <label for="keperluan" class="form-label fw-bold">Tujuan / Keperluan Peminjaman <span
+                                        class="text-danger">*</span></label>
+                                <textarea name="keperluan" id="keperluan" rows="2" class="form-control"
+                                    placeholder="Contoh: Praktikum Mandiri / Tugas Akhir Pembuatan Robot" required></textarea>
                                 <span class="text-danger error-text" id="keperluanError"></span>
                             </div>
                         </div>
 
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label for="waktu_pinjam" class="form-label fw-bold">Waktu Mulai Pinjam <span class="text-danger">*</span></label>
-                                <input type="datetime-local" name="waktu_pinjam" id="waktu_pinjam" class="form-control" required>
+                                <label for="waktu_pinjam" class="form-label fw-bold">Waktu Mulai Pinjam <span
+                                        class="text-danger">*</span></label>
+                                <input type="datetime-local" name="waktu_pinjam" id="waktu_pinjam" class="form-control"
+                                    required>
                                 <span class="text-danger error-text" id="waktuPinjamError"></span>
                             </div>
 
                             <div class="col-md-6 mb-3">
-                                <label for="rencana_kembali" class="form-label fw-bold">Rencana Waktu Pengembalian <span class="text-danger">*</span></label>
-                                <input type="datetime-local" name="rencana_kembali" id="rencana_kembali" class="form-control" required>
+                                <label for="rencana_kembali" class="form-label fw-bold">Rencana Waktu Pengembalian <span
+                                        class="text-danger">*</span></label>
+                                <input type="datetime-local" name="rencana_kembali" id="rencana_kembali"
+                                    class="form-control" required>
                                 <span class="text-danger error-text" id="rencanaKembaliError"></span>
                             </div>
                         </div>
@@ -266,7 +280,8 @@
 
                         <!-- Repeater Daftar Alat -->
                         <div class="d-flex justify-content-between align-items-center mb-2">
-                            <h6 class="fw-bold mb-0"><i class="bi bi-card-checklist"></i> Daftar Alat yang Ingin Dipinjam</h6>
+                            <h6 class="fw-bold mb-0"><i class="bi bi-card-checklist"></i> Daftar Alat yang Ingin Dipinjam
+                            </h6>
                             <button type="button" class="btn btn-sm btn-outline-primary" id="btnTambahBarisAlat">
                                 <i class="bi bi-plus-lg"></i> Tambah Baris Alat
                             </button>
@@ -292,7 +307,8 @@
 
                         <!-- Tombol Tambah Baris Khusus Mobile (Mudah dijangkau di bawah item) -->
                         <div class="d-md-none text-center mb-3">
-                            <button type="button" class="btn btn-outline-primary w-100 py-2 fw-semibold" id="btnTambahBarisBawah">
+                            <button type="button" class="btn btn-outline-primary w-100 py-2 fw-semibold"
+                                id="btnTambahBarisBawah">
                                 <i class="bi bi-plus-circle me-1"></i> + Tambah Baris Alat
                             </button>
                         </div>
@@ -303,16 +319,28 @@
                                 <div>
                                     <strong>Ketentuan & Batasan Peminjaman Alat:</strong>
                                     <ul class="mb-0 ps-3">
-                                        <li>Maksimal <strong>{{ $maxItems }} item</strong> alat per formulir pengajuan.</li>
-                                        <li>Durasi peminjaman maksimal <strong>{{ $maxLoanDays }} hari</strong> kalender.</li>
-                                        <li>Setiap mahasiswa dapat memiliki maksimal <strong>{{ $maxActiveLoans }} peminjaman aktif</strong> secara bersamaan.</li>
-                                        <li>Alat yang dipilih dari <strong>Inventaris</strong> memiliki jumlah <strong>1 unit per NUP</strong> (terkunci otomatis), dan satuannya mengikuti data inventaris.</li>
+                                        <li>Maksimal <strong>{{ $maxItems }} item</strong> alat per formulir pengajuan.
+                                        </li>
+                                        <li>Durasi peminjaman maksimal <strong>{{ $maxLoanDays }} hari</strong> kalender.
+                                        </li>
+                                        <li>Durasi khusus peminjaman di luar keperluan praktikum maksimal 1x24
+                                            jam</li>
+                                        <li>Setiap mahasiswa dapat memiliki maksimal <strong>{{ $maxActiveLoans }}
+                                                peminjaman aktif</strong> secara bersamaan.</li>
+                                        <li>Alat yang dipilih dari <strong>Inventaris</strong> memiliki jumlah <strong>1
+                                                unit per NUP</strong> (terkunci otomatis), dan satuannya mengikuti data
+                                            inventaris.</li>
                                         @if ($allowManual)
-                                            <li>Gunakan <strong>Input Manual</strong> jika alat belum tercatat di inventaris. Pada mode ini, Anda dapat menginputkan jumlah dan satuan secara bebas.</li>
+                                            <li>Gunakan <strong>Input Manual</strong> jika alat belum tercatat di
+                                                inventaris. Pada mode ini, Anda dapat menginputkan jumlah dan satuan secara
+                                                bebas.</li>
                                         @else
-                                            <li>Opsi <strong>Input Manual</strong> saat ini <span class="text-danger fw-bold">dinonaktifkan</span> oleh Administrator. Anda hanya dapat memilih alat dari daftar inventaris laboratorium.</li>
+                                            <li>Opsi <strong>Input Manual</strong> saat ini <span
+                                                    class="text-danger fw-bold">dinonaktifkan</span> oleh Administrator.
+                                                Anda hanya dapat memilih alat dari daftar inventaris laboratorium.</li>
                                         @endif
-                                        <li>Peminjaman alat memerlukan persetujuan langsung dari <strong>PLP</strong> penanggung jawab ruangan tersebut.</li>
+                                        <li>Peminjaman alat memerlukan persetujuan langsung dari <strong>PLP</strong>
+                                            penanggung jawab ruangan tersebut.</li>
                                     </ul>
                                 </div>
                             </div>
@@ -333,14 +361,16 @@
     </div>
 
     <!-- Modal Detail Peminjaman Alat -->
-    <div class="modal fade" id="detailModal" tabindex="-1" role="dialog" aria-labelledby="detailModalLabel" aria-hidden="true">
+    <div class="modal fade" id="detailModal" tabindex="-1" role="dialog" aria-labelledby="detailModalLabel"
+        aria-hidden="true">
         <div class="modal-dialog modal-lg" role="document">
             <div class="modal-content">
                 <div class="modal-header bg-info text-white">
                     <h5 class="modal-title text-white" id="detailModalLabel">
                         <i class="bi bi-info-circle"></i> Detail Peminjaman Alat
                     </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <table class="table table-bordered mb-3">
@@ -418,7 +448,8 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <a href="#" id="btnCetakModal" target="_blank" class="btn btn-primary" style="display: none;">
+                    <a href="#" id="btnCetakModal" target="_blank" class="btn btn-primary"
+                        style="display: none;">
                         <i class="bi bi-printer"></i> Cetak PDF
                     </a>
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
@@ -496,9 +527,9 @@
             const index = rowIndex++;
             const optionsHtml = buildInventarisOptionsHtml();
 
-            const sumberOptions = allowManualSetting
-                ? '<option value="0">Dari Inventaris</option><option value="1">Input Manual</option>'
-                : '<option value="0">Dari Inventaris</option>';
+            const sumberOptions = allowManualSetting ?
+                '<option value="0">Dari Inventaris</option><option value="1">Input Manual</option>' :
+                '<option value="0">Dari Inventaris</option>';
 
             const rowHtml = `
                 <tr id="itemRow_${index}" class="alat-item-row">
@@ -570,7 +601,8 @@
 
         $(document).ready(function() {
             // Sinkronisasi class body dengan tema aktif
-            const currentTheme = document.documentElement.getAttribute('data-bs-theme') || localStorage.getItem('theme') || 'light';
+            const currentTheme = document.documentElement.getAttribute('data-bs-theme') || localStorage.getItem(
+                'theme') || 'light';
             if (currentTheme === 'light') {
                 $('body').removeClass('dark theme-dark').addClass('light');
             } else {
@@ -582,16 +614,48 @@
                 processing: true,
                 serverSide: true,
                 ajax: "{{ route('peminjaman-alat.index') }}",
-                columns: [
-                    { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false },
-                    { data: 'kode_peminjaman', name: 'kode_peminjaman' },
-                    { data: 'lab', name: 'lab' },
-                    { data: 'daftar_alat', name: 'daftar_alat', orderable: false },
-                    { data: 'keperluan', name: 'keperluan' },
-                    { data: 'waktu_pinjam', name: 'waktu_pinjam' },
-                    { data: 'rencana_kembali', name: 'rencana_kembali' },
-                    { data: 'status', name: 'status' },
-                    { data: 'action', name: 'action', orderable: false, searchable: false, class: 'text-nowrap' },
+                columns: [{
+                        data: 'DT_RowIndex',
+                        name: 'DT_RowIndex',
+                        orderable: false,
+                        searchable: false
+                    },
+                    {
+                        data: 'kode_peminjaman',
+                        name: 'kode_peminjaman'
+                    },
+                    {
+                        data: 'lab',
+                        name: 'lab'
+                    },
+                    {
+                        data: 'daftar_alat',
+                        name: 'daftar_alat',
+                        orderable: false
+                    },
+                    {
+                        data: 'keperluan',
+                        name: 'keperluan'
+                    },
+                    {
+                        data: 'waktu_pinjam',
+                        name: 'waktu_pinjam'
+                    },
+                    {
+                        data: 'rencana_kembali',
+                        name: 'rencana_kembali'
+                    },
+                    {
+                        data: 'status',
+                        name: 'status'
+                    },
+                    {
+                        data: 'action',
+                        name: 'action',
+                        orderable: false,
+                        searchable: false,
+                        class: 'text-nowrap'
+                    },
                 ]
             });
 
@@ -616,7 +680,8 @@
                         updateAllInventarisSelects();
                     },
                     error: function() {
-                        $('.select-inventaris').html('<option value="">Gagal memuat alat inventaris</option>');
+                        $('.select-inventaris').html(
+                            '<option value="">Gagal memuat alat inventaris</option>');
                     }
                 });
             });
@@ -659,15 +724,19 @@
                     $(`#nup_${index}`).val('');
 
                     // Input Manual: Jumlah dan Satuan bisa diedit bebas
-                    inputJumlah.prop('readonly', false).removeClass('bg-light alat-input-readonly').val(1).removeAttr('title');
-                    inputSatuan.prop('readonly', false).removeClass('bg-light alat-input-readonly').val('Unit').removeAttr('title');
+                    inputJumlah.prop('readonly', false).removeClass('bg-light alat-input-readonly').val(1)
+                        .removeAttr('title');
+                    inputSatuan.prop('readonly', false).removeClass('bg-light alat-input-readonly').val(
+                        'Unit').removeAttr('title');
                 } else {
                     $(`#boxInventaris_${index}`).removeClass('d-none');
                     $(`#boxManual_${index}`).addClass('d-none');
 
                     // Dari Inventaris: Jumlah terkunci 1 dan Satuan diambil dari inventaris
-                    inputJumlah.prop('readonly', true).addClass('bg-light alat-input-readonly').val(1).attr('title', 'Jumlah terkunci 1 per NUP untuk alat inventaris');
-                    inputSatuan.prop('readonly', true).addClass('bg-light alat-input-readonly').attr('title', 'Satuan otomatis mengikuti master inventaris');
+                    inputJumlah.prop('readonly', true).addClass('bg-light alat-input-readonly').val(1).attr(
+                        'title', 'Jumlah terkunci 1 per NUP untuk alat inventaris');
+                    inputSatuan.prop('readonly', true).addClass('bg-light alat-input-readonly').attr(
+                        'title', 'Satuan otomatis mengikuti master inventaris');
 
                     const selected = $(`#boxInventaris_${index} select`).find(':selected');
                     const satuan = selected.data('satuan');
@@ -759,7 +828,8 @@
                     type: "POST",
                     data: formData,
                     success: function(res) {
-                        submitBtn.prop('disabled', false).html('<i class="bi bi-send"></i> Kirim Pengajuan ke PLP');
+                        submitBtn.prop('disabled', false).html(
+                            '<i class="bi bi-send"></i> Kirim Pengajuan ke PLP');
                         $('#addPeminjamanAlatModal').modal('hide');
                         $('#addPeminjamanAlatForm')[0].reset();
                         $('#tbodyItems').empty();
@@ -774,20 +844,26 @@
                         });
                     },
                     error: function(xhr) {
-                        submitBtn.prop('disabled', false).html('<i class="bi bi-send"></i> Kirim Pengajuan ke PLP');
+                        submitBtn.prop('disabled', false).html(
+                            '<i class="bi bi-send"></i> Kirim Pengajuan ke PLP');
                         const res = xhr.responseJSON;
 
                         if (xhr.status === 422) {
                             if (res.errors) {
-                                if (res.errors.lab_id) $('#labIdError').text(res.errors.lab_id[0]);
-                                if (res.errors.keperluan) $('#keperluanError').text(res.errors.keperluan[0]);
-                                if (res.errors.waktu_pinjam) $('#waktuPinjamError').text(res.errors.waktu_pinjam[0]);
-                                if (res.errors.rencana_kembali) $('#rencanaKembaliError').text(res.errors.rencana_kembali[0]);
+                                if (res.errors.lab_id) $('#labIdError').text(res.errors.lab_id[
+                                    0]);
+                                if (res.errors.keperluan) $('#keperluanError').text(res.errors
+                                    .keperluan[0]);
+                                if (res.errors.waktu_pinjam) $('#waktuPinjamError').text(res
+                                    .errors.waktu_pinjam[0]);
+                                if (res.errors.rencana_kembali) $('#rencanaKembaliError').text(
+                                    res.errors.rencana_kembali[0]);
                             }
                             Swal.fire({
                                 icon: 'warning',
                                 title: 'Periksa Formulir',
-                                text: res.message || 'Harap periksa kembali isian formulir Anda.',
+                                text: res.message ||
+                                    'Harap periksa kembali isian formulir Anda.',
                             });
                         } else {
                             Swal.fire({
@@ -851,7 +927,8 @@
                         // Waktu Kembali
                         if (data.waktu_kembali && data.waktu_kembali !== '-') {
                             $('#rowWaktuKembali').show();
-                            $('#dWaktuKembali').text(`${data.waktu_kembali} (${data.kondisi_kembali_catatan})`);
+                            $('#dWaktuKembali').text(
+                                `${data.waktu_kembali} (${data.kondisi_kembali_catatan})`);
                         } else {
                             $('#rowWaktuKembali').hide();
                         }
@@ -859,9 +936,9 @@
                         // Render items
                         let itemsHtml = '';
                         data.items.forEach((item, idx) => {
-                            const badgeSumber = item.is_manual
-                                ? '<span class="badge bg-warning text-dark"><i class="bi bi-pencil-square"></i> Input Manual</span>'
-                                : '<span class="badge bg-success"><i class="bi bi-box-seam"></i> Inventaris DIR</span>';
+                            const badgeSumber = item.is_manual ?
+                                '<span class="badge bg-warning text-dark"><i class="bi bi-pencil-square"></i> Input Manual</span>' :
+                                '<span class="badge bg-success"><i class="bi bi-box-seam"></i> Inventaris DIR</span>';
 
                             itemsHtml += `
                                 <tr>
@@ -880,7 +957,8 @@
 
                         // Tombol cetak
                         if (['disetujui', 'sedang_dipinjam', 'selesai'].includes(data.status)) {
-                            $('#btnCetakModal').attr('href', "{{ url('peminjaman-alat/cetak') }}/" + data.id).show();
+                            $('#btnCetakModal').attr('href',
+                                "{{ url('peminjaman-alat/cetak') }}/" + data.id).show();
                         } else {
                             $('#btnCetakModal').hide();
                         }
@@ -892,7 +970,9 @@
                         Swal.fire({
                             icon: 'error',
                             title: 'Gagal Memuat Detail',
-                            text: xhr.responseJSON?.message || 'Tidak dapat memuat detail peminjaman (Error: ' + xhr.status + ').'
+                            text: xhr.responseJSON?.message ||
+                                'Tidak dapat memuat detail peminjaman (Error: ' + xhr
+                                .status + ').'
                         });
                     }
                 });
@@ -927,7 +1007,8 @@
                                 table.ajax.reload(null, false);
                             },
                             error: function(xhr) {
-                                Swal.fire('Gagal', xhr.responseJSON?.message || 'Terjadi kesalahan.', 'error');
+                                Swal.fire('Gagal', xhr.responseJSON?.message ||
+                                    'Terjadi kesalahan.', 'error');
                             }
                         });
                     }
