@@ -164,4 +164,26 @@ class User extends Authenticatable
     {
         return $this->hasMany(Prodi::class);
     }
+
+    /**
+     * Cek apakah akun dosen menjabat sebagai Kepala Laboratorium (Kalab).
+     */
+    public function isKalab(): bool
+    {
+        if ($this->role?->slug !== 'dosen') {
+            return false;
+        }
+
+        return $this->jabatan?->slug === 'kalab'
+            || (int) $this->jabatan_id === 3
+            || LabManager::where('kalab_id', $this->id)->exists();
+    }
+
+    /**
+     * Cek apakah user sudah memiliki tanda tangan digital terverifikasi Admin.
+     */
+    public function hasApprovedSignature(): bool
+    {
+        return !empty($this->signature_path) && $this->signature_status === 'approved';
+    }
 }

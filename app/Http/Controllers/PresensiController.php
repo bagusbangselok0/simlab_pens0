@@ -412,6 +412,11 @@ class PresensiController extends Controller
 
     public function indexMonitoring(Request $request)
     {
+        $user = Auth::user();
+        if ($user && $user->role?->slug === 'dosen' && !$user->isKalab()) {
+            abort(403, 'Halaman ini khusus untuk Kepala Laboratorium, PLP, Satpam, atau Admin.');
+        }
+
         $title = 'Monitoring Presensi Lab';
 
         if ($request->ajax()) {

@@ -376,18 +376,21 @@
             <div class="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-3">
                 <div>
                     <span class="dashboard-chip mb-3">
-                        <i class="bi bi-person-badge me-2"></i>Area Kepala Laboratorium (Kalab)
+                        <i class="bi bi-person-badge me-2"></i>
+                        {{ $is_kalab_dosen ? 'Area Kepala Laboratorium (Kalab)' : 'Area Dosen Pengampu Praktikum' }}
                     </span>
                     <h3 class="fw-bold mb-2">Halo, {{ $user->full_name }} 👋</h3>
                     <p class="mb-0 text-white-50">
-                        @if ($my_lab_managers->isNotEmpty())
+                        @if ($is_kalab_dosen && $my_lab_managers->isNotEmpty())
                             Memantau aktivitas & persetujuan peminjaman untuk:
                             <strong class="text-white">
                                 {{ $my_lab_managers->pluck('lab.nama_lab')->filter()->join(', ') }}
                                 ({{ $my_lab_managers->pluck('lab.kode_lab')->filter()->join(', ') }})
                             </strong>
-                        @else
+                        @elseif ($is_kalab_dosen)
                             Pantau pengajuan laboratorium, kelola persetujuan, dan pastikan aktivitas lab tetap terkontrol.
+                        @else
+                            Kelola pengesahan logbook praktikum mata kuliah yang Anda ampu serta pantau jadwal penggunaan laboratorium.
                         @endif
                     </p>
                 </div>
@@ -432,27 +435,53 @@
                 </div>
                 <div class="card-body">
                     <div class="row g-2 g-sm-3">
+                        @if ($is_kalab_dosen)
+                            <div class="col-12 col-sm-6 col-md-4">
+                                <a href="{{ route('approval.index') }}"
+                                    class="btn btn-outline-warning w-100 text-start py-2.5 px-2 px-sm-3 d-flex align-items-center quick-action-card">
+                                    <div class="icon-box-shape icon-bg-amber me-2 me-sm-3">
+                                        <i class="bi bi-check2-square"></i>
+                                    </div>
+                                    <div class="text-truncate">
+                                        <h6 class="mb-0 fw-bold text-truncate">Approval Peminjaman</h6>
+                                        <small class="text-muted text-truncate d-none d-sm-block">Persetujuan Kalab</small>
+                                    </div>
+                                </a>
+                            </div>
+                            <div class="col-12 col-sm-6 col-md-4">
+                                <a href="{{ route('presensi.monitoring') }}"
+                                    class="btn btn-outline-success w-100 text-start py-2.5 px-2 px-sm-3 d-flex align-items-center quick-action-card">
+                                    <div class="icon-box-shape icon-bg-green me-2 me-sm-3">
+                                        <i class="bi bi-display-fill"></i>
+                                    </div>
+                                    <div class="text-truncate">
+                                        <h6 class="mb-0 fw-bold text-truncate">Monitoring Presensi</h6>
+                                        <small class="text-muted text-truncate d-none d-sm-block">Pantau Presensi Lab</small>
+                                    </div>
+                                </a>
+                            </div>
+                        @endif
                         <div class="col-12 col-sm-6 col-md-4">
-                            <a href="{{ route('approval.index') }}"
-                                class="btn btn-outline-warning w-100 text-start py-2.5 px-2 px-sm-3 d-flex align-items-center quick-action-card">
-                                <div class="icon-box-shape icon-bg-amber me-2 me-sm-3">
-                                    <i class="bi bi-check2-square"></i>
+                            <a href="{{ route('logbook.approval.index') }}"
+                                class="btn btn-outline-info w-100 text-start py-2.5 px-2 px-sm-3 d-flex align-items-center quick-action-card">
+                                <div class="icon-box-shape icon-bg-blue me-2 me-sm-3">
+                                    <i class="bi bi-pen-fill"></i>
                                 </div>
                                 <div class="text-truncate">
-                                    <h6 class="mb-0 fw-bold text-truncate">Approval Peminjaman</h6>
-                                    <small class="text-muted text-truncate d-none d-sm-block">Persetujuan Kalab</small>
+                                    <h6 class="mb-0 fw-bold text-truncate">Approval Logbook</h6>
+                                    <small class="text-muted text-truncate d-none d-sm-block">{{ $logbook_pending_dosen }} menunggu TTD</small>
                                 </div>
                             </a>
                         </div>
                         <div class="col-12 col-sm-6 col-md-4">
-                            <a href="{{ route('presensi.monitoring') }}"
+                            <a href="{{ route('jadwal-lab.index') }}"
                                 class="btn btn-outline-success w-100 text-start py-2.5 px-2 px-sm-3 d-flex align-items-center quick-action-card">
-                                <div class="icon-box-shape icon-bg-green me-2 me-sm-3">
-                                    <i class="bi bi-display-fill"></i>
+                                <div class="icon-box-shape icon-bg-teal me-2 me-sm-3">
+                                    <i class="bi bi-calendar-week"></i>
                                 </div>
                                 <div class="text-truncate">
-                                    <h6 class="mb-0 fw-bold text-truncate">Monitoring Presensi</h6>
-                                    <small class="text-muted text-truncate d-none d-sm-block">Pantau Presensi Lab</small>
+                                    <h6 class="mb-0 fw-bold text-truncate">Jadwal Lab</h6>
+                                    <small class="text-muted text-truncate d-none d-sm-block">Jadwal Penggunaan Ruang</small>
                                 </div>
                             </a>
                         </div>
@@ -474,6 +503,126 @@
         </div>
     </section>
 
+    @if (!$is_kalab_dosen)
+        {{-- ===== STATISTIK & ANTRIAN LOGBOOK DOSEN PENGAMPU ===== --}}
+        <section class="row mb-4">
+            <div class="col-12 col-sm-6 col-lg-3 mb-3">
+                <div class="card mb-0 h-100 dashboard-stat-card {{ $logbook_pending_dosen > 0 ? 'highlight-pending-card' : '' }}">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="dashboard-stat-icon icon-bg-amber">
+                                <i class="bi bi-hourglass-split"></i>
+                            </div>
+                            <div>
+                                <h6 class="text-muted font-semibold stat-title mb-1">Menunggu TTD Logbook</h6>
+                                <h4 class="font-extrabold stat-val mb-0 dashboard-stat-number">{{ $logbook_pending_dosen }}</h4>
+                                <small class="text-muted" style="font-size: 0.72rem;">Perlu pengesahan Anda</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-sm-6 col-lg-3 mb-3">
+                <div class="card mb-0 h-100 dashboard-stat-card">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="dashboard-stat-icon icon-bg-green">
+                                <i class="bi bi-check-circle-fill"></i>
+                            </div>
+                            <div>
+                                <h6 class="text-muted font-semibold stat-title mb-1">Logbook Disetujui</h6>
+                                <h4 class="font-extrabold stat-val mb-0 dashboard-stat-number">{{ $logbook_approved_dosen }}</h4>
+                                <small class="text-muted" style="font-size: 0.72rem;">Pertemuan bertanda tangan</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-sm-6 col-lg-3 mb-3">
+                <div class="card mb-0 h-100 dashboard-stat-card">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="dashboard-stat-icon icon-bg-indigo">
+                                <i class="bi bi-journal-bookmark-fill"></i>
+                            </div>
+                            <div>
+                                <h6 class="text-muted font-semibold stat-title mb-1">MK Praktikum Diampu</h6>
+                                <h4 class="font-extrabold stat-val mb-0 dashboard-stat-number">{{ $logbook_books_dosen }}</h4>
+                                <small class="text-muted" style="font-size: 0.72rem;">Buku logbook terhubung</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-sm-6 col-lg-3 mb-3">
+                <div class="card mb-0 h-100 dashboard-stat-card">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="dashboard-stat-icon icon-bg-blue">
+                                <i class="bi bi-lightning-charge-fill"></i>
+                            </div>
+                            <div>
+                                <h6 class="text-muted font-semibold stat-title mb-1">Auto-Approve Logbook</h6>
+                                <h4 class="font-extrabold stat-val mb-0 dashboard-stat-number">
+                                    {{ $logbook_auto_approve_active ? 'Aktif' : 'Manual' }}
+                                </h4>
+                                <small class="text-muted" style="font-size: 0.72rem;">Pengaturan izin Anda</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="row">
+            <div class="col-12">
+                <div class="card dashboard-section-card">
+                    <div class="card-header d-flex justify-content-between align-items-center pt-3 pb-2">
+                        <div>
+                            <h5 class="card-title fs-6 fs-sm-5 mb-0 d-flex align-items-center">
+                                <i class="bi bi-journal-check text-primary me-2"></i>Logbook Menunggu Tanda Tangan Anda
+                            </h5>
+                            <small class="text-muted">Pengajuan terbaru dari PLP untuk praktikum yang Anda ampu</small>
+                        </div>
+                        <a href="{{ route('logbook.approval.index') }}" class="btn btn-sm btn-primary rounded-pill px-3">Kelola Semua</a>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0" style="font-size: 0.9rem;">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Mata Kuliah & Kelas</th>
+                                        <th>Pertemuan</th>
+                                        <th>Laboratorium</th>
+                                        <th>PLP</th>
+                                        <th>Tanggal</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @forelse ($logbook_pending_list_dosen as $lbItem)
+                                        <tr>
+                                            <td class="fw-semibold">{{ $lbItem->logbook->nama_mk ?? '-' }} ({{ $lbItem->logbook->kelas ?? '-' }})</td>
+                                            <td>Minggu ke-{{ $lbItem->minggu_ke }}: {{ $lbItem->judul_praktikum }}</td>
+                                            <td>{{ $lbItem->logbook->lab->kode_lab ?? '-' }}</td>
+                                            <td>{{ $lbItem->logbook->plp->nama_asli ?? '-' }}</td>
+                                            <td>{{ $lbItem->tanggal_pelaksanaan ? $lbItem->tanggal_pelaksanaan->format('d/m/Y') : '-' }}</td>
+                                        </tr>
+                                    @empty
+                                        <tr>
+                                            <td colspan="5" class="text-center text-muted py-4">
+                                                <i class="bi bi-check2-circle fs-3 d-block text-success opacity-75 mb-2"></i>
+                                                Tidak ada logbook praktikum yang menunggu tanda tangan Anda.
+                                            </td>
+                                        </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    @else
     {{-- ===== KARTU STATISTIK LAB KALAB ===== --}}
     <div class="d-flex align-items-center justify-content-between mb-3">
         <h6 class="mb-0 text-muted fw-bold d-flex align-items-center">
@@ -823,6 +972,7 @@
             </div>
         </div>
     </section>
+    @endif
 @endsection
 
 @section('scripts')
@@ -855,6 +1005,7 @@
             }
         });
 
+        @if ($is_kalab_dosen)
         // ==========================================
         // 1. Grafik Tren Peminjaman Lab (Area Chart)
         // ==========================================
@@ -1000,6 +1151,7 @@
 
             const chartStatus = new ApexCharts(document.querySelector('#chart-status-peminjaman-kalab'), optionsStatus);
             chartStatus.render();
+        @endif
         @endif
     </script>
 @endsection

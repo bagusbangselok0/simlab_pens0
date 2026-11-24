@@ -12,8 +12,17 @@ use Yajra\DataTables\DataTables;
 
 class ApprovalController extends Controller
 {
+    private function ensureKalabOrNonDosen(): void
+    {
+        $user = Auth::user();
+        if ($user && $user->role?->slug === 'dosen' && !$user->isKalab()) {
+            abort(403, 'Halaman ini khusus untuk Kepala Laboratorium, PLP, atau Admin.');
+        }
+    }
+
     public function index()
     {
+        $this->ensureKalabOrNonDosen();
         $title = 'Daftar Persetujuan Peminjaman Lab';
 
         if (request()->ajax()) {
@@ -29,15 +38,17 @@ class ApprovalController extends Controller
                     $q->where('plp_id', $user->id);
                 })->whereIn('status', ['pending_plp', 'pending_kalab', 'disetujui', 'kadaluarsa', 'ditolak'])
                     ->orderBy('status', 'asc');
-            } elseif ($jabatanId == 3) { // Kalab
+            } elseif ($user->isKalab()) { // Kalab
                 // Hanya tampilkan pengajuan untuk lab yang Kalab ini bertanggung jawab
                 $query->whereHas('labManager', function ($q) use ($user) {
                     $q->where('kalab_id', $user->id);
                 })->whereIn('status', ['pending_kalab', 'pending_plp', 'disetujui', 'kadaluarsa', 'ditolak'])
                     ->orderBy('status', 'asc');
-            } else {
-                // Admin atau jabatan lain bisa lihat semua
+            } elseif ($user->role?->slug === 'admin') {
+                // Hanya Admin yang bisa melihat semua pengajuan
                 $query->whereIn('status', ['pending_plp', 'pending_kalab', 'disetujui', 'kadaluarsa', 'ditolak'])->orderBy('status', 'asc');
+            } else {
+                abort(403, 'Anda tidak memiliki hak akses untuk persetujuan ruangan.');
             }
 
             // Filter berdasarkan status yang dipilih
@@ -98,7 +109,7 @@ class ApprovalController extends Controller
                         } elseif ($peminjaman->status == 'pending_kalab') {
                             $button = '<span class="text-muted">Menunggu Kalab</span>';
                         }
-                    } elseif ($jabatanId == 3) { // Kalab
+                    } elseif ($user->isKalab()) { // Kalab
                         if ($peminjaman->status == 'pending_kalab' && $user->id == $peminjaman->labManager->kalab_id) {
                             $button = '<button class="btn btn-sm btn-success approve-btn" data-id="' . $peminjaman->id . '">Setuju</button>';
                             $button .= '&nbsp;';
@@ -126,6 +137,7 @@ class ApprovalController extends Controller
 
     public function approve($id)
     {
+        $this->ensureKalabOrNonDosen();
         $peminjaman = PeminjamanLab::findOrFail($id);
         $user = Auth::user();
         $jabatanId = $user->jabatan_id;
@@ -185,7 +197,7 @@ class ApprovalController extends Controller
             } else {
                 return response()->json(['success' => false, 'message' => 'Status tidak valid untuk approval PLP'], 400);
             }
-        } elseif ($jabatanId == 3) { // Kalab
+        } elseif ($user->isKalab()) { // Kalab
             if ($peminjaman->status == 'pending_kalab') {
                 $peminjaman->status = 'disetujui';
                 $peminjaman->tgl_ttd_kalab = now(
@@ -201,13 +213,15 @@ class ApprovalController extends Controller
             } else {
                 return response()->json(['success' => false, 'message' => 'Status tidak valid untuk approval Kalab'], 400);
             }
-        } else {
-            // Admin atau jabatan lain langsung approve
+        } elseif ($user->role?->slug === 'admin') {
+            // Admin langsung approve
             $peminjaman->status = 'disetujui';
             $message = 'Peminjaman disetujui';
 
             $actionType = 'approve_final';
             $recipient = $peminjaman->mahasiswa ?? null;
+        } else {
+            abort(403, 'Anda tidak memiliki hak akses untuk menyetujui peminjaman ini.');
         }
 
         DB::transaction(function () use ($peminjaman) {
@@ -241,6 +255,7 @@ class ApprovalController extends Controller
 
     public function reject($id)
     {
+        $this->ensureKalabOrNonDosen();
         $peminjaman = PeminjamanLab::findOrFail($id);
         $peminjaman->status = 'ditolak';
         $peminjaman->save();
@@ -253,6 +268,7 @@ class ApprovalController extends Controller
 
     public function rejectWithNote(Request $request, $id)
     {
+        $this->ensureKalabOrNonDosen();
         $request->validate([
             'catatan_tolak' => 'required|string',
         ]);

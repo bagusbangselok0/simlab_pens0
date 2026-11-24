@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\DosenLogbookAutoApprove;
 use App\Models\Lab;
 use App\Models\LabManager;
+use App\Models\LogbookPertemuan;
+use App\Models\LogbookPraktikum;
 use App\Models\PeminjamanAlat;
 use App\Models\PeminjamanLab;
 use App\Models\PresensiLab;
@@ -307,10 +310,42 @@ class DashboardController extends Controller
         ];
 
         // title dinamis berdasarkan role
+        $is_kalab_dosen = $user->isKalab();
+        $logbook_pending_dosen = 0;
+        $logbook_approved_dosen = 0;
+        $logbook_books_dosen = 0;
+        $logbook_auto_approve_active = false;
+        $logbook_pending_list_dosen = collect();
+
+        if ($roleSlug === 'dosen') {
+            $logbook_books_dosen = LogbookPraktikum::where('dosen_id', $user->id)->count();
+            $logbook_pending_dosen = LogbookPertemuan::whereHas('logbook', fn ($q) => $q->where('dosen_id', $user->id))
+                ->where('status', LogbookPertemuan::STATUS_PENDING_DOSEN)
+                ->count();
+            $logbook_approved_dosen = LogbookPertemuan::whereHas('logbook', fn ($q) => $q->where('dosen_id', $user->id))
+                ->where('status', LogbookPertemuan::STATUS_APPROVED)
+                ->count();
+            $todayDosen = now('Asia/Jakarta')->toDateString();
+            $logbook_auto_approve_active = DosenLogbookAutoApprove::where('dosen_id', $user->id)
+                ->where('is_enabled', true)
+                ->whereNotNull('consented_at')
+                ->where(function ($q) use ($todayDosen) {
+                    $q->whereNull('valid_until')
+                        ->orWhereDate('valid_until', '>=', $todayDosen);
+                })
+                ->exists();
+            $logbook_pending_list_dosen = LogbookPertemuan::with(['logbook.lab', 'logbook.plp'])
+                ->whereHas('logbook', fn ($q) => $q->where('dosen_id', $user->id))
+                ->where('status', LogbookPertemuan::STATUS_PENDING_DOSEN)
+                ->orderByDesc('submitted_at')
+                ->take(5)
+                ->get();
+        }
+
         $title = match ($roleSlug) {
             'admin'     => 'Dashboard Admin',
             'plp'       => 'Dashboard PLP',
-            'dosen'     => 'Dashboard Dosen',
+            'dosen'     => $is_kalab_dosen ? 'Dashboard Kalab & Dosen' : 'Dashboard Dosen Pengampu',
             'satpam'    => 'Dashboard Satpam',
             'mahasiswa' => 'Dashboard Mahasiswa',
             default     => 'Dashboard',
@@ -396,7 +431,13 @@ class DashboardController extends Controller
             'tren_satpam_masuk',
             'tren_satpam_keluar',
             'status_satpam_chart',
-            'show_signature_alert'
+            'show_signature_alert',
+            'is_kalab_dosen',
+            'logbook_pending_dosen',
+            'logbook_approved_dosen',
+            'logbook_books_dosen',
+            'logbook_auto_approve_active',
+            'logbook_pending_list_dosen'
         );
 
         // Cek apakah file view spesifik role ada

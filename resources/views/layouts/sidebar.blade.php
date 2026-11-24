@@ -67,6 +67,13 @@
                         <span>Dashboard</span>
                     </a>
                 </li>
+
+                <li class="sidebar-item @if (request()->routeIs('jadwal-lab.*')) active @endif">
+                    <a href="{{ route('jadwal-lab.index') }}" class="sidebar-link">
+                        <i class="bi bi-calendar-week"></i>
+                        <span>Jadwal Lab</span>
+                    </a>
+                </li>
                 @if (Auth::check() && Auth::user()->role_id == 1)
                     <li class="sidebar-item has-sub">
                         <a href="#" class="sidebar-link">
@@ -137,7 +144,7 @@
                     </li>
                 @endif
 
-                @if (Auth::check() && in_array(Auth::user()->role_id, [1, 2, 3, 4]))
+                @if (Auth::check() && (in_array(Auth::user()->role_id, [1, 3, 4]) || Auth::user()->isKalab()))
                     <li class="sidebar-item @if (Route::currentRouteName() == 'presensi.monitoring') active @endif">
                         <a href="{{ route('presensi.monitoring') }}" class="sidebar-link">
                             <i class="bi bi-eye"></i>
@@ -146,7 +153,7 @@
                     </li>
                 @endif
                 {{-- Modul Inventaris --}}
-                @if (Auth::check() && in_array(Auth::user()->role_id, [1, 2, 3]))
+                @if (Auth::check() && (in_array(Auth::user()->role_id, [1, 3]) || Auth::user()->isKalab()))
                     <li class="sidebar-item has-sub @if (request()->routeIs('inventaris.*') || request()->routeIs('inventaris-ruangan.*')) active @endif">
                         <a href="#" class="sidebar-link">
                             <i class="bi bi-box-seam-fill"></i>
@@ -171,11 +178,31 @@
 
 
                 {{-- Approval --}}
-                @if (Auth::check() && in_array(Auth::user()->role_id, [1, 2, 3]))
+                @if (Auth::check() && (in_array(Auth::user()->role_id, [1, 3]) || Auth::user()->isKalab()))
                     <li class="sidebar-item @if (Route::currentRouteName() == 'approval.index') active @endif">
                         <a href="{{ route('approval.index') }}" class="sidebar-link">
                             <i class="bi bi-check-circle"></i>
                             <span>Approval Lab</span>
+                        </a>
+                    </li>
+                @endif
+
+                {{-- Logbook Praktikum PLP --}}
+                @if (Auth::check() && in_array(Auth::user()->role?->slug, ['plp', 'admin'], true))
+                    <li class="sidebar-item @if (request()->routeIs('logbook.*') && !request()->routeIs('logbook.approval.*')) active @endif">
+                        <a href="{{ route('logbook.index') }}" class="sidebar-link">
+                            <i class="bi bi-journal-text"></i>
+                            <span>Logbook Praktikum</span>
+                        </a>
+                    </li>
+                @endif
+
+                {{-- Approval Logbook Dosen Pengampu --}}
+                @if (Auth::check() && in_array(Auth::user()->role?->slug, ['dosen', 'admin'], true))
+                    <li class="sidebar-item @if (request()->routeIs('logbook.approval.*')) active @endif">
+                        <a href="{{ route('logbook.approval.index') }}" class="sidebar-link">
+                            <i class="bi bi-pen-fill"></i>
+                            <span>Approval Logbook</span>
                         </a>
                     </li>
                 @endif

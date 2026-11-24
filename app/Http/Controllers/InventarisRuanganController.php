@@ -13,11 +13,20 @@ use Yajra\DataTables\DataTables;
 
 class InventarisRuanganController extends Controller
 {
+    private function ensureKalabOrNonDosen(): void
+    {
+        $user = Auth::user();
+        if ($user && $user->role?->slug === 'dosen' && !$user->isKalab()) {
+            abort(403, 'Halaman ini khusus untuk Kepala Laboratorium, PLP, atau Admin.');
+        }
+    }
+
     /**
      * Display a listing of the resource.
      */
     public function index(Request $request)
     {
+        $this->ensureKalabOrNonDosen();
         $user = Auth::user();
 
         // Tentukan lab yang dapat diakses user
@@ -142,6 +151,7 @@ class InventarisRuanganController extends Controller
      */
     public function show($id)
     {
+        $this->ensureKalabOrNonDosen();
         $item = InventarisRuangan::findOrFail($id);
 
         $assignedNupKeysOther = InventarisRuangan::query()
@@ -246,6 +256,7 @@ class InventarisRuanganController extends Controller
      */
     public function store(Request $request)
     {
+        $this->ensureKalabOrNonDosen();
         $validated = $request->validate([
             'lab_id' => 'required|exists:labs,id',
             'inventaris_barang_ids' => 'required|array|min:1',
@@ -334,6 +345,7 @@ class InventarisRuanganController extends Controller
      */
     public function update(Request $request, $id)
     {
+        $this->ensureKalabOrNonDosen();
         $inventaris = InventarisRuangan::findOrFail($id);
 
         if ($request->has('inventaris_barang_ids')) {
@@ -423,6 +435,7 @@ class InventarisRuanganController extends Controller
      */
     public function destroy($id)
     {
+        $this->ensureKalabOrNonDosen();
         $inventaris = InventarisRuangan::findOrFail($id);
         $labId = $inventaris->lab_id;
         $inventaris->delete();
@@ -436,6 +449,7 @@ class InventarisRuanganController extends Controller
      */
     public function exportPdf(Request $request, $lab_id)
     {
+        $this->ensureKalabOrNonDosen();
         $lab = Lab::with(['labManager.plp', 'labManager.kalab'])->findOrFail($lab_id);
         $items = InventarisRuangan::where('lab_id', $lab_id)->orderBy('nama_barang')->get();
 
