@@ -13,6 +13,7 @@ use App\Models\PlpAktivitasTemplate;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\URL;
 use Tests\TestCase;
@@ -123,7 +124,7 @@ class LogbookPraktikumTest extends TestCase
 
     private function createDummySignatureFile(string $filename): string
     {
-        $dir = public_path('storage/signatures');
+        $dir = storage_path('app/private/signatures');
         if (!file_exists($dir)) {
             mkdir($dir, 0755, true);
         }
@@ -268,7 +269,7 @@ class LogbookPraktikumTest extends TestCase
         $book->refresh();
         $this->assertSame('Budi Santoso', $book->default_mahasiswa_nama);
         $this->assertNotNull($book->default_mahasiswa_ttd_path);
-        $path1 = public_path('storage/logbook_signatures/' . $book->default_mahasiswa_ttd_path);
+        $path1 = storage_path('app/private/logbook_signatures/' . $book->default_mahasiswa_ttd_path);
         $this->assertFileExists($path1);
         $this->createdSignatureFiles[] = $path1;
 
@@ -293,7 +294,7 @@ class LogbookPraktikumTest extends TestCase
 
         $signedShowUrl = $linkResp->json('url');
         // Akses tanpa login (guest) harus berhasil karena signed URL valid
-        auth()->logout();
+        Auth::logout();
         $this->get($signedShowUrl)->assertStatus(200)->assertSee('Tanda Tangan Perwakilan Mahasiswa');
 
         $signedSubmitUrl = URL::temporarySignedRoute(
@@ -311,7 +312,7 @@ class LogbookPraktikumTest extends TestCase
         $pertemuan->refresh();
         $this->assertSame('Siti Aminah', $pertemuan->mahasiswa_nama);
         $this->assertNotNull($pertemuan->mahasiswa_ttd_path);
-        $path2 = public_path('storage/logbook_signatures/' . $pertemuan->mahasiswa_ttd_path);
+        $path2 = storage_path('app/private/logbook_signatures/' . $pertemuan->mahasiswa_ttd_path);
         $this->assertFileExists($path2);
         $this->createdSignatureFiles[] = $path2;
     }
@@ -414,7 +415,7 @@ class LogbookPraktikumTest extends TestCase
             'target_type' => 'pertemuan',
             'target_id' => $p1->id,
         ])->assertStatus(422);
-        auth()->logout();
+        Auth::logout();
         $lockedSubmitUrl = URL::temporarySignedRoute('logbook.sign-mahasiswa.submit', now()->addMinutes(5), ['type' => 'pertemuan', 'id' => $p1->id]);
         $this->post($lockedSubmitUrl, [
             'mahasiswa_nama' => 'Penyusup',

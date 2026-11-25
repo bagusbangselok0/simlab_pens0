@@ -42,6 +42,7 @@ class PresensiAutoGenerationTest extends TestCase
             'email' => 'mhs@example.com',
             'password' => bcrypt('password'),
             'signature_path' => 'mhs_sign.png',
+            'signature_status' => 'approved',
             'is_verified' => true,
             'is_active' => true,
         ]);
@@ -52,6 +53,7 @@ class PresensiAutoGenerationTest extends TestCase
             'email' => 'plp@example.com',
             'password' => bcrypt('password'),
             'signature_path' => 'plp_sign.png',
+            'signature_status' => 'approved',
             'is_verified' => true,
             'is_active' => true,
         ]);
@@ -62,6 +64,7 @@ class PresensiAutoGenerationTest extends TestCase
             'email' => 'kalab@example.com',
             'password' => bcrypt('password'),
             'signature_path' => 'kalab_sign.png',
+            'signature_status' => 'approved',
             'is_verified' => true,
             'is_active' => true,
         ]);

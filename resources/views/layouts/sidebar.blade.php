@@ -75,23 +75,28 @@
                     </a>
                 </li>
                 @if (Auth::check() && Auth::user()->role_id == 1)
-                    <li class="sidebar-item has-sub">
+                    <li class="sidebar-item has-sub @if (request()->routeIs('users.*', 'jabatan.*', 'lab.*', 'lab_manager.*', 'admin.signatures.*', 'settings.*')) active @endif">
                         <a href="#" class="sidebar-link">
                             <i class="bi bi-stack"></i>
                             <span>Data Master</span>
                         </a>
 
                         <ul class="submenu">
-                            <li class="submenu-item">
+                            <li class="submenu-item @if (request()->routeIs('users.*')) active @endif">
                                 <a href="{{ route('users.index') }}" class="submenu-link">Users</a>
                             </li>
 
-                            <li class="submenu-item">
+                            <li class="submenu-item @if (request()->routeIs('jabatan.*')) active @endif">
+                                <a href="{{ route('jabatan.index') }}" class="submenu-link">Jabatan</a>
+                            </li>
+
+                            <li class="submenu-item @if (request()->routeIs('lab.*')) active @endif">
                                 <a href="{{ route('lab.index') }}" class="submenu-link">Laboratorium</a>
                             </li>
 
-                            <li class="submenu-item">
-                                <a href="{{ route('lab_manager.index') }}" class="submenu-link">Penanggung Jawab Lab</a>
+                            <li class="submenu-item @if (request()->routeIs('lab_manager.*')) active @endif">
+                                <a href="{{ route('lab_manager.index') }}" class="submenu-link">Penanggung Jawab
+                                    Lab</a>
                             </li>
 
                             <li class="submenu-item @if (request()->routeIs('admin.signatures.*')) active @endif">

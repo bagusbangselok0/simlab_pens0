@@ -2,7 +2,10 @@
 
 namespace App\Models;
 
+use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\Log;
 
 class Setting extends Model
 {
@@ -36,6 +39,11 @@ class Setting extends Model
     public const THEME_ACCENT_COLOR    = 'theme.accent_color';
     public const THEME_SIDEBAR_DEFAULT = 'theme.sidebar_default';
 
+    public const SECRET_KEYS = [
+        self::WA_TOKEN,
+        self::VAPID_PRIVATE_KEY,
+    ];
+
     protected $fillable = [
         'setting_key',
         'scope_key',
@@ -55,6 +63,66 @@ class Setting extends Model
         return 'lab:' . $labId;
     }
 
+    public static function decryptValue(?string $rawValue): string
+    {
+        if ($rawValue === null || $rawValue === '') {
+            return '';
+        }
+
+        try {
+            return Crypt::decryptString($rawValue);
+        } catch (DecryptException $e) {
+            $decoded = json_decode((string) base64_decode($rawValue, true), true);
+            if (is_array($decoded) && isset($decoded['iv'], $decoded['value'], $decoded['mac'])) {
+                Log::warning('Setting::decryptValue gagal mendekripsi payload setting (kemungkinan APP_KEY berubah).');
+                return '';
+            }
+
+            // Fallback aman untuk nilai legacy plaintext sebelum enkripsi diterapkan
+            return $rawValue;
+        }
+    }
+
+    public static function putEncrypted(
+        string $key,
+        ?string $plainValue,
+        string $description = '',
+        ?int $updatedBy = null,
+        string $scopeKey = 'global'
+    ): self {
+        $trimmed = trim((string) $plainValue);
+        $storedValue = $trimmed !== '' ? Crypt::encryptString($trimmed) : '';
+
+        return static::updateOrCreate(
+            [
+                'setting_key' => $key,
+                'scope_key' => $scopeKey,
+            ],
+            [
+                'value' => $storedValue,
+                'value_type' => 'encrypted',
+                'description' => $description,
+                'is_active' => true,
+                'updated_by' => $updatedBy,
+            ]
+        );
+    }
+
+    public static function hasConfiguredSecret(string $key, string $scopeKey = 'global'): bool
+    {
+        $setting = static::query()
+            ->where('setting_key', $key)
+            ->where('scope_key', $scopeKey)
+            ->where('is_active', true)
+            ->first();
+
+        if (!$setting || $setting->value === null || $setting->value === '') {
+            return false;
+        }
+
+        return trim(static::decryptValue($setting->value)) !== '';
+    }
+
     public static function get(string $key, string $scopeKey = 'global', mixed $default = null): mixed
     {
         $setting = static::query()
@@ -65,6 +133,12 @@ class Setting extends Model
 
         if (!$setting) {
             return $default;
+        }
+
+        if ($setting->value_type === 'encrypted' || in_array($key, self::SECRET_KEYS, true)) {
+            $decrypted = static::decryptValue($setting->value);
+
+            return $decrypted !== '' ? $decrypted : $default;
         }
 
         return match ($setting->value_type) {

@@ -100,6 +100,7 @@ class InventarisBarangTest extends TestCase
             'kode_barang' => '3030101033',
             'nup' => '1',
             'nama_barang' => 'Personal Computer Dell',
+            'jenis_barang' => 'barang_tidak_habis_pakai',
             'merk' => 'Dell',
             'tipe' => 'OptiPlex 7080',
             'tgl_buku_pertama' => '2023-01-15',
@@ -131,6 +132,7 @@ class InventarisBarangTest extends TestCase
         $updatePayload = [
             'kode_barang' => '3030101033',
             'nama_barang' => 'Osiloskop Digital 4 Channel',
+            'jenis_barang' => 'barang_tidak_habis_pakai',
             'merk' => 'Rigol',
             'tipe' => 'DS1054Z Plus',
             'keterangan' => 'Sudah dikalibrasi',
@@ -326,10 +328,20 @@ class InventarisBarangTest extends TestCase
         ]);
 
         $response = $this->actingAs($this->plp)->get(route('inventaris.index'));
+        $response->assertStatus(200);
 
-        $response->assertStatus(200)
-            ->assertSee('Lab 201')
-            ->assertDontSee('Belum Masuk DIR');
+        $ajaxResponse = $this->actingAs($this->plp)
+            ->withHeaders(['X-Requested-With' => 'XMLHttpRequest'])
+            ->get(route('inventaris.index', [
+                'draw' => 1,
+                'start' => 0,
+                'length' => 10,
+            ]));
+
+        $ajaxResponse->assertStatus(200);
+        $statusDirHtml = (string) ($ajaxResponse->json('data.0.status_dir') ?? '');
+        $this->assertStringContainsString('Lab 201', $statusDirHtml);
+        $this->assertStringNotContainsString('Belum Masuk DIR', $statusDirHtml);
 
         $this->assertNotNull($barang->fresh()->assigned_dir);
     }

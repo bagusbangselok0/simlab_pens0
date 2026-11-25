@@ -12,11 +12,13 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\JabatanController;
 use App\Http\Controllers\LabController;
 use App\Http\Controllers\LabManagerController;
 use App\Http\Controllers\PeminjamanController;
 use App\Http\Controllers\PeminjamanAlatController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\PrivateSignatureController;
 use App\Http\Controllers\PresensiController;
 use App\Http\Controllers\RegisterController;
 use App\Http\Controllers\ResetPasswordController;
@@ -56,6 +58,12 @@ Route::middleware('auth')->group(function () {
     // Logout & Dashboard Utama
     Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    Route::get('/signatures/user/{user}', [PrivateSignatureController::class, 'showUserSignature'])
+        ->name('signatures.user.show');
+    Route::get('/signatures/logbook/{type}/{id}', [PrivateSignatureController::class, 'showLogbookSignature'])
+        ->whereIn('type', ['logbook', 'pertemuan'])
+        ->name('signatures.logbook.show');
 
     Route::prefix('profile')->group(function () {
         Route::get('/', [ProfileController::class, 'index'])->name('profile.index');
@@ -286,6 +294,15 @@ Route::middleware('auth')->group(function () {
             Route::delete('/{id}', [UserController::class, 'destroy'])->name('users.destroy');
             Route::patch('/{id}/verify', [UserController::class, 'verifyUser'])->name('users.verify');
             Route::post('/{id}/generate-reset-link', [UserController::class, 'generateResetLink'])->name('users.reset_link');
+        });
+
+        // Manajemen Jabatan
+        Route::prefix('jabatans')->name('jabatan.')->group(function () {
+            Route::get('/', [JabatanController::class, 'index'])->name('index');
+            Route::post('/', [JabatanController::class, 'store'])->name('store');
+            Route::get('/{id}/edit', [JabatanController::class, 'edit'])->name('edit');
+            Route::put('/{id}', [JabatanController::class, 'update'])->name('update');
+            Route::delete('/{id}', [JabatanController::class, 'destroy'])->name('destroy');
         });
 
         Route::get('/admin/peminjaman', [PeminjamanController::class, 'indexAdmin'])->name('peminjaman.admin');

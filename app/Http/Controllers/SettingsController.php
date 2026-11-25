@@ -25,20 +25,22 @@ class SettingsController extends Controller
         $maxActiveLoans = Setting::int(Setting::MAX_ACTIVE_LOANS, 'global', 2);
         $allowManual    = Setting::boolean(Setting::ALLOW_MANUAL_INPUT, 'global', true);
 
-        // Pengaturan Gateway WhatsApp
-        $waEnabled        = Setting::boolean(Setting::WA_ENABLED, 'global', (bool) config('services.fonnte.enabled', false));
-        $waToken          = Setting::get(Setting::WA_TOKEN, 'global', (string) config('services.fonnte.token', ''));
-        $waApiUrl         = Setting::get(Setting::WA_API_URL, 'global', 'https://api.fonnte.com/send');
-        $waPeminjamanLab  = Setting::boolean(Setting::WA_NOTIF_PEMINJAMAN_LAB, 'global', true);
-        $waPeminjamanAlat = Setting::boolean(Setting::WA_NOTIF_PEMINJAMAN_ALAT, 'global', true);
+        // Pengaturan Gateway WhatsApp (token tidak pernah dikirim plaintext ke UI)
+        $waEnabled         = Setting::boolean(Setting::WA_ENABLED, 'global', (bool) config('services.fonnte.enabled', false));
+        $hasWaTokenInDb    = Setting::hasConfiguredSecret(Setting::WA_TOKEN, 'global');
+        $hasWaTokenEnv     = !empty(config('services.fonnte.token'));
+        $waApiUrl          = Setting::get(Setting::WA_API_URL, 'global', 'https://api.fonnte.com/send');
+        $waPeminjamanLab   = Setting::boolean(Setting::WA_NOTIF_PEMINJAMAN_LAB, 'global', true);
+        $waPeminjamanAlat  = Setting::boolean(Setting::WA_NOTIF_PEMINJAMAN_ALAT, 'global', true);
 
-        // Pengaturan Gateway Web Push
-        $pushEnabled        = Setting::boolean(Setting::PUSH_ENABLED, 'global', true);
-        $vapidSubject       = Setting::get(Setting::VAPID_SUBJECT, 'global', (string) config('services.vapid.subject', 'mailto:admin@simlab.com'));
-        $vapidPublicKey     = Setting::get(Setting::VAPID_PUBLIC_KEY, 'global', (string) config('services.vapid.public_key', ''));
-        $vapidPrivateKey    = Setting::get(Setting::VAPID_PRIVATE_KEY, 'global', (string) config('services.vapid.private_key', ''));
-        $pushPeminjamanLab  = Setting::boolean(Setting::PUSH_NOTIF_PEMINJAMAN_LAB, 'global', true);
-        $pushPeminjamanAlat = Setting::boolean(Setting::PUSH_NOTIF_PEMINJAMAN_ALAT, 'global', true);
+        // Pengaturan Gateway Web Push (private key tidak pernah dikirim plaintext ke UI)
+        $pushEnabled            = Setting::boolean(Setting::PUSH_ENABLED, 'global', true);
+        $vapidSubject           = Setting::get(Setting::VAPID_SUBJECT, 'global', (string) config('services.vapid.subject', 'mailto:admin@simlab.com'));
+        $vapidPublicKey         = Setting::get(Setting::VAPID_PUBLIC_KEY, 'global', (string) config('services.vapid.public_key', ''));
+        $hasVapidPrivateKeyInDb = Setting::hasConfiguredSecret(Setting::VAPID_PRIVATE_KEY, 'global');
+        $hasVapidPrivateKeyEnv  = !empty(config('services.vapid.private_key'));
+        $pushPeminjamanLab      = Setting::boolean(Setting::PUSH_NOTIF_PEMINJAMAN_LAB, 'global', true);
+        $pushPeminjamanAlat     = Setting::boolean(Setting::PUSH_NOTIF_PEMINJAMAN_ALAT, 'global', true);
 
         // Pengaturan Tema & Loader
         $defaultMode    = Setting::get(Setting::THEME_DEFAULT_MODE, 'global', 'light');
@@ -56,14 +58,16 @@ class SettingsController extends Controller
             'maxActiveLoans',
             'allowManual',
             'waEnabled',
-            'waToken',
+            'hasWaTokenInDb',
+            'hasWaTokenEnv',
             'waApiUrl',
             'waPeminjamanLab',
             'waPeminjamanAlat',
             'pushEnabled',
             'vapidSubject',
             'vapidPublicKey',
-            'vapidPrivateKey',
+            'hasVapidPrivateKeyInDb',
+            'hasVapidPrivateKeyEnv',
             'pushPeminjamanLab',
             'pushPeminjamanAlat',
             'defaultMode',
@@ -173,27 +177,24 @@ class SettingsController extends Controller
     public function updateNotificationSettings(Request $request)
     {
         $request->validate([
-            'wa_api_url'        => ['nullable', 'url'],
-            'vapid_subject'     => ['nullable', 'string', 'max:255'],
-            'vapid_public_key'  => ['nullable', 'string'],
-            'vapid_private_key' => ['nullable', 'string'],
+            'wa_token'                => ['nullable', 'string', 'max:1000'],
+            'wa_api_url'              => ['nullable', 'url'],
+            'vapid_subject'           => ['nullable', 'string', 'max:255'],
+            'vapid_public_key'        => ['nullable', 'string'],
+            'vapid_private_key'       => ['nullable', 'string', 'max:1000'],
+            'clear_wa_token'          => ['nullable', 'boolean'],
+            'clear_vapid_private_key' => ['nullable', 'boolean'],
         ], [
             'wa_api_url.url' => 'Format Endpoint URL API WhatsApp tidak valid.',
         ]);
 
         $settings = [
-            // WhatsApp
+            // WhatsApp (non-secret)
             [
                 'key'   => Setting::WA_ENABLED,
                 'value' => $request->has('wa_enabled') ? 'true' : 'false',
                 'type'  => 'boolean',
                 'desc'  => 'Status aktif/nonaktif notifikasi WhatsApp Gateway.',
-            ],
-            [
-                'key'   => Setting::WA_TOKEN,
-                'value' => (string) ($request->input('wa_token') ?? ''),
-                'type'  => 'string',
-                'desc'  => 'API Token Fonnte untuk WhatsApp Gateway.',
             ],
             [
                 'key'   => Setting::WA_API_URL,
@@ -214,7 +215,7 @@ class SettingsController extends Controller
                 'desc'  => 'Kirim notifikasi WhatsApp untuk transaksi Peminjaman Alat.',
             ],
 
-            // Web Push
+            // Web Push (non-secret)
             [
                 'key'   => Setting::PUSH_ENABLED,
                 'value' => $request->has('push_enabled') ? 'true' : 'false',
@@ -232,12 +233,6 @@ class SettingsController extends Controller
                 'value' => (string) ($request->input('vapid_public_key') ?? ''),
                 'type'  => 'string',
                 'desc'  => 'VAPID Public Key untuk Web Push.',
-            ],
-            [
-                'key'   => Setting::VAPID_PRIVATE_KEY,
-                'value' => (string) ($request->input('vapid_private_key') ?? ''),
-                'type'  => 'string',
-                'desc'  => 'VAPID Private Key untuk Web Push.',
             ],
             [
                 'key'   => Setting::PUSH_NOTIF_PEMINJAMAN_LAB,
@@ -269,8 +264,21 @@ class SettingsController extends Controller
             );
         }
 
+        // Enkripsi secret keys hanya ketika diisi baru atau dihapus secara eksplisit
+        if ($request->boolean('clear_wa_token')) {
+            Setting::putEncrypted(Setting::WA_TOKEN, '', 'API Token Fonnte untuk WhatsApp Gateway.', Auth::id());
+        } elseif ($request->filled('wa_token')) {
+            Setting::putEncrypted(Setting::WA_TOKEN, (string) $request->input('wa_token'), 'API Token Fonnte untuk WhatsApp Gateway.', Auth::id());
+        }
+
+        if ($request->boolean('clear_vapid_private_key')) {
+            Setting::putEncrypted(Setting::VAPID_PRIVATE_KEY, '', 'VAPID Private Key untuk Web Push.', Auth::id());
+        } elseif ($request->filled('vapid_private_key')) {
+            Setting::putEncrypted(Setting::VAPID_PRIVATE_KEY, (string) $request->input('vapid_private_key'), 'VAPID Private Key untuk Web Push.', Auth::id());
+        }
+
         return redirect()->route('settings.index', ['tab' => 'notif'])
-            ->with('success_notif', 'Pengaturan Gateway WhatsApp dan Web Push berhasil disimpan.');
+            ->with('success_notif', 'Pengaturan Gateway WhatsApp dan Web Push berhasil disimpan (token/private key terenkripsi).');
     }
 
     public function generateVapidKeys()

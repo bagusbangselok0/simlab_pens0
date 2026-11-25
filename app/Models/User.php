@@ -108,10 +108,17 @@ class User extends Authenticatable
             ->toBase64();
     }
 
-    // Accessor untuk signature path
+    // Accessor untuk signature path (private storage route)
     public function getSignatureUrlAttribute()
     {
-        return $this->signature_path ? asset('storage/signatures/' . $this->signature_path) : asset('images/default/image-empty.png');
+        if (!$this->signature_path) {
+            return asset('images/default/image-empty.png');
+        }
+
+        return route('signatures.user.show', [
+            'user' => $this->id,
+            'v' => substr(md5($this->signature_path), 0, 8),
+        ]);
     }
 
     // Accessor label & badge status TTD

@@ -350,22 +350,44 @@
                                         </div>
                                     </div>
 
-                                    {{-- API Token Fonnte --}}
+                                    {{-- API Token Fonnte (Masking Tanpa Plaintext ke HTML) --}}
                                     <div class="mb-3">
-                                        <label class="form-label fw-bold" for="wa_token">
-                                            <i class="bi bi-key-fill text-success me-1"></i> API Token Fonnte
-                                        </label>
+                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                            <label class="form-label fw-bold mb-0" for="wa_token">
+                                                <i class="bi bi-key-fill text-success me-1"></i> API Token Fonnte
+                                            </label>
+                                            @if ($hasWaTokenInDb)
+                                                <span class="badge bg-success-subtle text-success border border-success-subtle">
+                                                    <i class="bi bi-lock-fill me-1"></i>Tersimpan (Terenkripsi)
+                                                </span>
+                                            @elseif ($hasWaTokenEnv)
+                                                <span class="badge bg-info-subtle text-info border border-info-subtle">
+                                                    Menggunakan .env
+                                                </span>
+                                            @else
+                                                <span class="badge bg-secondary-subtle text-secondary">Belum Diatur</span>
+                                            @endif
+                                        </div>
                                         <div class="input-group">
                                             <input type="password" class="form-control font-monospace" 
                                                 id="wa_token" name="wa_token" 
-                                                value="{{ old('wa_token', $waToken) }}" 
-                                                placeholder="Masukkan token dari fonnte.com...">
-                                            <button class="btn btn-outline-secondary btn-toggle-password" type="button" data-target="wa_token" title="Lihat/Sembunyikan Token">
+                                                value="" 
+                                                autocomplete="new-password"
+                                                placeholder="{{ ($hasWaTokenInDb || $hasWaTokenEnv) ? '•••••••••••••••• (Kosongkan jika tidak ingin mengubah token)' : 'Masukkan token dari fonnte.com...' }}">
+                                            <button class="btn btn-outline-secondary btn-toggle-password" type="button" data-target="wa_token" title="Lihat/Sembunyikan Token Baru">
                                                 <i class="bi bi-eye"></i>
                                             </button>
                                         </div>
+                                        @if ($hasWaTokenInDb)
+                                            <div class="form-check mt-2">
+                                                <input class="form-check-input" type="checkbox" id="clear_wa_token" name="clear_wa_token" value="1">
+                                                <label class="form-check-label small text-danger" for="clear_wa_token">
+                                                    Hapus token WhatsApp tersimpan di database
+                                                </label>
+                                            </div>
+                                        @endif
                                         <small class="text-muted d-block mt-1">
-                                            Dapatkan token API resmi dari akun perangkat Anda di portal <a href="https://fonnte.com" target="_blank" class="fw-semibold">Fonnte.com</a>.
+                                            Dapatkan token API resmi dari akun perangkat Anda di portal <a href="https://fonnte.com" target="_blank" class="fw-semibold">Fonnte.com</a>. Demi keamanan, token tersimpan tidak ditampilkan ulang.
                                         </small>
                                     </div>
 
@@ -497,12 +519,25 @@
                                         </div>
                                     </div>
 
-                                    {{-- VAPID Private Key & Generator --}}
+                                    {{-- VAPID Private Key & Generator (Masking Tanpa Plaintext ke HTML) --}}
                                     <div class="mb-3">
-                                        <div class="d-flex justify-content-between align-items-center mb-1">
-                                            <label class="form-label fw-bold mb-0" for="vapid_private_key">
-                                                <i class="bi bi-shield-lock text-primary me-1"></i> VAPID Private Key
-                                            </label>
+                                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-1 mb-1">
+                                            <div class="d-flex align-items-center gap-2">
+                                                <label class="form-label fw-bold mb-0" for="vapid_private_key">
+                                                    <i class="bi bi-shield-lock text-primary me-1"></i> VAPID Private Key
+                                                </label>
+                                                @if ($hasVapidPrivateKeyInDb)
+                                                    <span class="badge bg-success-subtle text-success border border-success-subtle">
+                                                        <i class="bi bi-lock-fill me-1"></i>Tersimpan (Terenkripsi)
+                                                    </span>
+                                                @elseif ($hasVapidPrivateKeyEnv)
+                                                    <span class="badge bg-info-subtle text-info border border-info-subtle">
+                                                        Menggunakan .env
+                                                    </span>
+                                                @else
+                                                    <span class="badge bg-secondary-subtle text-secondary">Belum Diatur</span>
+                                                @endif
+                                            </div>
                                             <button type="button" class="btn btn-sm btn-outline-primary" id="btnGenerateVapid">
                                                 <i class="bi bi-magic me-1"></i> Buat Kunci Baru Otomatis
                                             </button>
@@ -510,15 +545,24 @@
                                         <div class="input-group">
                                             <input type="password" class="form-control font-monospace" 
                                                 id="vapid_private_key" name="vapid_private_key" 
-                                                value="{{ old('vapid_private_key', $vapidPrivateKey) }}" 
-                                                placeholder="Kunci privat VAPID...">
+                                                value="" 
+                                                autocomplete="new-password"
+                                                placeholder="{{ ($hasVapidPrivateKeyInDb || $hasVapidPrivateKeyEnv) ? '•••••••••••••••• (Kosongkan jika tidak ingin mengubah private key)' : 'Kunci privat VAPID...' }}">
                                             <button class="btn btn-outline-secondary btn-toggle-password" type="button" data-target="vapid_private_key" title="Lihat/Sembunyikan">
                                                 <i class="bi bi-eye"></i>
                                             </button>
-                                            <button class="btn btn-outline-secondary btn-copy" type="button" data-target="vapid_private_key" title="Salin Kunci">
-                                                <i class="bi bi-clipboard"></i>
-                                            </button>
                                         </div>
+                                        @if ($hasVapidPrivateKeyInDb)
+                                            <div class="form-check mt-2">
+                                                <input class="form-check-input" type="checkbox" id="clear_vapid_private_key" name="clear_vapid_private_key" value="1">
+                                                <label class="form-check-label small text-danger" for="clear_vapid_private_key">
+                                                    Hapus VAPID Private Key tersimpan di database
+                                                </label>
+                                            </div>
+                                        @endif
+                                        <small class="text-muted d-block mt-1">
+                                            Demi keamanan, kunci privat tersimpan tidak dikirim ke halaman HTML. Isi hanya bila ingin mengganti kunci.
+                                        </small>
                                     </div>
 
                                     {{-- Event Triggers Web Push --}}

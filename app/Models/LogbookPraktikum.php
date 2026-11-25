@@ -82,8 +82,14 @@ class LogbookPraktikum extends Model
 
     public function getDefaultMahasiswaTtdUrlAttribute(): ?string
     {
-        return $this->default_mahasiswa_ttd_path
-            ? asset('storage/logbook_signatures/' . $this->default_mahasiswa_ttd_path)
-            : null;
+        if (!$this->default_mahasiswa_ttd_path) {
+            return null;
+        }
+
+        return route('signatures.logbook.show', [
+            'type' => 'logbook',
+            'id' => $this->id,
+            'v' => substr(md5($this->default_mahasiswa_ttd_path), 0, 8),
+        ]);
     }
 }

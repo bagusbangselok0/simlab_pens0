@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Services\SignatureStorageService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -99,7 +100,7 @@ class ProfileController extends Controller
         return back()->with('success', 'No Handphone berhasil diperbarui');
     }
 
-    public function uploadFileTtd(Request $request, $id)
+    public function uploadFileTtd(Request $request, $id, SignatureStorageService $storage)
     {
         $request->validate([
             'signature_path' => 'required|image|mimes:jpeg,png,jpg|max:2048',
@@ -112,22 +113,8 @@ class ProfileController extends Controller
         $user = User::findOrFail($id);
 
         if ($request->hasFile('signature_path')) {
-            // Hapus file lama jika ada
-            if ($user->signature_path && file_exists(public_path('storage/signatures/' . $user->signature_path))) {
-                unlink(public_path('storage/signatures/' . $user->signature_path));
-            }
-
-            $file = $request->file('signature_path');
-            $filename = time() . '_' . $user->nama_asli . '.' . $file->getClientOriginalExtension();
-
-            // Buat direktori jika belum ada
-            $signaturePath = public_path('storage/signatures');
-            if (!file_exists($signaturePath)) {
-                mkdir($signaturePath, 0755, true);
-            }
-
-            // Simpan ke public/storage/signatures/
-            $file->move($signaturePath, $filename);
+            $oldSignature = $user->signature_path;
+            $filename = $storage->storeUserSignature($request->file('signature_path'), $user->id);
 
             // Simpan nama file ke database & set status pending verifikasi
             $user->signature_path = $filename;
@@ -137,10 +124,13 @@ class ProfileController extends Controller
             $user->signature_verified_by = null;
             $user->save();
 
+            // Hapus file TTD lama bila sudah tidak direferensikan oleh transaksi PDF
+            $storage->deleteUserSignatureIfUnused($oldSignature, $user->id);
+
             return response()->json([
                 'success' => true,
                 'message' => 'Tanda tangan berhasil diunggah dan sedang menunggu persetujuan Admin.',
-                'signature_url' => asset('storage/signatures/' . $filename),
+                'signature_url' => $user->signature_url,
                 'signature_status' => 'pending',
                 'signature_status_label' => 'Menunggu Persetujuan Admin'
             ]);

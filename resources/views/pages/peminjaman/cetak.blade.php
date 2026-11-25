@@ -162,14 +162,19 @@
     <p style="text-align: right; padding-top: 15px">Sumenep,
         {{ $peminjaman->tgl_ttd_kalab->locale('id')->translatedFormat('d F Y') }}</p>
 
+    @php
+        $ttdMhsUri = \App\Services\SignatureStorageService::userSignatureDataUri($peminjaman->ttd_mahasiswa_file);
+        $ttdKalabUri = \App\Services\SignatureStorageService::userSignatureDataUri($peminjaman->ttd_kalab_file);
+        $ttdPlpUri = \App\Services\SignatureStorageService::userSignatureDataUri($peminjaman->ttd_plp_file);
+    @endphp
     <table class="signature-table">
         <tr>
             <td colspan="2" style="padding-left: 60%;">Peminjam,</td>
         </tr>
         <tr style="height: 80px;">
             <td colspan="2" style="padding-left: 60%;">
-                @if ($peminjaman->ttd_mahasiswa_file)
-                    <img src="data:image/png;base64,{{ base64_encode(file_get_contents(public_path('storage/signatures/' . $peminjaman->ttd_mahasiswa_file))) }}"
+                @if ($ttdMhsUri)
+                    <img src="{{ $ttdMhsUri }}"
                         style="height: 50px;">
                 @endif
             </td>
@@ -193,14 +198,14 @@
         </tr>
         <tr style="height: 80px;">
             <td>
-                @if ($peminjaman->ttd_kalab_file)
-                    <img src="data:image/png;base64,{{ base64_encode(file_get_contents(public_path('storage/signatures/' . $peminjaman->ttd_kalab_file))) }}"
+                @if ($ttdKalabUri)
+                    <img src="{{ $ttdKalabUri }}"
                         style="height: 50px;">
                 @endif
             </td>
             <td>
-                @if ($peminjaman->ttd_plp_file)
-                    <img src="data:image/png;base64,{{ base64_encode(file_get_contents(public_path('storage/signatures/' . $peminjaman->ttd_plp_file))) }}"
+                @if ($ttdPlpUri)
+                    <img src="{{ $ttdPlpUri }}"
                         style="height: 50px;">
                 @endif
             </td>

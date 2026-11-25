@@ -13,6 +13,7 @@ use App\Models\PeriodeJadwal;
 use App\Models\PlpAktivitasTemplate;
 use App\Models\User;
 use App\Notifications\LogbookNotification;
+use App\Services\SignatureStorageService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -801,7 +802,7 @@ class LogbookPraktikumController extends Controller
             $mhsTtdBase64 = null;
 
             if ($hasPeralatan && !empty($effMhs['ttd_path'])) {
-                $mhsTtdBase64 = $this->fileToBase64(public_path('storage/logbook_signatures/' . $effMhs['ttd_path']));
+                $mhsTtdBase64 = SignatureStorageService::logbookSignatureDataUri($effMhs['ttd_path']);
             }
 
             return [
@@ -970,83 +971,26 @@ class LogbookPraktikumController extends Controller
 
     private function storeBase64Png(string $base64Data): ?string
     {
-        if (!preg_match('/^data:image\/(png|jpeg|jpg);base64,(.+)$/i', trim($base64Data), $matches)) {
-            return null;
-        }
-
-        $binary = base64_decode($matches[2], true);
-        if ($binary === false || strlen($binary) < 50) {
-            return null;
-        }
-
-        $dir = public_path('storage/logbook_signatures');
-        if (!file_exists($dir)) {
-            mkdir($dir, 0755, true);
-        }
-
-        $ext = strtolower($matches[1]) === 'png' ? 'png' : 'jpg';
-        $filename = 'mhs_' . time() . '_' . Str::random(8) . '.' . $ext;
-        file_put_contents($dir . DIRECTORY_SEPARATOR . $filename, $binary);
-
-        return $filename;
+        return app(SignatureStorageService::class)->storeLogbookBase64Signature($base64Data);
     }
 
     private function copyProfileSignatureToLogbook(string $profileSignaturePath): ?string
     {
-        $source = $this->findSignatureAbsolutePath($profileSignaturePath);
-        if (!$source) {
-            return null;
-        }
-
-        $dir = public_path('storage/logbook_signatures');
-        if (!file_exists($dir)) {
-            mkdir($dir, 0755, true);
-        }
-
-        $ext = pathinfo($source, PATHINFO_EXTENSION) ?: 'png';
-        $filename = 'mhs_profile_' . time() . '_' . Str::random(8) . '.' . $ext;
-        copy($source, $dir . DIRECTORY_SEPARATOR . $filename);
-
-        return $filename;
+        return app(SignatureStorageService::class)->copyUserSignatureToLogbook($profileSignaturePath);
     }
 
     private function findSignatureAbsolutePath(?string $filename): ?string
     {
-        if (!$filename) {
-            return null;
-        }
-
-        $candidates = [
-            public_path('storage/signatures/' . $filename),
-            storage_path('app/public/signatures/' . $filename),
-        ];
-
-        foreach ($candidates as $path) {
-            if (file_exists($path) && is_file($path)) {
-                return $path;
-            }
-        }
-
-        return null;
+        return app(SignatureStorageService::class)->resolveUserSignaturePath($filename);
     }
 
     private function userSignatureToBase64(?string $filename): ?string
     {
-        return $this->fileToBase64($this->findSignatureAbsolutePath($filename));
+        return SignatureStorageService::userSignatureDataUri($filename);
     }
 
     private function fileToBase64(?string $path): ?string
     {
-        if (!$path || !file_exists($path) || !is_file($path)) {
-            return null;
-        }
-
-        $mime = mime_content_type($path) ?: 'image/png';
-        $data = file_get_contents($path);
-        if ($data === false) {
-            return null;
-        }
-
-        return 'data:' . $mime . ';base64,' . base64_encode($data);
+        return app(SignatureStorageService::class)->fileToDataUri($path);
     }
 }

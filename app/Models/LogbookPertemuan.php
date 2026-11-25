@@ -100,12 +100,29 @@ class LogbookPertemuan extends Model
             $displayLabel = trim((string) $nrp);
         }
 
+        $ttdUrl = null;
+        if ($ttdPath) {
+            if ($source === 'pertemuan') {
+                $ttdUrl = route('signatures.logbook.show', [
+                    'type' => 'pertemuan',
+                    'id' => $this->id,
+                    'v' => substr(md5($ttdPath), 0, 8),
+                ]);
+            } elseif ($source === 'semester' && $this->logbook_praktikum_id) {
+                $ttdUrl = route('signatures.logbook.show', [
+                    'type' => 'logbook',
+                    'id' => $this->logbook_praktikum_id,
+                    'v' => substr(md5($ttdPath), 0, 8),
+                ]);
+            }
+        }
+
         return [
             'nama' => $nama,
             'nrp' => $nrp,
             'display' => $displayLabel,
             'ttd_path' => $ttdPath,
-            'ttd_url' => $ttdPath ? asset('storage/logbook_signatures/' . $ttdPath) : null,
+            'ttd_url' => $ttdUrl,
             'source' => $source,
         ];
     }

@@ -112,6 +112,9 @@ class SignatureVerificationTest extends TestCase
         $this->mahasiswa->refresh();
         $this->assertEquals('pending', $this->mahasiswa->signature_status);
         $this->assertNotNull($this->mahasiswa->signature_path);
+        $privateFile = storage_path('app/private/signatures/' . $this->mahasiswa->signature_path);
+        $this->assertFileExists($privateFile);
+        @unlink($privateFile);
     }
 
     public function test_admin_can_view_signature_verification_page(): void
@@ -143,7 +146,7 @@ class SignatureVerificationTest extends TestCase
 
     public function test_admin_can_approve_signature(): void
     {
-        $signatureDir = public_path('storage/signatures');
+        $signatureDir = storage_path('app/private/signatures');
         if (!file_exists($signatureDir)) {
             mkdir($signatureDir, 0755, true);
         }
@@ -171,7 +174,7 @@ class SignatureVerificationTest extends TestCase
 
     public function test_admin_can_reject_signature_and_file_is_deleted(): void
     {
-        $signatureDir = public_path('storage/signatures');
+        $signatureDir = storage_path('app/private/signatures');
         if (!file_exists($signatureDir)) {
             mkdir($signatureDir, 0755, true);
         }

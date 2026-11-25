@@ -234,6 +234,10 @@
         baik dan lengkap sesuai peraturan yang berlaku di SIMLAB Politeknik Elektronika Negeri Surabaya.
     </p>
 
+    @php
+        $ttdPlpUri = \App\Services\SignatureStorageService::userSignatureDataUri($peminjaman->ttd_plp_file);
+        $ttdMhsUri = \App\Services\SignatureStorageService::userSignatureDataUri($peminjaman->ttd_mahasiswa_file);
+    @endphp
     <table class="signature-table">
         <tr>
             <td>
@@ -241,8 +245,8 @@
                 <div style="padding-bottom:10px;"></div>
                 Menyetujui,<br>
                 <strong>Pranata Laboratorium Pendidikan</strong><br>
-                @if ($peminjaman->ttd_plp_file && file_exists(storage_path('app/public/signatures/' . $peminjaman->ttd_plp_file)))
-                    <img src="data:image/png;base64,{{ base64_encode(file_get_contents(storage_path('app/public/signatures/' . $peminjaman->ttd_plp_file))) }}"
+                @if ($ttdPlpUri)
+                    <img src="{{ $ttdPlpUri }}"
                         class="signature-img"><br>
                 @else
                     <div style="height: 70px;"></div>
@@ -257,10 +261,8 @@
                 </div>
                 Mengetahui,<br>
                 <strong>Peminjam (Mahasiswa)</strong><br>
-                @if (
-                    $peminjaman->ttd_mahasiswa_file &&
-                        file_exists(storage_path('app/public/signatures/' . $peminjaman->ttd_mahasiswa_file)))
-                    <img src="data:image/png;base64,{{ base64_encode(file_get_contents(storage_path('app/public/signatures/' . $peminjaman->ttd_mahasiswa_file))) }}"
+                @if ($ttdMhsUri)
+                    <img src="{{ $ttdMhsUri }}"
                         class="signature-img"><br>
                 @else
                     <div style="height: 70px;"></div>

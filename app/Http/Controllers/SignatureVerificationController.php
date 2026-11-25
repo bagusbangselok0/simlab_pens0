@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Notifications\SimpleDatabaseNotification;
+use App\Services\SignatureStorageService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Yajra\DataTables\DataTables;
@@ -13,7 +14,7 @@ class SignatureVerificationController extends Controller
     /**
      * Display a listing of user signatures for admin review.
      */
-    public function index(Request $request)
+    public function index(Request $request, SignatureStorageService $storage)
     {
         $title = 'Verifikasi Tanda Tangan Digital';
 
@@ -39,13 +40,13 @@ class SignatureVerificationController extends Controller
             return DataTables::of($users)
                 ->addIndexColumn()
                 ->addColumn('user_info', function ($row) {
-                    $identifier = $row->nrp ? "NRP: {$row->nrp}" : ($row->nip ? "NIP: {$row->nip}" : $row->email);
-                    $roleBadge = $row->role ? "<span class='badge bg-light-primary text-primary'>{$row->role->nama_role}</span>" : '';
-                    return "<div class='fw-bold'>{$row->full_name}</div><small class='text-muted'>{$identifier}</small> <div>{$roleBadge}</div>";
+                    $identifier = $row->nrp ? 'NRP: ' . e($row->nrp) : ($row->nip ? 'NIP: ' . e($row->nip) : e($row->email));
+                    $roleBadge = $row->role ? "<span class='badge bg-light-primary text-primary'>" . e($row->role->nama_role) . "</span>" : '';
+                    return "<div class='fw-bold'>" . e($row->full_name) . "</div><small class='text-muted'>{$identifier}</small> <div>{$roleBadge}</div>";
                 })
-                ->addColumn('signature_preview', function ($row) {
-                    if ($row->signature_path && file_exists(public_path('storage/signatures/' . $row->signature_path))) {
-                        $url = asset('storage/signatures/' . $row->signature_path);
+                ->addColumn('signature_preview', function ($row) use ($storage) {
+                    if ($row->signature_path && $storage->userSignatureExists($row->signature_path)) {
+                        $url = e($row->signature_url);
                         return "<a href='{$url}' target='_blank'><img src='{$url}' alt='TTD' class='img-thumbnail' style='max-height: 60px; max-width: 120px; object-fit: contain;'></a>";
                     }
                     return "<span class='text-muted fst-italic'>Tidak ada file</span>";
@@ -89,11 +90,11 @@ class SignatureVerificationController extends Controller
     /**
      * Approve user signature.
      */
-    public function approve($id)
+    public function approve($id, SignatureStorageService $storage)
     {
         $user = User::findOrFail($id);
 
-        if (!$user->signature_path || !file_exists(public_path('storage/signatures/' . $user->signature_path))) {
+        if (!$user->signature_path || !$storage->userSignatureExists($user->signature_path)) {
             return response()->json([
                 'success' => false,
                 'message' => 'File tanda tangan fisik tidak ditemukan atau belum diupload.'
@@ -116,7 +117,7 @@ class SignatureVerificationController extends Controller
     /**
      * Reject user signature and delete physical file.
      */
-    public function reject(Request $request, $id)
+    public function reject(Request $request, $id, SignatureStorageService $storage)
     {
         $request->validate([
             'rejection_note' => 'required|string|max:500',
@@ -125,9 +126,7 @@ class SignatureVerificationController extends Controller
         $user = User::findOrFail($id);
 
         // Hapus file fisik gambar tanda tangan dari storage jika ada
-        if ($user->signature_path && file_exists(public_path('storage/signatures/' . $user->signature_path))) {
-            unlink(public_path('storage/signatures/' . $user->signature_path));
-        }
+        $storage->deleteUserSignature($user->signature_path);
 
         $user->update([
             'signature_path' => null,
