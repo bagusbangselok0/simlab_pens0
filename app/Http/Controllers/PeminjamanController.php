@@ -10,6 +10,7 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
 use Shuchkin\SimpleXLSXGen;
 use Yajra\DataTables\DataTables;
 
@@ -267,14 +268,9 @@ class PeminjamanController extends Controller
     {
         $penolak = null;
         $peminjaman = PeminjamanLab::with(['lab', 'labManager.plp', 'labManager.kalab', 'mahasiswa'])
-            ->where('id', $id);
+            ->findOrFail($id);
 
-        // Jika bukan admin, hanya bisa melihat milik sendiri
-        if (Auth::user()->role_id != 1) {
-            $peminjaman->where('mahasiswa_id', Auth::id());
-        }
-
-        $peminjaman = $peminjaman->firstOrFail();
+        Gate::authorize('view', $peminjaman);
 
         // Jika tgl_ttd_plp kosong berarti di tolak oleh PLP, jika tgl_ttd_kalab kosong berarti di tolak oleh Kalab
         if ($peminjaman->status == 'ditolak') {
@@ -327,9 +323,9 @@ class PeminjamanController extends Controller
     public function cetak($id)
     {
         $peminjaman = PeminjamanLab::with(['lab', 'labManager.plp', 'labManager.kalab', 'mahasiswa'])
-            ->where('id', $id)
-            ->where('mahasiswa_id', Auth::id())
-            ->firstOrFail();
+            ->findOrFail($id);
+
+        Gate::authorize('downloadPdf', $peminjaman);
 
         // 1. Render HTML ke PDF biasa via DomPDF
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pages.peminjaman.cetak', compact('peminjaman'));
@@ -385,9 +381,9 @@ class PeminjamanController extends Controller
 
     public function cancel($id)
     {
-        $peminjaman = PeminjamanLab::where('id', $id)
-            ->where('mahasiswa_id', Auth::id())
-            ->firstOrFail();
+        $peminjaman = PeminjamanLab::findOrFail($id);
+
+        Gate::authorize('cancel', $peminjaman);
 
         if (!in_array($peminjaman->status, ['pending_plp', 'pending_kalab'])) {
             return response()->json([

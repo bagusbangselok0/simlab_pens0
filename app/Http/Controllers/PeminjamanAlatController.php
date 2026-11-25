@@ -15,6 +15,8 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\ValidationException;
 use Yajra\DataTables\DataTables;
 
 class PeminjamanAlatController extends Controller
@@ -297,8 +299,9 @@ class PeminjamanAlatController extends Controller
             }
         }
 
-        // Cek validasi per item & duplikasi NUP
+        // Cek validasi per item & kumpulkan ID DIR untuk pessimistic locking
         $selectedUnits = [];
+        $parsedItems = [];
 
         foreach ($itemsData as $index => $item) {
             $isManual = (bool) ($item['is_manual'] ?? false);
@@ -309,6 +312,15 @@ class PeminjamanAlatController extends Controller
                         'message' => 'Nama alat pada baris ke-' . ($index + 1) . ' wajib diisi karena menggunakan opsi Input Manual.',
                     ], 422);
                 }
+
+                $parsedItems[] = [
+                    'is_manual' => true,
+                    'nama_alat' => trim($item['nama_alat']),
+                    'jumlah' => (int) $item['jumlah'],
+                    'satuan' => !empty($item['satuan']) ? $item['satuan'] : 'Unit',
+                    'spesifikasi' => $item['spesifikasi'] ?? null,
+                    'keterangan' => $item['keterangan'] ?? null,
+                ];
             } else {
                 if (empty($item['inventaris_ruangan_id'])) {
                     return response()->json([
@@ -317,9 +329,21 @@ class PeminjamanAlatController extends Controller
                     ], 422);
                 }
 
-                $rawId = $item['inventaris_ruangan_id'];
-                $nupVal = $item['nup'] ?? '';
-                $unitKey = $rawId . '|' . $nupVal;
+                $rawId = (string) $item['inventaris_ruangan_id'];
+                $selectedNup = !empty($item['nup']) ? trim((string) $item['nup']) : null;
+
+                if (str_contains($rawId, '__')) {
+                    [$dirId, $embeddedNup] = explode('__', $rawId, 2);
+                    if (!$selectedNup || $selectedNup === '-') {
+                        $selectedNup = ($embeddedNup !== 'none') ? trim($embeddedNup) : null;
+                    }
+                } else {
+                    $dirId = $rawId;
+                }
+
+                $dirId = (int) $dirId;
+                $normalizedNup = ($selectedNup && $selectedNup !== '-') ? $selectedNup : null;
+                $unitKey = $dirId . '__' . ($normalizedNup ?? 'none');
 
                 if (in_array($unitKey, $selectedUnits, true)) {
                     return response()->json([
@@ -328,104 +352,169 @@ class PeminjamanAlatController extends Controller
                     ], 422);
                 }
                 $selectedUnits[] = $unitKey;
+
+                $parsedItems[] = [
+                    'is_manual' => false,
+                    'dir_id' => $dirId,
+                    'selected_nup' => $normalizedNup,
+                    'unit_key' => $unitKey,
+                    'spesifikasi' => $item['spesifikasi'] ?? null,
+                    'keterangan' => $item['keterangan'] ?? null,
+                ];
             }
         }
 
         // 3. Tentukan Ruangan & PLP Penanggung Jawab
-        $labId = $request->lab_id;
+        $labId = (int) $request->lab_id;
         $plpId = null;
 
-        // Jika lab_id belum ditentukan, coba ambil dari item pertama yang berasal dari DIR
-        if (!$labId) {
-            foreach ($itemsData as $item) {
-                if (empty($item['is_manual']) && !empty($item['inventaris_ruangan_id'])) {
-                    $dirItem = InventarisRuangan::find($item['inventaris_ruangan_id']);
-                    if ($dirItem && $dirItem->lab_id) {
-                        $labId = $dirItem->lab_id;
-                        break;
-                    }
-                }
-            }
+        $labManager = LabManager::where('lab_id', $labId)->first();
+        if ($labManager) {
+            $plpId = $labManager->plp_id;
         }
 
-        // Cari PLP penanggung jawab ruangan tersebut
-        if ($labId) {
-            $labManager = LabManager::where('lab_id', $labId)->first();
-            if ($labManager) {
-                $plpId = $labManager->plp_id;
-            }
-        }
+        $dirIds = collect($parsedItems)
+            ->where('is_manual', false)
+            ->pluck('dir_id')
+            ->unique()
+            ->sort()
+            ->values()
+            ->all();
 
-        // 4. Generate Nomor/Kode Peminjaman Unik (Contoh: ALAT-20261104-001)
-        $todayStr = now()->format('Ymd');
-        $todayCount = PeminjamanAlat::whereDate('created_at', today())->count();
-        $kodePeminjaman = sprintf('ALAT-%s-%03d', $todayStr, $todayCount + 1);
-
-        // 5. Simpan ke Database dengan Transaksi
-        DB::beginTransaction();
+        // 4. Simpan ke Database dengan Transaksi & Pessimistic Locking (lockForUpdate)
         try {
-            $peminjaman = PeminjamanAlat::create([
-                'kode_peminjaman' => $kodePeminjaman,
-                'mahasiswa_id' => $user->id,
-                'lab_id' => $labId,
-                'plp_id' => $plpId,
-                'keperluan' => $request->keperluan,
-                'waktu_pinjam' => $request->waktu_pinjam,
-                'rencana_kembali' => $request->rencana_kembali,
-                'status' => 'pending_plp',
-                'ttd_mahasiswa_file' => $user->signature_path,
-            ]);
+            $peminjaman = DB::transaction(function () use ($user, $request, $parsedItems, $dirIds, $labId, $plpId, $maxActiveLoans) {
+                User::where('id', $user->id)->lockForUpdate()->first();
 
-            foreach ($itemsData as $item) {
-                $isManual = (bool) ($item['is_manual'] ?? false);
+                $lockedActiveCount = PeminjamanAlat::where('mahasiswa_id', $user->id)
+                    ->whereIn('status', ['pending_plp', 'disetujui', 'sedang_dipinjam'])
+                    ->lockForUpdate()
+                    ->count();
 
-                if ($isManual) {
-                    PeminjamanAlatDetail::create([
-                        'peminjaman_alat_id' => $peminjaman->id,
-                        'inventaris_ruangan_id' => null,
-                        'nama_alat' => trim($item['nama_alat']),
-                        'kode_barang' => null,
-                        'nup' => null,
-                        'jumlah' => (int) $item['jumlah'],
-                        'satuan' => !empty($item['satuan']) ? $item['satuan'] : 'Unit',
-                        'is_manual' => true,
-                        'spesifikasi' => $item['spesifikasi'] ?? null,
-                        'keterangan' => $item['keterangan'] ?? null,
-                        'kondisi_pinjam' => 'baik',
+                if ($lockedActiveCount >= $maxActiveLoans) {
+                    throw ValidationException::withMessages([
+                        'items' => ["Anda telah mencapai batas maksimal ({$maxActiveLoans}) peminjaman alat yang masih aktif/berjalan. Harap selesaikan pengembalian alat sebelumnya terlebih dahulu."],
                     ]);
-                } else {
-                    $rawId = $item['inventaris_ruangan_id'];
-                    $selectedNup = !empty($item['nup']) ? trim($item['nup']) : null;
+                }
 
-                    if (str_contains($rawId, '__')) {
-                        [$dirId, $embeddedNup] = explode('__', $rawId, 2);
-                        if (!$selectedNup || $selectedNup === '-') {
-                            $selectedNup = ($embeddedNup !== 'none') ? $embeddedNup : null;
-                        }
-                    } else {
-                        $dirId = $rawId;
+                $lockedDirs = collect();
+                $lockedActiveUnits = [];
+
+                if (!empty($dirIds)) {
+                    $lockedDirs = InventarisRuangan::whereIn('id', $dirIds)
+                        ->orderBy('id')
+                        ->lockForUpdate()
+                        ->get()
+                        ->keyBy('id');
+
+                    $lockedActiveUnits = PeminjamanAlatDetail::query()
+                        ->join('peminjaman_alats', 'peminjaman_alat_details.peminjaman_alat_id', '=', 'peminjaman_alats.id')
+                        ->whereIn('peminjaman_alat_details.inventaris_ruangan_id', $dirIds)
+                        ->whereIn('peminjaman_alats.status', ['pending_plp', 'disetujui', 'sedang_dipinjam'])
+                        ->lockForUpdate()
+                        ->get(['peminjaman_alat_details.inventaris_ruangan_id', 'peminjaman_alat_details.nup'])
+                        ->map(function ($row) {
+                            $nup = trim((string) ($row->nup ?? ''));
+                            return $row->inventaris_ruangan_id . '__' . ($nup !== '' && $nup !== '-' ? $nup : 'none');
+                        })
+                        ->all();
+                }
+
+                $detailsPayload = [];
+                foreach ($parsedItems as $item) {
+                    if ($item['is_manual']) {
+                        $detailsPayload[] = [
+                            'inventaris_ruangan_id' => null,
+                            'nama_alat' => $item['nama_alat'],
+                            'kode_barang' => null,
+                            'nup' => null,
+                            'jumlah' => $item['jumlah'],
+                            'satuan' => $item['satuan'],
+                            'is_manual' => true,
+                            'spesifikasi' => $item['spesifikasi'],
+                            'keterangan' => $item['keterangan'],
+                            'kondisi_pinjam' => 'baik',
+                        ];
+                        continue;
                     }
 
-                    $dirItem = InventarisRuangan::findOrFail($dirId);
-                    $finalNup = ($selectedNup && $selectedNup !== '-') ? $selectedNup : $dirItem->nup;
+                    /** @var \App\Models\InventarisRuangan|null $dirItem */
+                    $dirItem = $lockedDirs->get($item['dir_id']);
+                    if (!$dirItem || (int) $dirItem->lab_id !== $labId) {
+                        throw ValidationException::withMessages([
+                            'items' => ['Alat inventaris tidak ditemukan pada laboratorium yang dipilih.'],
+                        ]);
+                    }
 
-                    PeminjamanAlatDetail::create([
-                        'peminjaman_alat_id' => $peminjaman->id,
+                    if (!$dirItem->is_bisa_dipinjam || $dirItem->kondisi === 'rusak_berat') {
+                        throw ValidationException::withMessages([
+                            'items' => ["Alat \"{$dirItem->nama_barang}\" saat ini tidak dapat dipinjam (status non-pinjam atau rusak berat)."],
+                        ]);
+                    }
+
+                    $availableNups = $this->parseNupList($dirItem->nup);
+                    $finalNup = $item['selected_nup'];
+                    if (!empty($availableNups)) {
+                        if ($finalNup === null || !in_array($finalNup, $availableNups, true)) {
+                            throw ValidationException::withMessages([
+                                'items' => ["NUP alat \"{$dirItem->nama_barang}\" tidak valid untuk inventaris ruangan ini."],
+                            ]);
+                        }
+                    } elseif ($finalNup === null && !empty($dirItem->nup) && trim($dirItem->nup) !== '-') {
+                        $finalNup = trim($dirItem->nup);
+                    }
+
+                    $conflictKey = $dirItem->id . '__' . ($finalNup ?? 'none');
+                    if (in_array($conflictKey, $lockedActiveUnits, true)) {
+                        $nupLabel = $finalNup ?? '-';
+                        throw ValidationException::withMessages([
+                            'items' => ["Unit {$dirItem->nama_barang} (NUP: {$nupLabel}) baru saja dipinjam atau sedang menunggu persetujuan. Silakan pilih NUP lain."],
+                        ]);
+                    }
+                    $lockedActiveUnits[] = $conflictKey;
+
+                    $detailsPayload[] = [
                         'inventaris_ruangan_id' => $dirItem->id,
                         'nama_alat' => $dirItem->nama_barang,
                         'kode_barang' => $dirItem->kode_barang,
-                        'nup' => $finalNup, // Single NUP spesifik yang dipilih peminjam
-                        'jumlah' => 1,      // Pasti 1 per NUP
+                        'nup' => $finalNup,
+                        'jumlah' => 1,
                         'satuan' => $dirItem->satuan ?? 'Unit',
                         'is_manual' => false,
-                        'spesifikasi' => $dirItem->spesifikasi_merk_tipe ?? ($item['spesifikasi'] ?? null),
-                        'keterangan' => $item['keterangan'] ?? null,
+                        'spesifikasi' => $dirItem->spesifikasi_merk_tipe ?? $item['spesifikasi'],
+                        'keterangan' => $item['keterangan'],
                         'kondisi_pinjam' => $dirItem->kondisi ?? 'baik',
-                    ]);
+                    ];
                 }
-            }
 
-            DB::commit();
+                // Generate kode peminjaman unik secara aman di dalam transaksi
+                $prefix = 'ALAT-' . now()->format('Ymd') . '-';
+                $lastCode = PeminjamanAlat::where('kode_peminjaman', 'like', $prefix . '%')
+                    ->orderByDesc('kode_peminjaman')
+                    ->lockForUpdate()
+                    ->value('kode_peminjaman');
+                $nextSeq = $lastCode ? ((int) substr($lastCode, strlen($prefix))) + 1 : 1;
+                $kodePeminjaman = sprintf('%s%03d', $prefix, $nextSeq);
+
+                $peminjaman = PeminjamanAlat::create([
+                    'kode_peminjaman' => $kodePeminjaman,
+                    'mahasiswa_id' => $user->id,
+                    'lab_id' => $labId,
+                    'plp_id' => $plpId,
+                    'keperluan' => $request->keperluan,
+                    'waktu_pinjam' => $request->waktu_pinjam,
+                    'rencana_kembali' => $request->rencana_kembali,
+                    'status' => 'pending_plp',
+                    'ttd_mahasiswa_file' => $user->signature_path,
+                ]);
+
+                foreach ($detailsPayload as $detailData) {
+                    $detailData['peminjaman_alat_id'] = $peminjaman->id;
+                    PeminjamanAlatDetail::create($detailData);
+                }
+
+                return $peminjaman;
+            });
 
             // Kirim notifikasi pengajuan baru ke PLP ruangan
             try {
@@ -445,11 +534,17 @@ class PeminjamanAlatController extends Controller
                 'kode' => $peminjaman->kode_peminjaman,
             ], 200);
 
-        } catch (\Exception $e) {
-            DB::rollBack();
+        } catch (ValidationException $e) {
+            $firstMessage = collect($e->errors())->flatten()->first() ?? 'Data pengajuan alat tidak valid.';
             return response()->json([
                 'success' => false,
-                'message' => 'Terjadi kesalahan saat menyimpan pengajuan: ' . $e->getMessage(),
+                'message' => $firstMessage,
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menyimpan pengajuan.',
             ], 500);
         }
     }
@@ -465,6 +560,8 @@ class PeminjamanAlatController extends Controller
             'plp',
             'details.inventarisRuangan.lab'
         ])->findOrFail($id);
+
+        Gate::authorize('view', $peminjaman);
 
         $items = $peminjaman->details->map(function ($detail) {
             $labName = '-';
@@ -520,9 +617,9 @@ class PeminjamanAlatController extends Controller
      */
     public function cancel(Request $request, $id)
     {
-        $peminjaman = PeminjamanAlat::where('id', $id)
-            ->where('mahasiswa_id', Auth::id())
-            ->firstOrFail();
+        $peminjaman = PeminjamanAlat::findOrFail($id);
+
+        Gate::authorize('cancel', $peminjaman);
 
         if ($peminjaman->status !== 'pending_plp') {
             return response()->json([
@@ -649,6 +746,7 @@ class PeminjamanAlatController extends Controller
     public function approve(Request $request, $id)
     {
         $peminjaman = PeminjamanAlat::findOrFail($id);
+        Gate::authorize('manageApproval', $peminjaman);
         $user = Auth::user();
 
         // Validasi TTD PLP
@@ -700,6 +798,7 @@ class PeminjamanAlatController extends Controller
         ]);
 
         $peminjaman = PeminjamanAlat::findOrFail($id);
+        Gate::authorize('manageApproval', $peminjaman);
         $user = Auth::user();
 
         if ($peminjaman->status !== 'pending_plp') {
@@ -736,6 +835,7 @@ class PeminjamanAlatController extends Controller
     public function kembalikan(Request $request, $id)
     {
         $peminjaman = PeminjamanAlat::findOrFail($id);
+        Gate::authorize('manageApproval', $peminjaman);
 
         if (!in_array($peminjaman->status, ['disetujui', 'sedang_dipinjam'])) {
             return response()->json([
@@ -776,6 +876,8 @@ class PeminjamanAlatController extends Controller
             'plp',
             'details.inventarisRuangan.lab'
         ])->findOrFail($id);
+
+        Gate::authorize('downloadPdf', $peminjaman);
 
         $pdf = Pdf::loadView('pages.peminjaman_alat.cetak', compact('peminjaman'));
         return $pdf->stream('Peminjaman_Alat_' . $peminjaman->kode_peminjaman . '.pdf');

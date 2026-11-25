@@ -160,7 +160,7 @@
     </p>
 
     <p style="text-align: right; padding-top: 15px">Sumenep,
-        {{ $peminjaman->tgl_ttd_kalab->locale('id')->translatedFormat('d F Y') }}</p>
+        {{ ($peminjaman->tgl_ttd_kalab ?? $peminjaman->updated_at ?? now())->locale('id')->translatedFormat('d F Y') }}</p>
 
     @php
         $ttdMhsUri = \App\Services\SignatureStorageService::userSignatureDataUri($peminjaman->ttd_mahasiswa_file);

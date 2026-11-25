@@ -222,6 +222,8 @@ class PresensiController extends Controller
             ->where('id', $id)
             ->firstOrFail();
 
+        \Illuminate\Support\Facades\Gate::authorize('downloadPdf', $peminjaman);
+
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pages.peminjaman.cetak', compact('peminjaman'));
 
         $nama_file = 'Peminjaman_Lab_' . str_replace(' ', '_', $peminjaman->lab->nama_lab) . '_' . date('YmdHis') . '.pdf';

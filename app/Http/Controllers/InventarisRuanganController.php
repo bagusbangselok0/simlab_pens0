@@ -21,12 +21,40 @@ class InventarisRuanganController extends Controller
         }
     }
 
+    private function authorizeLabAccess(int $labId): void
+    {
+        $user = Auth::user();
+        if (!$user) {
+            abort(403);
+        }
+
+        if ($user->role?->slug === 'admin' || (int) $user->role_id === 1) {
+            return;
+        }
+
+        $isAssigned = LabManager::where('lab_id', $labId)
+            ->where(function ($q) use ($user) {
+                $q->where('plp_id', $user->id);
+                if ($user->isKalab()) {
+                    $q->orWhere('kalab_id', $user->id);
+                }
+            })
+            ->exists();
+
+        if (!$isAssigned) {
+            abort(403, 'Anda tidak ditugaskan sebagai penanggung jawab laboratorium ini.');
+        }
+    }
+
     /**
      * Display a listing of the resource.
      */
     public function index(Request $request)
     {
         $this->ensureKalabOrNonDosen();
+        if ($request->filled('lab_id')) {
+            $this->authorizeLabAccess((int) $request->get('lab_id'));
+        }
         $user = Auth::user();
 
         // Tentukan lab yang dapat diakses user
@@ -153,6 +181,7 @@ class InventarisRuanganController extends Controller
     {
         $this->ensureKalabOrNonDosen();
         $item = InventarisRuangan::findOrFail($id);
+        $this->authorizeLabAccess((int) $item->lab_id);
 
         $assignedNupKeysOther = InventarisRuangan::query()
             ->whereNotNull('nup')
@@ -270,6 +299,7 @@ class InventarisRuanganController extends Controller
         ]);
 
         $validated['is_bisa_dipinjam'] = $request->has('is_bisa_dipinjam');
+        $this->authorizeLabAccess((int) $validated['lab_id']);
 
         $masters = InventarisBarang::whereIn('id', $validated['inventaris_barang_ids'])->get();
         $master = $masters->first();
@@ -347,6 +377,7 @@ class InventarisRuanganController extends Controller
     {
         $this->ensureKalabOrNonDosen();
         $inventaris = InventarisRuangan::findOrFail($id);
+        $this->authorizeLabAccess((int) $inventaris->lab_id);
 
         if ($request->has('inventaris_barang_ids')) {
             $validated = $request->validate([
@@ -437,6 +468,7 @@ class InventarisRuanganController extends Controller
     {
         $this->ensureKalabOrNonDosen();
         $inventaris = InventarisRuangan::findOrFail($id);
+        $this->authorizeLabAccess((int) $inventaris->lab_id);
         $labId = $inventaris->lab_id;
         $inventaris->delete();
 
@@ -451,6 +483,7 @@ class InventarisRuanganController extends Controller
     {
         $this->ensureKalabOrNonDosen();
         $lab = Lab::with(['labManager.plp', 'labManager.kalab'])->findOrFail($lab_id);
+        $this->authorizeLabAccess((int) $lab->id);
         $items = InventarisRuangan::where('lab_id', $lab_id)->orderBy('nama_barang')->get();
 
         $pdf = Pdf::loadView('pages.inventaris_ruangan.pdf_dir', compact('lab', 'items'))

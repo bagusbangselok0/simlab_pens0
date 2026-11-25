@@ -4,10 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\PeminjamanLab;
 use App\Models\Setting;
+use App\Models\User;
 use App\Notifications\PeminjamanNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Yajra\DataTables\DataTables;
 
 class ApprovalController extends Controller
@@ -138,7 +140,9 @@ class ApprovalController extends Controller
     public function approve($id)
     {
         $this->ensureKalabOrNonDosen();
-        $peminjaman = PeminjamanLab::findOrFail($id);
+        $peminjaman = PeminjamanLab::with(['labManager.kalab', 'mahasiswa'])->findOrFail($id);
+        Gate::authorize('approve', $peminjaman);
+
         $user = Auth::user();
         $jabatanId = $user->jabatan_id;
 
@@ -160,8 +164,8 @@ class ApprovalController extends Controller
         $actionType = null;
         $recipient = null;
 
-        // Logic approval berdasarkan jabatan
-        if ($jabatanId == 4) { // PLP
+        // Logic approval berdasarkan role / jabatan
+        if ($user->role?->slug === 'plp' || (int) $jabatanId === 4) { // PLP
             if ($peminjaman->status == 'pending_plp') {
                 $peminjaman->tgl_ttd_plp = now(
                     date_default_timezone_set('Asia/Jakarta')
@@ -256,7 +260,13 @@ class ApprovalController extends Controller
     public function reject($id)
     {
         $this->ensureKalabOrNonDosen();
-        $peminjaman = PeminjamanLab::findOrFail($id);
+        $peminjaman = PeminjamanLab::with(['labManager', 'mahasiswa'])->findOrFail($id);
+        Gate::authorize('reject', $peminjaman);
+
+        if (!$this->canRejectStatus($peminjaman, Auth::user())) {
+            return response()->json(['success' => false, 'message' => 'Status peminjaman tidak valid untuk ditolak.'], 422);
+        }
+
         $peminjaman->status = 'ditolak';
         $peminjaman->save();
 
@@ -270,10 +280,16 @@ class ApprovalController extends Controller
     {
         $this->ensureKalabOrNonDosen();
         $request->validate([
-            'catatan_tolak' => 'required|string',
+            'catatan_tolak' => 'required|string|max:1000',
         ]);
 
-        $peminjaman = PeminjamanLab::findOrFail($id);
+        $peminjaman = PeminjamanLab::with(['labManager', 'mahasiswa'])->findOrFail($id);
+        Gate::authorize('reject', $peminjaman);
+
+        if (!$this->canRejectStatus($peminjaman, Auth::user())) {
+            return response()->json(['success' => false, 'message' => 'Status peminjaman tidak valid untuk ditolak.'], 422);
+        }
+
         $peminjaman->status = 'ditolak';
         $peminjaman->catatan_tolak = $request->catatan_tolak;
         $peminjaman->save();
@@ -282,5 +298,22 @@ class ApprovalController extends Controller
         $peminjaman->mahasiswa->notify(new PeminjamanNotification($peminjaman, 'reject', Auth::user(), $peminjaman->catatan_tolak));
 
         return response()->json(['success' => true, 'message' => 'Peminjaman ditolak dengan catatan']);
+    }
+
+    private function canRejectStatus(PeminjamanLab $peminjaman, User $user): bool
+    {
+        if ($user->role?->slug === 'admin') {
+            return in_array($peminjaman->status, ['pending_plp', 'pending_kalab'], true);
+        }
+
+        if ($user->role?->slug === 'plp' || (int) $user->jabatan_id === 4) {
+            return $peminjaman->status === 'pending_plp';
+        }
+
+        if ($user->isKalab()) {
+            return $peminjaman->status === 'pending_kalab';
+        }
+
+        return false;
     }
 }

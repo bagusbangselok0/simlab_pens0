@@ -7,6 +7,7 @@ use App\Models\LogbookPraktikum;
 use App\Models\User;
 use App\Services\SignatureStorageService;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class PrivateSignatureController extends Controller
@@ -49,13 +50,7 @@ class PrivateSignatureController extends Controller
             abort(404);
         }
 
-        $isAdmin = $authUser->role?->slug === 'admin';
-        $isOwnerPlp = (int) $logbook->plp_id === (int) $authUser->id;
-        $isAssignedDosen = $authUser->role?->slug === 'dosen' && (int) $logbook->dosen_id === (int) $authUser->id;
-
-        if (!$isAdmin && !$isOwnerPlp && !$isAssignedDosen) {
-            abort(403, 'Anda tidak berhak mengakses berkas tanda tangan mahasiswa ini.');
-        }
+        Gate::authorize('view', $logbook);
 
         $path = $storage->resolveLogbookSignaturePath($filename);
         if (!$path) {

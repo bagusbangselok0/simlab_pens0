@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Notifications\LogbookNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
 
 class LogbookApprovalController extends Controller
 {
@@ -279,15 +280,6 @@ class LogbookApprovalController extends Controller
 
     private function authorizeDosenAccess(LogbookPertemuan $pertemuan): void
     {
-        $user = Auth::user();
-        if ($user->role?->slug === 'admin') {
-            return;
-        }
-
-        if ($user->role?->slug === 'dosen' && $pertemuan->logbook->dosen_id === $user->id) {
-            return;
-        }
-
-        abort(403, 'Anda bukan Dosen Pengampu untuk logbook ini.');
+        Gate::authorize('review', $pertemuan);
     }
 }

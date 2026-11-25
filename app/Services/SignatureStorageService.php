@@ -41,20 +41,26 @@ class SignatureStorageService
 
     public function storeLogbookBase64Signature(string $base64Data): ?string
     {
-        if (!preg_match('/^data:image\/(png|jpeg|jpg);base64,(.+)$/is', trim($base64Data), $matches)) {
+        $trimmed = trim($base64Data);
+        if ($trimmed === '' || strlen($trimmed) > 700000) {
             return null;
         }
 
+        if (!preg_match('/^data:image\/(png|jpeg|jpg);base64,([A-Za-z0-9+\/=\r\n]+)$/i', $trimmed, $matches)) {
+            return null;
+        }
+
+        $declaredMime = strtolower($matches[1]);
         $binary = base64_decode(preg_replace('/\s+/', '', $matches[2]), true);
-        if ($binary === false || strlen($binary) < 50) {
+        if ($binary === false || strlen($binary) < 50 || strlen($binary) > (512 * 1024)) {
             return null;
         }
 
-        if (!$this->isValidPngOrJpegBinary($binary)) {
+        if (!$this->isValidPngOrJpegBinary($binary, $declaredMime)) {
             return null;
         }
 
-        $ext = strtolower($matches[1]) === 'png' ? 'png' : 'jpg';
+        $ext = $declaredMime === 'png' ? 'png' : 'jpg';
         $filename = 'mhs_' . Str::uuid()->toString() . '.' . $ext;
         Storage::disk('local')->put(self::LOGBOOK_DIR . '/' . $filename, $binary);
 
@@ -227,20 +233,30 @@ class SignatureStorageService
         return null;
     }
 
-    private function isValidPngOrJpegBinary(string $binary): bool
+    private function isValidPngOrJpegBinary(string $binary, string $declaredMime): bool
     {
-        $isPngHeader = str_starts_with($binary, "\x89PNG\r\n\x1a\n");
-        $isJpegHeader = str_starts_with($binary, "\xFF\xD8\xFF");
-
-        if (!$isPngHeader && !$isJpegHeader) {
-            return false;
+        if ($declaredMime === 'png') {
+            if (!str_starts_with($binary, "\x89PNG\r\n\x1a\n")) {
+                return false;
+            }
+            $expectedImageType = IMAGETYPE_PNG;
+        } else {
+            if (!str_starts_with($binary, "\xFF\xD8\xFF")) {
+                return false;
+            }
+            $expectedImageType = IMAGETYPE_JPEG;
         }
 
         $info = @getimagesizefromstring($binary);
-        if ($info !== false) {
-            return in_array($info[2], [IMAGETYPE_PNG, IMAGETYPE_JPEG], true);
+        if ($info === false) {
+            return false;
         }
 
-        return true;
+        $width = (int) ($info[0] ?? 0);
+        $height = (int) ($info[1] ?? 0);
+
+        return $info[2] === $expectedImageType
+            && $width >= 1 && $width <= 4000
+            && $height >= 1 && $height <= 4000;
     }
 }

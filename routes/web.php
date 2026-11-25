@@ -45,12 +45,14 @@ Route::middleware('guest')->group(function () {
 });
 
 // Public Signed Routes untuk TTD Perwakilan Mahasiswa (Tanpa Login)
-Route::middleware('signed')->group(function () {
-    Route::get('/logbook/ttd-mahasiswa/{type}/{id}', [LogbookPraktikumController::class, 'showPublicSign'])
-        ->name('logbook.sign-mahasiswa.show');
-    Route::post('/logbook/ttd-mahasiswa/{type}/{id}', [LogbookPraktikumController::class, 'submitPublicSign'])
-        ->name('logbook.sign-mahasiswa.submit');
-});
+Route::middleware(['signed', 'throttle:public-logbook-sign'])
+    ->whereIn('type', ['logbook', 'pertemuan'])
+    ->group(function () {
+        Route::get('/logbook/ttd-mahasiswa/{type}/{id}', [LogbookPraktikumController::class, 'showPublicSign'])
+            ->name('logbook.sign-mahasiswa.show');
+        Route::post('/logbook/ttd-mahasiswa/{type}/{id}', [LogbookPraktikumController::class, 'submitPublicSign'])
+            ->name('logbook.sign-mahasiswa.submit');
+    });
 
 // 3. Authenticated Routes (Harus login)
 Route::middleware('auth')->group(function () {
@@ -165,64 +167,6 @@ Route::middleware('auth')->group(function () {
         Route::get('/presensi', [PresensiController::class, 'index'])->name('presensi.index');
         Route::post('/presensi/store', [PresensiController::class, 'store'])->name('presensi.store');
         Route::get('/presensi/riwayat', [PresensiController::class, 'riwayat'])->name('presensi.riwayat');
-    });
-
-    // ---------------------------------------------------------
-    // JADWAL PEMAKAIAN LAB (Semua role dapat melihat & cetak)
-    // ---------------------------------------------------------
-    Route::prefix('jadwal-lab')->name('jadwal-lab.')->group(function () {
-        Route::get('/', [JadwalLabController::class, 'index'])->name('index');
-        Route::get('/export-pdf', [JadwalLabController::class, 'exportPdf'])->name('export-pdf');
-        Route::get('/export-excel', [JadwalLabController::class, 'exportExcel'])->name('export-excel');
-
-        Route::middleware('role:admin,plp')->group(function () {
-            Route::get('/import/preview', [JadwalLabController::class, 'showPreview'])->name('preview-show');
-            Route::post('/import/preview', [JadwalLabController::class, 'previewImport'])->name('preview-import');
-            Route::post('/import/commit', [JadwalLabController::class, 'commitImport'])->name('commit-import');
-            Route::post('/', [JadwalLabController::class, 'store'])->name('store');
-            Route::put('/{jadwalLab}', [JadwalLabController::class, 'update'])->name('update');
-            Route::delete('/{jadwalLab}', [JadwalLabController::class, 'destroy'])->name('destroy');
-            Route::patch('/periode/{periode}/activate', [JadwalLabController::class, 'activatePeriode'])->name('periode.activate');
-            Route::delete('/periode/{periode}', [JadwalLabController::class, 'destroyPeriode'])->name('periode.destroy');
-        });
-    });
-
-    // ---------------------------------------------------------
-    // LOGBOOK PRAKTIKUM PLP (FM. LAB-02) & APPROVAL DOSEN
-    // ---------------------------------------------------------
-    Route::middleware('role:plp,admin')->prefix('logbook')->name('logbook.')->group(function () {
-        Route::get('/', [LogbookPraktikumController::class, 'index'])->name('index');
-        Route::post('/from-jadwal', [LogbookPraktikumController::class, 'storeFromJadwal'])->name('store-from-jadwal');
-        Route::post('/', [LogbookPraktikumController::class, 'store'])->name('store');
-        Route::post('/mahasiswa-signature', [LogbookPraktikumController::class, 'saveMahasiswaSignature'])->name('mahasiswa-signature');
-        Route::post('/sign-link', [LogbookPraktikumController::class, 'generateSignLink'])->name('sign-link');
-        Route::post('/templates', [LogbookPraktikumController::class, 'storeTemplate'])->name('templates.store');
-        Route::delete('/templates/{template}', [LogbookPraktikumController::class, 'destroyTemplate'])->name('templates.destroy');
-
-        Route::get('/{logbook}', [LogbookPraktikumController::class, 'show'])->name('show');
-        Route::put('/{logbook}', [LogbookPraktikumController::class, 'update'])->name('update');
-        Route::delete('/{logbook}', [LogbookPraktikumController::class, 'destroy'])->name('destroy');
-        Route::post('/{logbook}/generate-pertemuan', [LogbookPraktikumController::class, 'generatePertemuans'])->name('generate-pertemuans');
-        Route::post('/{logbook}/pertemuan', [LogbookPraktikumController::class, 'storePertemuan'])->name('pertemuan.store');
-        Route::post('/{logbook}/bulk-submit', [LogbookPraktikumController::class, 'bulkSubmit'])->name('bulk-submit');
-
-        Route::put('/pertemuan/{pertemuan}', [LogbookPraktikumController::class, 'updatePertemuan'])->name('pertemuan.update');
-        Route::delete('/pertemuan/{pertemuan}', [LogbookPraktikumController::class, 'destroyPertemuan'])->name('pertemuan.destroy');
-        Route::post('/pertemuan/{pertemuan}/duplicate', [LogbookPraktikumController::class, 'duplicatePertemuan'])->name('pertemuan.duplicate');
-        Route::post('/pertemuan/{pertemuan}/submit', [LogbookPraktikumController::class, 'submitPertemuan'])->name('pertemuan.submit');
-    });
-
-    Route::middleware('role:plp,dosen,admin')->get('/logbook/{logbook}/export-pdf', [LogbookPraktikumController::class, 'exportPdf'])
-        ->name('logbook.export-pdf');
-
-    Route::middleware('role:dosen,admin')->prefix('approval-logbook')->name('logbook.approval.')->group(function () {
-        Route::get('/', [LogbookApprovalController::class, 'index'])->name('index');
-        Route::post('/{pertemuan}/approve', [LogbookApprovalController::class, 'approve'])->name('approve');
-        Route::post('/bulk-approve', [LogbookApprovalController::class, 'bulkApprove'])->name('bulk-approve');
-        Route::post('/{pertemuan}/reject', [LogbookApprovalController::class, 'reject'])->name('reject');
-        Route::post('/{pertemuan}/revoke', [LogbookApprovalController::class, 'revoke'])->name('revoke');
-        Route::post('/auto-approve', [LogbookApprovalController::class, 'saveAutoApprove'])->name('auto-approve.save');
-        Route::delete('/auto-approve/{setting}', [LogbookApprovalController::class, 'deleteAutoApprove'])->name('auto-approve.destroy');
     });
 
     // ---------------------------------------------------------

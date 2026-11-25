@@ -19,6 +19,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -390,8 +391,8 @@ class LogbookPraktikumController extends Controller
 
     public function updatePertemuan(Request $request, LogbookPertemuan $pertemuan)
     {
+        Gate::authorize('manage', $pertemuan);
         $logbook = $pertemuan->logbook;
-        $this->authorizeLogbookAccess($logbook);
 
         if (!in_array($pertemuan->status, [LogbookPertemuan::STATUS_DRAFT, LogbookPertemuan::STATUS_REJECTED], true)) {
             return redirect()->route('logbook.show', $logbook->id)
@@ -420,8 +421,8 @@ class LogbookPraktikumController extends Controller
 
     public function destroyPertemuan(LogbookPertemuan $pertemuan)
     {
+        Gate::authorize('manage', $pertemuan);
         $logbook = $pertemuan->logbook;
-        $this->authorizeLogbookAccess($logbook);
 
         if (!in_array($pertemuan->status, [LogbookPertemuan::STATUS_DRAFT, LogbookPertemuan::STATUS_REJECTED], true)) {
             return redirect()->route('logbook.show', $logbook->id)
@@ -437,8 +438,8 @@ class LogbookPraktikumController extends Controller
 
     public function duplicatePertemuan(LogbookPertemuan $pertemuan)
     {
+        Gate::authorize('manage', $pertemuan);
         $logbook = $pertemuan->logbook;
-        $this->authorizeLogbookAccess($logbook);
 
         $nextWeek = ((int) ($logbook->pertemuans()->max('minggu_ke') ?? 0)) + 1;
         $copy = LogbookPertemuan::create([
@@ -546,8 +547,8 @@ class LogbookPraktikumController extends Controller
             $this->authorizeLogbookAccess($target->logbook);
             $redirectBookId = $target->logbook_praktikum_id;
 
-            if ($target->status === LogbookPertemuan::STATUS_APPROVED) {
-                $msg = 'TTD mahasiswa tidak dapat diubah karena pertemuan sudah disetujui dosen.';
+            if ($this->isPertemuanSignatureLocked($target)) {
+                $msg = 'TTD mahasiswa tidak dapat diubah karena pertemuan sedang menunggu approval atau sudah disetujui dosen.';
                 if ($request->ajax()) {
                     return response()->json(['success' => false, 'message' => $msg], 422);
                 }
@@ -614,10 +615,10 @@ class LogbookPraktikumController extends Controller
             $pertemuan = LogbookPertemuan::with('logbook')->findOrFail($validated['target_id']);
             $this->authorizeLogbookAccess($pertemuan->logbook);
 
-            if ($pertemuan->status === LogbookPertemuan::STATUS_APPROVED) {
+            if ($this->isPertemuanSignatureLocked($pertemuan)) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Pertemuan sudah disetujui dosen sehingga TTD mahasiswa tidak dapat diubah.',
+                    'message' => 'Pertemuan sedang menunggu approval atau sudah disetujui dosen sehingga TTD mahasiswa tidak dapat diubah.',
                 ], 422);
             }
         }
@@ -647,8 +648,8 @@ class LogbookPraktikumController extends Controller
         $logbook = $type === 'logbook' ? $target : $target->logbook;
         $pertemuan = $type === 'pertemuan' ? $target : null;
 
-        if ($pertemuan && $pertemuan->status === LogbookPertemuan::STATUS_APPROVED) {
-            abort(403, 'Pertemuan sudah disetujui dosen sehingga TTD mahasiswa tidak dapat diubah.');
+        if ($pertemuan && $this->isPertemuanSignatureLocked($pertemuan)) {
+            abort(403, 'Pertemuan sedang menunggu approval atau sudah disetujui dosen sehingga TTD mahasiswa tidak dapat diubah.');
         }
 
         $defaultName = $pertemuan
@@ -683,32 +684,42 @@ class LogbookPraktikumController extends Controller
         $validated = $request->validate([
             'mahasiswa_nama' => ['required', 'string', 'max:150'],
             'mahasiswa_nrp' => ['required', 'string', 'max:50'],
-            'signature_data' => ['required', 'string'],
+            'signature_data' => ['required', 'string', 'max:700000'],
         ], [
             'mahasiswa_nama.required' => 'Nama lengkap wajib diisi.',
             'mahasiswa_nrp.required' => 'NRP wajib diisi.',
             'signature_data.required' => 'Silakan bubuhkan tanda tangan pada kotak yang tersedia.',
+            'signature_data.max' => 'Ukuran tanda tangan melebihi batas maksimal.',
         ]);
-
-        $filename = $this->storeBase64Png($validated['signature_data']);
-        if (!$filename) {
-            return back()->withInput()->with('error', 'Format tanda tangan tidak valid. Silakan ulangi tanda tangan.');
-        }
 
         if ($type === 'logbook') {
             $logbook = LogbookPraktikum::with(['lab', 'plp'])->findOrFail($id);
+            $pertemuan = null;
+        } else {
+            $pertemuan = LogbookPertemuan::with(['logbook.lab', 'logbook.plp'])->findOrFail($id);
+            if ($this->isPertemuanSignatureLocked($pertemuan)) {
+                abort(403, 'Pertemuan sedang menunggu approval atau sudah disetujui dosen sehingga TTD mahasiswa tidak dapat diubah.');
+            }
+            $logbook = $pertemuan->logbook;
+        }
+
+        $filename = $this->storeBase64Png($validated['signature_data']);
+        if (!$filename) {
+            $msg = 'Format tanda tangan tidak valid atau melebihi batas ukuran (maks 512KB PNG/JPG). Silakan ulangi tanda tangan.';
+            if ($request->expectsJson()) {
+                return response()->json(['success' => false, 'message' => $msg], 422);
+            }
+
+            return back()->withInput()->withErrors(['signature_data' => $msg])->with('error', $msg);
+        }
+
+        if ($type === 'logbook') {
             $logbook->update([
                 'default_mahasiswa_nama' => trim($validated['mahasiswa_nama']),
                 'default_mahasiswa_nrp' => trim($validated['mahasiswa_nrp']),
                 'default_mahasiswa_ttd_path' => $filename,
             ]);
-            $pertemuan = null;
         } else {
-            $pertemuan = LogbookPertemuan::with(['logbook.lab', 'logbook.plp'])->findOrFail($id);
-            if ($pertemuan->status === LogbookPertemuan::STATUS_APPROVED) {
-                abort(403, 'Pertemuan sudah disetujui dosen sehingga TTD mahasiswa tidak dapat diubah.');
-            }
-            $logbook = $pertemuan->logbook;
             $pertemuan->update([
                 'mahasiswa_nama' => trim($validated['mahasiswa_nama']),
                 'mahasiswa_nrp' => trim($validated['mahasiswa_nrp']),
@@ -770,7 +781,7 @@ class LogbookPraktikumController extends Controller
 
     public function exportPdf(Request $request, LogbookPraktikum $logbook)
     {
-        $this->authorizeLogbookAccess($logbook, allowDosen: true);
+        Gate::authorize('downloadPdf', $logbook);
 
         $logbook->load(['lab', 'plp', 'dosen', 'defaultMahasiswa']);
 
@@ -839,26 +850,17 @@ class LogbookPraktikumController extends Controller
         return $pdf->stream($fileName);
     }
 
+    private function isPertemuanSignatureLocked(LogbookPertemuan $pertemuan): bool
+    {
+        return in_array($pertemuan->status, [
+            LogbookPertemuan::STATUS_PENDING_DOSEN,
+            LogbookPertemuan::STATUS_APPROVED,
+        ], true);
+    }
+
     private function authorizeLogbookAccess(LogbookPraktikum $logbook, bool $allowDosen = false): void
     {
-        $user = Auth::user();
-        if (!$user) {
-            abort(403);
-        }
-
-        if ($user->role?->slug === 'admin') {
-            return;
-        }
-
-        if ($logbook->plp_id === $user->id) {
-            return;
-        }
-
-        if ($allowDosen && $user->role?->slug === 'dosen' && $logbook->dosen_id === $user->id) {
-            return;
-        }
-
-        abort(403, 'Anda tidak memiliki hak akses untuk logbook praktikum ini.');
+        Gate::authorize($allowDosen ? 'view' : 'manage', $logbook);
     }
 
     private function validatePertemuan(Request $request): array
