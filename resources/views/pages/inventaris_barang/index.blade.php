@@ -572,6 +572,15 @@
 
         // --- Event Delegation for Dynamic Table Action Buttons ---
 
+        function escapeHtml(str) {
+            return String(str ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
         // 1. Modal Foto Barang
         $(document).on('click', '.btnFoto', function() {
             var id = $(this).data('id');
@@ -585,9 +594,9 @@
                 dataType: 'json',
                 success: function(response) {
                     var item = response.data;
-                    $('#modalFotoTitle').html('<i class="bi bi-image me-2"></i>Foto Barang - ' + (item.nama_barang || ''));
+                    $('#modalFotoTitle').html('<i class="bi bi-image me-2"></i>Foto Barang - ' + escapeHtml(item.nama_barang || ''));
                     if (item.foto_barang) {
-                        $('#modalFotoBody').html('<img src="' + item.foto_barang + '" alt="Foto ' + item.nama_barang + '" class="img-fluid rounded" style="max-height: 70vh; object-fit: contain;">');
+                        $('#modalFotoBody').html('<img src="' + escapeHtml(item.foto_barang) + '" alt="Foto ' + escapeHtml(item.nama_barang || '') + '" class="img-fluid rounded" style="max-height: 70vh; object-fit: contain;">');
                     } else {
                         $('#modalFotoBody').html('<div class="text-muted py-5"><i class="bi bi-image fs-1 d-block mb-2"></i>Foto barang belum tersedia.</div>');
                     }
@@ -616,7 +625,12 @@
                 dataType: 'json',
                 success: function(response) {
                     var item = response.data;
-                    $('#assignItemInfo').html('<strong>Barang:</strong> ' + (item.nama_barang || '-') + '<br><small class="text-muted">Kode: ' + (item.kode_barang || '-') + ' | NUP: ' + (item.nup || '-') + ' | Merk/Tipe: ' + (item.merk_tipe || '-') + '</small>');
+                    $('#assignItemInfo').html(
+                        '<strong>Barang:</strong> ' + escapeHtml(item.nama_barang || '-') +
+                        '<br><small class="text-muted">Kode: ' + escapeHtml(item.kode_barang || '-') +
+                        ' | NUP: ' + escapeHtml(item.nup || '-') +
+                        ' | Merk/Tipe: ' + escapeHtml(item.merk_tipe || '-') + '</small>'
+                    );
                     $('#assign_keterangan').val(item.keterangan || '');
                 },
                 error: function() {
@@ -663,7 +677,7 @@
                     $('#edit_spesifikasi').val(item.spesifikasi || '');
                     $('#edit_keterangan').val(item.keterangan || '');
                     if (item.foto_barang) {
-                        $('#edit_current_foto').html('Foto saat ini: <a href="' + item.foto_barang + '" target="_blank" class="text-primary fw-bold">Lihat Foto</a>');
+                        $('#edit_current_foto').html('Foto saat ini: <a href="' + escapeHtml(item.foto_barang) + '" target="_blank" class="text-primary fw-bold">Lihat Foto</a>');
                     }
                 },
                 error: function() {

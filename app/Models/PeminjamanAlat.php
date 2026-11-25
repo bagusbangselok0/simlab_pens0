@@ -70,7 +70,7 @@ class PeminjamanAlat extends Model
             'sedang_dipinjam' => '<span class="badge bg-primary">Sedang Dipinjam</span>',
             'selesai' => '<span class="badge bg-info">Selesai / Dikembalikan</span>',
             'dibatalkan' => '<span class="badge bg-secondary">Dibatalkan</span>',
-            default => '<span class="badge bg-secondary">' . ucfirst($this->status) . '</span>',
+            default => '<span class="badge bg-secondary">' . e(ucfirst((string) $this->status)) . '</span>',
         };
     }
 }

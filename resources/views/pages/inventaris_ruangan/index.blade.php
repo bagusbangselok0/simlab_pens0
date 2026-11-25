@@ -609,14 +609,18 @@
                     allEditNups = item.nups || [];
 
                     // Render list group barang
-                    var groupOptions = '<option value="">-- Pilih kode dan nama barang --</option>';
+                    var groupSelect = $('#editMasterBarangGroup').empty();
+                    groupSelect.append($('<option value="">-- Pilih kode dan nama barang --</option>'));
                     if (item.groups && item.groups.length > 0) {
                         item.groups.forEach(function(g) {
-                            var selected = (g.key === item.selected_group_key) ? ' selected' : '';
-                            groupOptions += '<option value="' + g.key + '"' + selected + '>' + g.label + '</option>';
+                            groupSelect.append(
+                                $('<option></option>')
+                                    .val(g.key)
+                                    .text(g.label)
+                                    .prop('selected', g.key === item.selected_group_key)
+                            );
                         });
                     }
-                    $('#editMasterBarangGroup').html(groupOptions);
 
                     // Render NUP options
                     renderEditNups(item.selected_group_key, item.selected_master_ids || []);

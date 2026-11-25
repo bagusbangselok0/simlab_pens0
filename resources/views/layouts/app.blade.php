@@ -16,6 +16,14 @@
         $globalDefaultMode    = \App\Models\Setting::get(\App\Models\Setting::THEME_DEFAULT_MODE, 'global', 'light');
         $globalAccentColor    = \App\Models\Setting::get(\App\Models\Setting::THEME_ACCENT_COLOR, 'global', '#435ebe');
         $globalSidebarDefault = \App\Models\Setting::get(\App\Models\Setting::THEME_SIDEBAR_DEFAULT, 'global', 'expanded');
+        $vapidPublicKey       = (string) \App\Models\Setting::get(\App\Models\Setting::VAPID_PUBLIC_KEY, 'global', (string) config('services.vapid.public_key', ''));
+
+        if (!in_array($globalDefaultMode, ['light', 'dark', 'system'], true)) {
+            $globalDefaultMode = 'light';
+        }
+        if (!is_string($globalAccentColor) || !preg_match('/^#[0-9a-fA-F]{6}$/', $globalAccentColor)) {
+            $globalAccentColor = '#435ebe';
+        }
 
         $cleanHex = ltrim($globalAccentColor, '#');
         if (strlen($cleanHex) === 6) {
@@ -273,6 +281,15 @@
     {{-- Notification AJAX Script --}}
     <script>
         $(document).ready(function() {
+            function escapeHtml(str) {
+                return String(str ?? '')
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#039;');
+            }
+
             function loadNotifications() {
                 $.ajax({
                     url: '{{ route("notifications.unread") }}',
@@ -295,19 +312,28 @@
                             if (response.notifications.length > 0) {
                                 let html = '';
                                 response.notifications.forEach(function(notif) {
+                                    const safeId = encodeURIComponent(notif.id ?? '');
+                                    const safeIconColor = escapeHtml(notif.icon_color ?? 'primary');
+                                    const safeIcon = escapeHtml(notif.icon ?? 'bi-bell');
+                                    const safeTitle = escapeHtml(notif.title ?? '');
+                                    const rawMessage = String(notif.message ?? '');
+                                    const shortMessage = rawMessage.length > 80 ? rawMessage.substring(0, 80) + '...' : rawMessage;
+                                    const safeMessage = escapeHtml(shortMessage);
+                                    const safeTimeAgo = escapeHtml(notif.time_ago ?? '');
+
                                     html += `
-                                        <form action="/notifications/${notif.id}/read" method="POST" class="notification-item-form">
+                                        <form action="/notifications/${safeId}/read" method="POST" class="notification-item-form">
                                             @csrf
                                             <button type="submit" class="dropdown-item d-flex align-items-start gap-3 px-3 py-3 border-bottom" style="white-space: normal;">
                                                 <div class="flex-shrink-0">
-                                                    <div class="rounded-circle d-flex align-items-center justify-content-center bg-light-${notif.icon_color}" style="width: 40px; height: 40px; min-width: 40px; line-height: 1; padding: 0;">
-                                                        <i class="bi ${notif.icon} text-${notif.icon_color}" style="font-size: 1rem; display: inline-flex; align-items: center; justify-content: center;"></i>
+                                                    <div class="rounded-circle d-flex align-items-center justify-content-center bg-light-${safeIconColor}" style="width: 40px; height: 40px; min-width: 40px; line-height: 1; padding: 0;">
+                                                        <i class="bi ${safeIcon} text-${safeIconColor}" style="font-size: 1rem; display: inline-flex; align-items: center; justify-content: center;"></i>
                                                     </div>
                                                 </div>
                                                 <div class="flex-grow-1">
-                                                    <p class="mb-0 fw-semibold" style="font-size: 0.85rem;">${notif.title}</p>
-                                                    <p class="mb-0 text-muted" style="font-size: 0.78rem;">${notif.message.length > 80 ? notif.message.substring(0, 80) + '...' : notif.message}</p>
-                                                    <small class="text-muted">${notif.time_ago}</small>
+                                                    <p class="mb-0 fw-semibold" style="font-size: 0.85rem;">${safeTitle}</p>
+                                                    <p class="mb-0 text-muted" style="font-size: 0.78rem;">${safeMessage}</p>
+                                                    <small class="text-muted">${safeTimeAgo}</small>
                                                 </div>
                                             </button>
                                         </form>
@@ -396,7 +422,7 @@
 
     <script>
     (function () {
-        const VAPID_PUBLIC_KEY = '{{ \App\Models\Setting::get(\App\Models\Setting::VAPID_PUBLIC_KEY, 'global', config('services.vapid.public_key')) }}';
+        const VAPID_PUBLIC_KEY = @json($vapidPublicKey);
         const SUBSCRIBE_URL    = '{{ route('notifications.push.subscribe') }}';
         const UNSUBSCRIBE_URL  = '{{ route('notifications.push.unsubscribe') }}';
         const CSRF_TOKEN       = '{{ csrf_token() }}';

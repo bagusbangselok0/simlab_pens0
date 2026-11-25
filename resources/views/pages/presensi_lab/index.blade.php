@@ -64,8 +64,10 @@
 
                                                 @if (!$peminjaman->presensiHariIni || $peminjaman->presensiHariIni->status_presensi === 'belum_hadir')
                                                     @if ($bisaPresensiMasuk)
-                                                        <button type="button" class="btn btn-primary btn-sm w-100 mb-2"
-                                                            onclick="showPresensiModal('masuk', {{ $peminjaman->id }}, '{{ $peminjaman->lab->nama_lab }}')">
+                                                        <button type="button" class="btn btn-primary btn-sm w-100 mb-2 btn-open-presensi"
+                                                            data-tipe="masuk"
+                                                            data-id="{{ (int) $peminjaman->id }}"
+                                                            data-lab="{{ $peminjaman->lab->nama_lab }}">
                                                             <i class="bi bi-box-arrow-in-right"></i> Presensi Masuk
                                                         </button>
                                                     @else
@@ -87,8 +89,10 @@
                                                     </button>
                                                 @elseif($peminjaman->presensiHariIni->status_presensi === 'didalam')
                                                     @if ($bisaPresensiKeluar)
-                                                        <button type="button" class="btn btn-danger btn-sm w-100 mb-2"
-                                                            onclick="showPresensiModal('keluar', {{ $peminjaman->id }}, '{{ $peminjaman->lab->nama_lab }}')">
+                                                        <button type="button" class="btn btn-danger btn-sm w-100 mb-2 btn-open-presensi"
+                                                            data-tipe="keluar"
+                                                            data-id="{{ (int) $peminjaman->id }}"
+                                                            data-lab="{{ $peminjaman->lab->nama_lab }}">
                                                             <i class="bi bi-box-arrow-right"></i> Presensi Keluar
                                                         </button>
                                                     @else
@@ -212,12 +216,12 @@
             $('#tipe_presensi').val(tipe);
 
             if (tipe === 'masuk') {
-                $('#presensiModalLabel').html('Presensi Masuk - ' + labName);
+                $('#presensiModalLabel').text('Presensi Masuk - ' + labName);
                 $('#tipePresensi').text('Masuk');
                 $('#submitText').text('Presensi Masuk');
                 $('#submitBtn').removeClass('btn-danger').addClass('btn-primary');
             } else {
-                $('#presensiModalLabel').html('Presensi Keluar - ' + labName);
+                $('#presensiModalLabel').text('Presensi Keluar - ' + labName);
                 $('#tipePresensi').text('Keluar');
                 $('#submitText').text('Presensi Keluar');
                 $('#submitBtn').removeClass('btn-primary').addClass('btn-danger');
@@ -231,6 +235,10 @@
         }
 
         $(document).ready(function() {
+            $(document).on('click', '.btn-open-presensi', function() {
+                showPresensiModal($(this).data('tipe'), $(this).data('id'), $(this).data('lab'));
+            });
+
             // Handle form submission
             $('#presensiForm').on('submit', function(e) {
                 e.preventDefault();

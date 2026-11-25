@@ -450,6 +450,13 @@
                             $('#rowWaktuKembali').hide();
                         }
 
+                        const escapeHtml = (str) => String(str ?? '')
+                            .replace(/&/g, '&amp;')
+                            .replace(/</g, '&lt;')
+                            .replace(/>/g, '&gt;')
+                            .replace(/"/g, '&quot;')
+                            .replace(/'/g, '&#039;');
+
                         // Render items (Desktop Table & Mobile Cards)
                         let itemsHtml = '';
                         let itemsMobileHtml = '';
@@ -464,16 +471,24 @@
                                     ? item.keterangan 
                                     : ((item.spesifikasi && item.spesifikasi !== '-') ? item.spesifikasi : '-');
 
+                                const safeNamaAlat = escapeHtml(item.nama_alat);
+                                const safeKodeBarang = escapeHtml(item.kode_barang);
+                                const safeNup = escapeHtml(item.nup);
+                                const safeLokasiLab = escapeHtml(item.lokasi_lab);
+                                const safeJumlah = Number(item.jumlah) || 0;
+                                const safeSatuan = escapeHtml(item.satuan);
+                                const safeSpekKet = escapeHtml(spekKet);
+
                                 // Desktop Table
                                 itemsHtml += `
                                     <tr>
                                         <td class="text-center">${idx + 1}</td>
-                                        <td class="fw-bold">${item.nama_alat}</td>
-                                        <td><code>${item.kode_barang}</code> / NUP: <strong>${item.nup}</strong></td>
-                                        <td>${item.lokasi_lab}</td>
-                                        <td class="text-center"><span class="badge bg-light-primary text-primary fw-bold">${item.jumlah}</span></td>
-                                        <td>${item.satuan}</td>
-                                        <td><small>${spekKet}</small></td>
+                                        <td class="fw-bold">${safeNamaAlat}</td>
+                                        <td><code>${safeKodeBarang}</code> / NUP: <strong>${safeNup}</strong></td>
+                                        <td>${safeLokasiLab}</td>
+                                        <td class="text-center"><span class="badge bg-light-primary text-primary fw-bold">${safeJumlah}</span></td>
+                                        <td>${safeSatuan}</td>
+                                        <td><small>${safeSpekKet}</small></td>
                                         <td class="text-center">${badgeSumber}</td>
                                     </tr>
                                 `;
@@ -485,15 +500,15 @@
                                             <span class="badge bg-primary px-2 py-1"><i class="bi bi-tools"></i> Alat #${idx + 1}</span>
                                             ${badgeSumber}
                                         </div>
-                                        <h6 class="fw-bold mb-2">${item.nama_alat}</h6>
+                                        <h6 class="fw-bold mb-2">${safeNamaAlat}</h6>
                                         <div class="small mb-2 d-flex flex-column gap-1">
-                                            <div><i class="bi bi-upc-scan text-muted me-1"></i> <span class="text-muted">Kode:</span> <code>${item.kode_barang}</code> &bull; <span class="text-muted">NUP:</span> <strong>${item.nup}</strong></div>
-                                            <div><i class="bi bi-geo-alt text-muted me-1"></i> <span class="text-muted">Ruang Asal:</span> <strong>${item.lokasi_lab}</strong></div>
-                                            <div><i class="bi bi-layers text-muted me-1"></i> <span class="text-muted">Jumlah:</span> <span class="badge bg-info text-dark">${item.jumlah} ${item.satuan}</span></div>
+                                            <div><i class="bi bi-upc-scan text-muted me-1"></i> <span class="text-muted">Kode:</span> <code>${safeKodeBarang}</code> &bull; <span class="text-muted">NUP:</span> <strong>${safeNup}</strong></div>
+                                            <div><i class="bi bi-geo-alt text-muted me-1"></i> <span class="text-muted">Ruang Asal:</span> <strong>${safeLokasiLab}</strong></div>
+                                            <div><i class="bi bi-layers text-muted me-1"></i> <span class="text-muted">Jumlah:</span> <span class="badge bg-info text-dark">${safeJumlah} ${safeSatuan}</span></div>
                                         </div>
                                         ${spekKet !== '-' ? `
                                             <div class="p-2 rounded detail-spek-box small">
-                                                <strong><i class="bi bi-info-circle me-1"></i> Catatan/Spek:</strong> ${spekKet}
+                                                <strong><i class="bi bi-info-circle me-1"></i> Catatan/Spek:</strong> ${safeSpekKet}
                                             </div>
                                         ` : ''}
                                     </div>
@@ -509,12 +524,13 @@
 
                         // Actions di modal
                         let actionBtns = '';
+                        const safeDataId = encodeURIComponent(data.id);
                         if (data.status === 'pending_plp') {
-                            actionBtns += `<button class="btn btn-success approveBtn w-100 w-sm-auto" data-id="${data.id}"><i class="bi bi-check-circle"></i> Setujui</button>`;
-                            actionBtns += `<button class="btn btn-danger rejectBtn w-100 w-sm-auto" data-id="${data.id}"><i class="bi bi-x-circle"></i> Tolak</button>`;
+                            actionBtns += `<button class="btn btn-success approveBtn w-100 w-sm-auto" data-id="${safeDataId}"><i class="bi bi-check-circle"></i> Setujui</button>`;
+                            actionBtns += `<button class="btn btn-danger rejectBtn w-100 w-sm-auto" data-id="${safeDataId}"><i class="bi bi-x-circle"></i> Tolak</button>`;
                         }
                         if (['disetujui', 'sedang_dipinjam', 'selesai'].includes(data.status)) {
-                            actionBtns += `<a href="{{ url('peminjaman-alat/cetak') }}/${data.id}" target="_blank" class="btn btn-secondary w-100 w-sm-auto"><i class="bi bi-printer"></i> Cetak PDF</a>`;
+                            actionBtns += `<a href="{{ url('peminjaman-alat/cetak') }}/${safeDataId}" target="_blank" class="btn btn-secondary w-100 w-sm-auto"><i class="bi bi-printer"></i> Cetak PDF</a>`;
                         }
                         $('#modalActionButtons').html(actionBtns);
 

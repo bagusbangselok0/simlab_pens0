@@ -182,8 +182,9 @@
                                 $errorDiv.text(messages[0]).show();
                             });
                         } else {
-                            $('#errorList').append('<li>' + (xhr.responseJSON.message ||
-                                'Terjadi kesalahan sistem.') + '</li>');
+                            $('#errorList').append($('<li></li>').text(
+                                (xhr.responseJSON && xhr.responseJSON.message) || 'Terjadi kesalahan sistem.'
+                            ));
                             $('#generalError').removeClass('d-none');
                         }
                     }

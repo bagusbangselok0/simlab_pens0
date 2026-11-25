@@ -74,6 +74,15 @@
             const monitoringUrl = '{{ route('presensi.monitoring') }}';
             let dataTableInstance = null;
 
+            function escapeHtml(str) {
+                return String(str ?? '')
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#039;');
+            }
+
             function getBadge(status) {
                 switch (status) {
                     case 'menunggu_konfirmasi_masuk':
@@ -85,7 +94,7 @@
                     case 'selesai':
                         return '<span class="badge bg-secondary">Selesai</span>';
                     default:
-                        return '<span class="badge bg-light text-dark">' + status + '</span>';
+                        return '<span class="badge bg-light text-dark">' + escapeHtml(status) + '</span>';
                 }
             }
 
@@ -124,23 +133,23 @@
 
                 rows.forEach((item, index) => {
                     const row = `
-                        <tr data-status="${item.status_presensi}">
+                        <tr data-status="${escapeHtml(item.status_presensi)}">
                             <td>${index + 1}</td>
                             <td>
-                                <strong>${item.mahasiswa_name}</strong><br>
-                                <small class="text-muted">${item.mahasiswa_email}</small>
+                                <strong>${escapeHtml(item.mahasiswa_name)}</strong><br>
+                                <small class="text-muted">${escapeHtml(item.mahasiswa_email)}</small>
                             </td>
-                            <td>${item.lab_name} (${item.lab_code})</td>
-                            <td>${item.tujuan}</td>
-                            <td>${item.waktu_mulai || '-'}</td>
-                            <td>${item.waktu_selesai || '-'}</td>
+                            <td>${escapeHtml(item.lab_name)} (${escapeHtml(item.lab_code)})</td>
+                            <td>${escapeHtml(item.tujuan)}</td>
+                            <td>${escapeHtml(item.waktu_mulai || '-')}</td>
+                            <td>${escapeHtml(item.waktu_selesai || '-')}</td>
                             <td>${getBadge(item.status_presensi)}</td>
-                            <td>${getSatpamName(item)}</td>
-                            <td>${item.created_at}</td>
+                            <td>${escapeHtml(getSatpamName(item))}</td>
+                            <td>${escapeHtml(item.created_at)}</td>
                             <td>${item.status_presensi === 'didalam' ? '<span class="badge bg-success">Dikonfirmasi Masuk</span>' : item.status_presensi === 'selesai' ? '<span class="badge bg-secondary">Dikonfirmasi Keluar</span>' : '<span class="badge bg-warning">Menunggu Konfirmasi</span>'}</td>
-                            <td>${getKonfirmasiTime(item)}</td>
+                            <td>${escapeHtml(getKonfirmasiTime(item))}</td>
                             <td>
-                                <a href="${'{{ route('presensi.monitoring.cetak', ':id') }}'.replace(':id', item.peminjaman_lab_id)}" target="_blank" class="btn btn-sm btn-outline-danger" title="Cetak PDF">
+                                <a href="${'{{ route('presensi.monitoring.cetak', ':id') }}'.replace(':id', encodeURIComponent(item.peminjaman_lab_id))}" target="_blank" class="btn btn-sm btn-outline-danger" title="Cetak PDF">
                                     <i class="bi bi-file-earmark-pdf"></i> Cetak PDF
                                 </a>
                             </td>

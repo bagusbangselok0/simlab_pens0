@@ -177,7 +177,7 @@
                                 $errorDiv.text(messages[0]).show();
                             });
                         } else if (response && response.message) {
-                            $('#errorList').append('<li>' + response.message + '</li>');
+                            $('#errorList').append($('<li></li>').text(response.message));
                             $('#generalError').removeClass('d-none');
                         } else {
                             $('#errorList').append(

@@ -96,26 +96,29 @@ class ApprovalController extends Controller
                     } elseif ($row->status == 'kadaluarsa') {
                         return '<span class="badge bg-secondary">Kadaluarsa</span>';
                     }
+
+                    return '<span class="badge bg-secondary">' . e((string) $row->status) . '</span>';
                 })
                 ->addColumn('action', function ($peminjaman) {
                     $user = Auth::user();
                     $jabatanId = $user->jabatan_id;
+                    $peminjamanId = (int) $peminjaman->id;
                     $button = '';
 
                     // Logic tombol berdasarkan jabatan dan status
                     if ($jabatanId == 4) { // PLP
                         if ($peminjaman->status == 'pending_plp' && $user->id == $peminjaman->labManager->plp_id) {
-                            $button = '<button class="btn btn-sm btn-success approve-btn" data-id="' . $peminjaman->id . '">Setuju</button>';
+                            $button = '<button class="btn btn-sm btn-success approve-btn" data-id="' . $peminjamanId . '">Setuju</button>';
                             $button .= '&nbsp;';
-                            $button .= '<button class="btn btn-sm btn-danger reject-btn" data-id="' . $peminjaman->id . '">Tolak</button>';
+                            $button .= '<button class="btn btn-sm btn-danger reject-btn" data-id="' . $peminjamanId . '">Tolak</button>';
                         } elseif ($peminjaman->status == 'pending_kalab') {
                             $button = '<span class="text-muted">Menunggu Kalab</span>';
                         }
                     } elseif ($user->isKalab()) { // Kalab
                         if ($peminjaman->status == 'pending_kalab' && $user->id == $peminjaman->labManager->kalab_id) {
-                            $button = '<button class="btn btn-sm btn-success approve-btn" data-id="' . $peminjaman->id . '">Setuju</button>';
+                            $button = '<button class="btn btn-sm btn-success approve-btn" data-id="' . $peminjamanId . '">Setuju</button>';
                             $button .= '&nbsp;';
-                            $button .= '<button class="btn btn-sm btn-danger reject-btn" data-id="' . $peminjaman->id . '">Tolak</button>';
+                            $button .= '<button class="btn btn-sm btn-danger reject-btn" data-id="' . $peminjamanId . '">Tolak</button>';
                         }
                     } else {
                         // Admin atau jabatan lain

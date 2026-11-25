@@ -13,6 +13,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         // Percayai semua proxy (Cloudflare Tunnel)
         $middleware->trustProxies(at: '*');
+        $middleware->append(\App\Http\Middleware\SecurityHeaders::class);
         $middleware->alias([
             'role' => \App\Http\Middleware\RoleMiddleware::class,
             'guest' => \App\Http\Middleware\RedirectIfAuthenticated::class,

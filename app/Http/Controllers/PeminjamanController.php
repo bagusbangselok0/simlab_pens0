@@ -33,7 +33,7 @@ class PeminjamanController extends Controller
             return DataTables::of($query)
                 ->addIndexColumn()
                 ->addColumn('mahasiswa', function ($row) {
-                    return $row->mahasiswa->nama_asli . '<br><small class="text-muted">' . ($row->mahasiswa->nrp ?? '-') . '</small>';
+                    return e($row->mahasiswa?->nama_asli ?? '-') . '<br><small class="text-muted">' . e($row->mahasiswa?->nrp ?? '-') . '</small>';
                 })
                 ->addColumn('nama_lab', function ($row) {
                     return $row->lab->nama_lab . ' (' . $row->lab->kode_lab . ')';
@@ -63,9 +63,11 @@ class PeminjamanController extends Controller
                     } elseif ($row->status == 'dibatalkan_mahasiswa') {
                         return '<span class="badge bg-danger">Dibatalkan Mahasiswa</span>';
                     }
+
+                    return '<span class="badge bg-secondary">' . e((string) $row->status) . '</span>';
                 })
                 ->addColumn('action', function ($pinjam) {
-                    return '<a href="javascript:void(0)" class="btn btn-sm btn-info detailData" data-id="' . $pinjam->id . '">Detail</a>';
+                    return '<a href="javascript:void(0)" class="btn btn-sm btn-info detailData" data-id="' . (int) $pinjam->id . '">Detail</a>';
                 })
                 ->rawColumns(['mahasiswa', 'status', 'action'])
                 ->make(true);
@@ -249,11 +251,14 @@ class PeminjamanController extends Controller
                     } elseif ($row->status == 'dibatalkan_mahasiswa') {
                         return '<span class="badge bg-danger">Dibatalkan Anda</span>';
                     }
+
+                    return '<span class="badge bg-secondary">' . e((string) $row->status) . '</span>';
                 })
                 ->addColumn('action', function ($pinjam) {
-                    $btn = '<a href="#" class="btn btn-sm btn-info detailData" data-id="' . $pinjam->id . '" data-bs-toggle="modal" data-bs-target="#detailModal">Detail</a>';
+                    $pinjamId = (int) $pinjam->id;
+                    $btn = '<a href="#" class="btn btn-sm btn-info detailData" data-id="' . $pinjamId . '" data-bs-toggle="modal" data-bs-target="#detailModal">Detail</a>';
                     if (in_array($pinjam->status, ['pending_plp', 'pending_kalab'])) {
-                        $btn .= ' <button class="btn btn-sm btn-danger cancelData" data-id="' . $pinjam->id . '">Batalkan</button>';
+                        $btn .= ' <button class="btn btn-sm btn-danger cancelData" data-id="' . $pinjamId . '">Batalkan</button>';
                     }
                     return $btn;
                 })

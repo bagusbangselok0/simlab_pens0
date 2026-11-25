@@ -470,6 +470,15 @@
         let currentLabItems = [];
         let rowIndex = 0;
 
+        function escapeHtml(str) {
+            return String(str ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
         // Fungsi membuat elemen option untuk dropdown inventaris (per setiap NUP)
         function buildInventarisOptionsHtml() {
             const labId = $('#lab_id').val();
@@ -483,13 +492,13 @@
 
             let html = '<option value="">-- Pilih Alat & NUP dari Inventaris --</option>';
             currentLabItems.forEach(item => {
-                const nupStr = (item.nup && item.nup !== '-') ? ` (NUP: ${item.nup})` : '';
-                const spekStr = item.spesifikasi_merk_tipe ? ` [${item.spesifikasi_merk_tipe}]` : '';
+                const nupStr = (item.nup && item.nup !== '-') ? ` (NUP: ${escapeHtml(item.nup)})` : '';
+                const spekStr = item.spesifikasi_merk_tipe ? ` [${escapeHtml(item.spesifikasi_merk_tipe)}]` : '';
                 const statusStr = item.is_dipinjam ? ' - [Sedang Dipinjam]' : '';
                 const disabledAttr = item.is_dipinjam ? 'disabled' : '';
 
-                html += `<option value="${item.unique_id}" data-id="${item.inventaris_ruangan_id}" data-nup="${item.nup}" data-satuan="${item.satuan || 'Unit'}" data-spek="${item.spesifikasi_merk_tipe || ''}" ${disabledAttr}>
-                    ${item.nama_barang}${nupStr}${spekStr}${statusStr}
+                html += `<option value="${escapeHtml(item.unique_id)}" data-id="${escapeHtml(item.inventaris_ruangan_id)}" data-nup="${escapeHtml(item.nup)}" data-satuan="${escapeHtml(item.satuan || 'Unit')}" data-spek="${escapeHtml(item.spesifikasi_merk_tipe || '')}" ${disabledAttr}>
+                    ${escapeHtml(item.nama_barang)}${nupStr}${spekStr}${statusStr}
                 </option>`;
             });
             return html;
@@ -939,16 +948,17 @@
                             const badgeSumber = item.is_manual ?
                                 '<span class="badge bg-warning text-dark"><i class="bi bi-pencil-square"></i> Input Manual</span>' :
                                 '<span class="badge bg-success"><i class="bi bi-box-seam"></i> Inventaris DIR</span>';
+                            const spekText = item.keterangan !== '-' ? item.keterangan : (item.spesifikasi !== '-' ? item.spesifikasi : '-');
 
                             itemsHtml += `
                                 <tr>
                                     <td class="text-center">${idx + 1}</td>
-                                    <td class="fw-bold">${item.nama_alat}</td>
-                                    <td>${item.kode_barang} / ${item.nup}</td>
-                                    <td>${item.lokasi_lab}</td>
-                                    <td class="text-center">${item.jumlah}</td>
-                                    <td>${item.satuan}</td>
-                                    <td><small>${item.keterangan !== '-' ? item.keterangan : (item.spesifikasi !== '-' ? item.spesifikasi : '-')}</small></td>
+                                    <td class="fw-bold">${escapeHtml(item.nama_alat)}</td>
+                                    <td>${escapeHtml(item.kode_barang)} / ${escapeHtml(item.nup)}</td>
+                                    <td>${escapeHtml(item.lokasi_lab)}</td>
+                                    <td class="text-center">${Number(item.jumlah) || 0}</td>
+                                    <td>${escapeHtml(item.satuan)}</td>
+                                    <td><small>${escapeHtml(spekText)}</small></td>
                                     <td class="text-center">${badgeSumber}</td>
                                 </tr>
                             `;
@@ -958,7 +968,7 @@
                         // Tombol cetak
                         if (['disetujui', 'sedang_dipinjam', 'selesai'].includes(data.status)) {
                             $('#btnCetakModal').attr('href',
-                                "{{ url('peminjaman-alat/cetak') }}/" + data.id).show();
+                                "{{ url('peminjaman-alat/cetak') }}/" + encodeURIComponent(data.id)).show();
                         } else {
                             $('#btnCetakModal').hide();
                         }

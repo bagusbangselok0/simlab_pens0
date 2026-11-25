@@ -56,18 +56,18 @@ class PeminjamanAlatController extends Controller
                         $badge = $d->is_manual
                             ? ' <span class="badge bg-warning text-dark" style="font-size:0.7rem;">Input Manual</span>'
                             : '';
-                        $html .= '<li>• ' . e($d->nama_alat) . ' (' . $d->jumlah . ' ' . e($d->satuan) . ')' . $badge . '</li>';
+                        $html .= '<li>• ' . e($d->nama_alat) . ' (' . (int) $d->jumlah . ' ' . e($d->satuan) . ')' . $badge . '</li>';
                     }
 
                     if ($remaining > 0) {
-                        $html .= '<li class="text-muted fst-italic" style="font-size:0.8rem;">• .... (+' . $remaining . ' alat lainnya)</li>';
+                        $html .= '<li class="text-muted fst-italic" style="font-size:0.8rem;">• .... (+' . (int) $remaining . ' alat lainnya)</li>';
                     }
 
                     $html .= '</ul>';
                     return $html;
                 })
                 ->addColumn('keperluan', function ($row) {
-                    return e($row->keperluan);
+                    return $row->keperluan;
                 })
                 ->addColumn('waktu_pinjam', function ($row) {
                     return $row->waktu_pinjam ? $row->waktu_pinjam->format('d-m-Y H:i') : '-';
@@ -79,15 +79,16 @@ class PeminjamanAlatController extends Controller
                     return $row->status_badge;
                 })
                 ->addColumn('action', function ($row) {
+                    $rowId = (int) $row->id;
                     $btn = '<div class="btn-group" role="group">';
-                    $btn .= '<button type="button" class="btn btn-sm btn-info detailBtn" data-id="' . $row->id . '"><i class="bi bi-eye"></i> Detail</button>';
+                    $btn .= '<button type="button" class="btn btn-sm btn-info detailBtn" data-id="' . $rowId . '"><i class="bi bi-eye"></i> Detail</button>';
 
                     if ($row->status === 'pending_plp') {
-                        $btn .= '<button type="button" class="btn btn-sm btn-danger cancelBtn ms-1" data-id="' . $row->id . '"><i class="bi bi-x-circle"></i> Batal</button>';
+                        $btn .= '<button type="button" class="btn btn-sm btn-danger cancelBtn ms-1" data-id="' . $rowId . '"><i class="bi bi-x-circle"></i> Batal</button>';
                     }
 
                     if (in_array($row->status, ['disetujui', 'sedang_dipinjam', 'selesai'])) {
-                        $btn .= '<a href="' . route('peminjaman-alat.cetak', $row->id) . '" target="_blank" class="btn btn-sm btn-secondary ms-1"><i class="bi bi-printer"></i> Cetak</a>';
+                        $btn .= '<a href="' . e(route('peminjaman-alat.cetak', $rowId)) . '" target="_blank" class="btn btn-sm btn-secondary ms-1"><i class="bi bi-printer"></i> Cetak</a>';
                     }
 
                     $btn .= '</div>';
@@ -696,11 +697,11 @@ class PeminjamanAlatController extends Controller
                         $badge = $d->is_manual
                             ? ' <span class="badge bg-warning text-dark" style="font-size:0.7rem;">Input Manual</span>'
                             : '';
-                        $html .= '<li>• ' . e($d->nama_alat) . ' (' . $d->jumlah . ' ' . e($d->satuan) . ')' . $badge . '</li>';
+                        $html .= '<li>• ' . e($d->nama_alat) . ' (' . (int) $d->jumlah . ' ' . e($d->satuan) . ')' . $badge . '</li>';
                     }
 
                     if ($remaining > 0) {
-                        $html .= '<li class="text-muted fst-italic" style="font-size:0.8rem;">• .... (+' . $remaining . ' alat lainnya)</li>';
+                        $html .= '<li class="text-muted fst-italic" style="font-size:0.8rem;">• .... (+' . (int) $remaining . ' alat lainnya)</li>';
                     }
 
                     $html .= '</ul>';
@@ -716,18 +717,19 @@ class PeminjamanAlatController extends Controller
                     return $row->status_badge;
                 })
                 ->addColumn('action', function ($row) {
+                    $rowId = (int) $row->id;
                     $btn = '<div class="d-inline-flex flex-nowrap gap-1 align-items-center">';
-                    $btn .= '<button type="button" class="btn btn-sm btn-info detailBtn text-white" data-id="' . $row->id . '" title="Lihat Detail"><i class="bi bi-eye"></i> Detail</button>';
+                    $btn .= '<button type="button" class="btn btn-sm btn-info detailBtn text-white" data-id="' . $rowId . '" title="Lihat Detail"><i class="bi bi-eye"></i> Detail</button>';
 
                     if ($row->status === 'pending_plp') {
-                        $btn .= '<button type="button" class="btn btn-sm btn-success approveBtn" data-id="' . $row->id . '" title="Setujui Peminjaman"><i class="bi bi-check-circle"></i> Setujui</button>';
-                        $btn .= '<button type="button" class="btn btn-sm btn-danger rejectBtn" data-id="' . $row->id . '" title="Tolak Peminjaman"><i class="bi bi-x-circle"></i> Tolak</button>';
+                        $btn .= '<button type="button" class="btn btn-sm btn-success approveBtn" data-id="' . $rowId . '" title="Setujui Peminjaman"><i class="bi bi-check-circle"></i> Setujui</button>';
+                        $btn .= '<button type="button" class="btn btn-sm btn-danger rejectBtn" data-id="' . $rowId . '" title="Tolak Peminjaman"><i class="bi bi-x-circle"></i> Tolak</button>';
                     } elseif ($row->status === 'disetujui' || $row->status === 'sedang_dipinjam') {
-                        $btn .= '<button type="button" class="btn btn-sm btn-primary returnBtn" data-id="' . $row->id . '" title="Proses Pengembalian"><i class="bi bi-arrow-return-left"></i> Pengembalian</button>';
+                        $btn .= '<button type="button" class="btn btn-sm btn-primary returnBtn" data-id="' . $rowId . '" title="Proses Pengembalian"><i class="bi bi-arrow-return-left"></i> Pengembalian</button>';
                     }
 
                     if (in_array($row->status, ['disetujui', 'sedang_dipinjam', 'selesai'])) {
-                        $btn .= '<a href="' . route('peminjaman-alat.cetak', $row->id) . '" target="_blank" class="btn btn-sm btn-secondary" title="Cetak Bukti Peminjaman"><i class="bi bi-printer"></i> Cetak</a>';
+                        $btn .= '<a href="' . e(route('peminjaman-alat.cetak', $rowId)) . '" target="_blank" class="btn btn-sm btn-secondary" title="Cetak Bukti Peminjaman"><i class="bi bi-printer"></i> Cetak</a>';
                     }
 
                     $btn .= '</div>';

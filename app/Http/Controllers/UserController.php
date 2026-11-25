@@ -78,22 +78,23 @@ class UserController extends Controller
                     return '<div class="d-flex flex-column">' .
                                 '<div class="d-flex align-items-center gap-1 flex-wrap">' . 
                                     $platformBadge . 
-                                    '<span class="fw-semibold small me-1"><i class="bi bi-clock me-1 text-secondary"></i>' . $time . '</span>' .
+                                    '<span class="fw-semibold small me-1"><i class="bi bi-clock me-1 text-secondary"></i>' . e($time) . '</span>' .
                                 '</div>' .
                                 $ipHtml .
                            '</div>';
                 })
                 ->addColumn('action', function ($user) {
                     $button = '';
+                    $userId = (int) $user->id;
                     if (!$user->is_verified) {
-                        $button .= '<a href="javascript:void(0)" data-id="' . $user->id . '" class="btn btn-sm btn-circle btn-info verifyUserBtn" title="Verifikasi User"><i class="bi bi-check-circle-fill"></i></a>';
+                        $button .= '<a href="javascript:void(0)" data-id="' . $userId . '" class="btn btn-sm btn-circle btn-info verifyUserBtn" title="Verifikasi User"><i class="bi bi-check-circle-fill"></i></a>';
                         $button .= '&nbsp;';
                     }
-                    $button .= '<a href="javascript:void(0)" data-id="' . $user->id . '" class="btn btn-sm btn-circle btn-primary" id="editData" title="Edit Data"><i class="bi bi-pen"></i></a>';
+                    $button .= '<a href="javascript:void(0)" data-id="' . $userId . '" class="btn btn-sm btn-circle btn-primary" id="editData" title="Edit Data"><i class="bi bi-pen"></i></a>';
                     $button .= '&nbsp;';
-                    $button .= '<a href="javascript:void(0)" data-id="' . $user->id . '" data-email="' . $user->email . '" class="btn btn-sm btn-circle btn-warning generateResetBtn" title="Reset Password"><i class="bi bi-key-fill"></i></a>';
+                    $button .= '<a href="javascript:void(0)" data-id="' . $userId . '" data-email="' . e($user->email) . '" class="btn btn-sm btn-circle btn-warning generateResetBtn" title="Reset Password"><i class="bi bi-key-fill"></i></a>';
                     $button .= '&nbsp;';
-                    $button .= '<a href="javascript:void(0)" data-id="' . $user->id . '" class="btn btn-sm btn-circle btn-danger" id="deleteData" title="Hapus Data"><i class="bi bi-trash"></i></a>';
+                    $button .= '<a href="javascript:void(0)" data-id="' . $userId . '" class="btn btn-sm btn-circle btn-danger" id="deleteData" title="Hapus Data"><i class="bi bi-trash"></i></a>';
 
                     return $button;
                 })

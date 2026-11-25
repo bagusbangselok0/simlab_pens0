@@ -52,21 +52,22 @@ class SignatureVerificationController extends Controller
                     return "<span class='text-muted fst-italic'>Tidak ada file</span>";
                 })
                 ->addColumn('status_badge', function ($row) {
-                    $badge = "<span class='{$row->signature_status_badge_class}'>{$row->signature_status_label}</span>";
+                    $badge = "<span class='" . e($row->signature_status_badge_class) . "'>" . e($row->signature_status_label) . "</span>";
                     if ($row->signature_status === 'rejected' && $row->signature_rejection_note) {
                         $badge .= "<div class='text-danger small mt-1'><strong>Alasan:</strong> " . e($row->signature_rejection_note) . "</div>";
                     } elseif ($row->signature_status === 'approved' && $row->signature_verified_at) {
-                        $badge .= "<div class='text-muted small mt-1'>Disetujui: " . $row->signature_verified_at->format('d/m/Y H:i') . "</div>";
+                        $badge .= "<div class='text-muted small mt-1'>Disetujui: " . e($row->signature_verified_at->format('d/m/Y H:i')) . "</div>";
                     }
                     return $badge;
                 })
                 ->addColumn('action', function ($row) {
                     $buttons = '';
+                    $rowId = (int) $row->id;
                     if ($row->signature_status === 'pending' || $row->signature_status === 'rejected') {
-                        $buttons .= "<button type='button' class='btn btn-sm btn-success btn-approve-sign me-1' data-id='{$row->id}' data-name='" . e($row->nama_asli) . "' title='Setujui TTD'><i class='bi bi-check-circle'></i> Setujui</button>";
+                        $buttons .= "<button type='button' class='btn btn-sm btn-success btn-approve-sign me-1' data-id='{$rowId}' data-name='" . e($row->nama_asli) . "' title='Setujui TTD'><i class='bi bi-check-circle'></i> Setujui</button>";
                     }
                     if ($row->signature_status === 'pending' || $row->signature_status === 'approved') {
-                        $buttons .= "<button type='button' class='btn btn-sm btn-danger btn-reject-sign' data-id='{$row->id}' data-name='" . e($row->nama_asli) . "' title='Tolak TTD'><i class='bi bi-x-circle'></i> Tolak</button>";
+                        $buttons .= "<button type='button' class='btn btn-sm btn-danger btn-reject-sign' data-id='{$rowId}' data-name='" . e($row->nama_asli) . "' title='Tolak TTD'><i class='bi bi-x-circle'></i> Tolak</button>";
                     }
                     return $buttons ?: '<span class="text-muted">-</span>';
                 })
