@@ -11,6 +11,27 @@
         font-size: 0.8rem;
         min-width: 90px;
     }
+    @media (max-width: 767.98px) {
+        .preview-room-tabs {
+            flex-wrap: nowrap !important;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: thin;
+            padding-bottom: 0.35rem;
+        }
+        .preview-room-tabs .nav-item {
+            flex: 0 0 auto;
+        }
+        .preview-room-tabs .filter-room-btn {
+            white-space: nowrap;
+            font-size: 0.85rem;
+        }
+    }
+    @media (max-width: 575.98px) {
+        .preview-mobile-full {
+            width: 100%;
+        }
+    }
 </style>
 @endsection
 
@@ -33,7 +54,7 @@
     {{-- Ringkasan Hasil Parsing --}}
     <div class="row g-3 mb-3">
         <div class="col-6 col-md-3">
-            <div class="card mb-0">
+            <div class="card mb-0 h-100">
                 <div class="card-body py-3">
                     <small class="text-muted d-block">Total Sesi Terbaca</small>
                     <h4 class="fw-bold mb-0">{{ $parsed['stats']['total_entries'] }}</h4>
@@ -41,7 +62,7 @@
             </div>
         </div>
         <div class="col-6 col-md-3">
-            <div class="card mb-0">
+            <div class="card mb-0 h-100">
                 <div class="card-body py-3">
                     <small class="text-muted d-block">Ruangan / Lab</small>
                     <h4 class="fw-bold mb-0">{{ $parsed['stats']['total_rooms'] }}</h4>
@@ -49,7 +70,7 @@
             </div>
         </div>
         <div class="col-6 col-md-3">
-            <div class="card mb-0 {{ $parsed['stats']['total_conflicts'] > 0 ? 'border border-danger' : '' }}">
+            <div class="card mb-0 h-100 {{ $parsed['stats']['total_conflicts'] > 0 ? 'border border-danger' : '' }}">
                 <div class="card-body py-3">
                     <small class="text-muted d-block">Potensi Bentrok</small>
                     <h4 class="fw-bold mb-0 {{ $parsed['stats']['total_conflicts'] > 0 ? 'text-danger' : 'text-success' }}">
@@ -59,7 +80,7 @@
             </div>
         </div>
         <div class="col-6 col-md-3">
-            <div class="card mb-0">
+            <div class="card mb-0 h-100">
                 <div class="card-body py-3">
                     <small class="text-muted d-block">Belum Ter-mapping (Lab / Dosen)</small>
                     <h4 class="fw-bold mb-0">
@@ -89,7 +110,7 @@
 
         {{-- Metadata Periode --}}
         <div class="card mb-3">
-            <div class="card-header d-flex justify-content-between align-items-center">
+            <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
                 <h5 class="card-title mb-0">Informasi Periode Jadwal</h5>
                 <a href="{{ route('jadwal-lab.index') }}" class="btn btn-sm btn-outline-secondary">
                     <i class="bi bi-arrow-left me-1"></i> Kembali
@@ -101,7 +122,7 @@
                         <label class="form-label fw-semibold">Nama Periode <span class="text-danger">*</span></label>
                         <input type="text" name="nama_periode" class="form-control" value="{{ old('nama_periode', $parsed['meta']['nama_periode']) }}" required>
                     </div>
-                    <div class="col-md-2">
+                    <div class="col-6 col-md-2">
                         <label class="form-label fw-semibold">Semester <span class="text-danger">*</span></label>
                         @php $oldSemester = old('semester', $parsed['meta']['semester']); @endphp
                         <select name="semester" class="form-select" required>
@@ -109,7 +130,7 @@
                             <option value="Genap" @selected($oldSemester === 'Genap')>Genap</option>
                         </select>
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-6 col-md-3">
                         <label class="form-label fw-semibold">Tahun Ajaran <span class="text-danger">*</span></label>
                         <input type="text" name="tahun_ajaran" class="form-control" value="{{ old('tahun_ajaran', $parsed['meta']['tahun_ajaran']) }}" required>
                     </div>
@@ -127,16 +148,16 @@
         <div class="card">
             <div class="card-header">
                 <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
-                    <div>
-                        <h5 class="card-title mb-0">Hasil Konversi per Ruangan ({{ $sourceFilename }})</h5>
+                    <div style="min-width: 0;">
+                        <h5 class="card-title mb-0 text-break">Hasil Konversi per Ruangan ({{ $sourceFilename }})</h5>
                         <small class="text-muted">Periksa atau sesuaikan mapping Lab, Dosen, maupun Catatan sebelum menyimpan.</small>
                     </div>
-                    <button type="submit" class="btn btn-primary" id="btnSaveImport">
+                    <button type="submit" class="btn btn-primary preview-mobile-full" id="btnSaveImport">
                         <i class="bi bi-check-lg me-1"></i> Simpan Jadwal (<span id="remainingCount">{{ count($parsed['entries']) }}</span> Sesi)
                     </button>
                 </div>
 
-                <ul class="nav nav-pills gap-2 mt-3 flex-wrap" id="previewRoomFilter">
+                <ul class="nav nav-pills gap-2 mt-3 flex-wrap preview-room-tabs" id="previewRoomFilter">
                     <li class="nav-item">
                         <button type="button" class="nav-link active py-1 px-3 filter-room-btn" data-room="__ALL__">
                             Semua Ruangan ({{ count($parsed['entries']) }})
@@ -154,6 +175,9 @@
             </div>
 
             <div class="card-body">
+                <div class="d-md-none text-muted small mb-2">
+                    <i class="bi bi-arrow-left-right me-1"></i>Geser tabel ke samping untuk melihat dan mengubah seluruh kolom.
+                </div>
                 <div class="table-responsive">
                     <table class="table table-bordered preview-table align-middle" id="previewEntriesTable">
                         <thead class="table-light text-center">

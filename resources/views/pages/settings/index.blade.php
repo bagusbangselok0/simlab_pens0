@@ -13,6 +13,62 @@
         transform: scale(1.18);
         box-shadow: 0 0 0 3px #ffffff, 0 0 0 5px var(--bs-primary, #435ebe) !important;
     }
+    .settings-avatar {
+        width: 42px;
+        height: 42px;
+        min-width: 42px;
+        min-height: 42px;
+        flex-shrink: 0;
+    }
+    .settings-switch-input {
+        width: 2.75rem;
+        height: 1.4rem;
+        cursor: pointer;
+        flex-shrink: 0;
+    }
+    .settings-approval-card {
+        border: 1px solid var(--bs-border-color, #dee2e6);
+        border-radius: 0.65rem;
+        background-color: var(--bs-body-bg, #ffffff);
+    }
+    @media (max-width: 767.98px) {
+        .settings-nav-tabs {
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: thin;
+            padding-bottom: 0.35rem;
+        }
+        .settings-nav-tabs .nav-item {
+            flex: 0 0 auto;
+        }
+        .settings-nav-tabs .nav-link {
+            white-space: nowrap;
+            font-size: 0.875rem;
+            padding: 0.45rem 0.85rem !important;
+        }
+    }
+    @media (max-width: 575.98px) {
+        .settings-card .card-header,
+        .settings-card .card-body {
+            padding-left: 1rem;
+            padding-right: 1rem;
+        }
+        .settings-card .card-title {
+            font-size: 1rem;
+        }
+        .theme-mode-label {
+            padding: 0.65rem 0.35rem !important;
+        }
+        .theme-mode-label i {
+            font-size: 1.35rem !important;
+        }
+        .settings-mobile-full {
+            width: 100% !important;
+            padding-left: 1rem !important;
+            padding-right: 1rem !important;
+        }
+    }
 </style>
 @endsection
 
@@ -72,7 +128,7 @@
         @endphp
 
         {{-- Navigasi Tab Pengaturan --}}
-        <ul class="nav nav-pills mb-4 gap-2" id="settingsTab" role="tablist">
+        <ul class="nav nav-pills mb-4 gap-2 settings-nav-tabs" id="settingsTab" role="tablist">
             <li class="nav-item" role="presentation">
                 <button class="nav-link {{ $activeTab === 'theme' ? 'active' : '' }} fw-semibold px-4 py-2" 
                     id="tab-theme-btn" data-bs-toggle="pill" data-bs-target="#tab-theme" type="button" role="tab"
@@ -115,13 +171,13 @@
                     <div class="row g-4">
                         {{-- Kartu 1: Mode Tampilan & Warna Aksen --}}
                         <div class="col-lg-6">
-                            <div class="card shadow-sm h-100 border">
-                                <div class="card-header border-bottom bg-transparent d-flex justify-content-between align-items-center py-3">
-                                    <div class="d-flex align-items-center">
-                                        <div class="avatar bg-primary text-white me-3 p-2 rounded-circle d-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
+                            <div class="card shadow-sm h-100 border settings-card">
+                                <div class="card-header border-bottom bg-transparent d-flex flex-wrap justify-content-between align-items-center gap-2 py-3">
+                                    <div class="d-flex align-items-center" style="min-width: 0;">
+                                        <div class="avatar settings-avatar bg-primary text-white me-3 p-2 rounded-circle d-flex align-items-center justify-content-center">
                                             <i class="bi bi-moon-stars-fill fs-4"></i>
                                         </div>
-                                        <div>
+                                        <div style="min-width: 0;">
                                             <h5 class="card-title mb-0">Mode Tema & Warna Aksen</h5>
                                             <small class="text-muted">Atur nuansa visual dan palet warna antarmuka sistem</small>
                                         </div>
@@ -137,7 +193,7 @@
                                             <div class="col-4">
                                                 <input type="radio" class="btn-check" name="default_mode" id="theme_light" value="light" 
                                                     {{ old('default_mode', $defaultMode) === 'light' ? 'checked' : '' }}>
-                                                <label class="btn btn-outline-secondary w-100 py-3 d-flex flex-column align-items-center justify-content-center h-100" for="theme_light">
+                                                <label class="btn btn-outline-secondary w-100 py-3 theme-mode-label d-flex flex-column align-items-center justify-content-center h-100" for="theme_light">
                                                     <i class="bi bi-sun fs-2 mb-1 text-warning"></i>
                                                     <span class="fw-bold small">Terang</span>
                                                     <small class="text-muted" style="font-size: 0.7rem;">Light Mode</small>
@@ -146,7 +202,7 @@
                                             <div class="col-4">
                                                 <input type="radio" class="btn-check" name="default_mode" id="theme_dark" value="dark"
                                                     {{ old('default_mode', $defaultMode) === 'dark' ? 'checked' : '' }}>
-                                                <label class="btn btn-outline-secondary w-100 py-3 d-flex flex-column align-items-center justify-content-center h-100" for="theme_dark">
+                                                <label class="btn btn-outline-secondary w-100 py-3 theme-mode-label d-flex flex-column align-items-center justify-content-center h-100" for="theme_dark">
                                                     <i class="bi bi-moon-stars fs-2 mb-1 text-primary"></i>
                                                     <span class="fw-bold small">Gelap</span>
                                                     <small class="text-muted" style="font-size: 0.7rem;">Dark Mode</small>
@@ -155,7 +211,7 @@
                                             <div class="col-4">
                                                 <input type="radio" class="btn-check" name="default_mode" id="theme_system" value="system"
                                                     {{ old('default_mode', $defaultMode) === 'system' ? 'checked' : '' }}>
-                                                <label class="btn btn-outline-secondary w-100 py-3 d-flex flex-column align-items-center justify-content-center h-100" for="theme_system">
+                                                <label class="btn btn-outline-secondary w-100 py-3 theme-mode-label d-flex flex-column align-items-center justify-content-center h-100" for="theme_system">
                                                     <i class="bi bi-display fs-2 mb-1 text-info"></i>
                                                     <span class="fw-bold small">Otomatis</span>
                                                     <small class="text-muted" style="font-size: 0.7rem;">Ikuti OS</small>
@@ -218,13 +274,13 @@
 
                         {{-- Kartu 2: Pengaturan Global Page Loader --}}
                         <div class="col-lg-6">
-                            <div class="card shadow-sm h-100 border">
-                                <div class="card-header border-bottom bg-transparent d-flex justify-content-between align-items-center py-3">
-                                    <div class="d-flex align-items-center">
-                                        <div class="avatar bg-info text-white me-3 p-2 rounded-circle d-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
+                            <div class="card shadow-sm h-100 border settings-card">
+                                <div class="card-header border-bottom bg-transparent d-flex flex-wrap justify-content-between align-items-center gap-2 py-3">
+                                    <div class="d-flex align-items-center" style="min-width: 0;">
+                                        <div class="avatar settings-avatar bg-info text-white me-3 p-2 rounded-circle d-flex align-items-center justify-content-center">
                                             <i class="bi bi-hourglass-split fs-4"></i>
                                         </div>
-                                        <div>
+                                        <div style="min-width: 0;">
                                             <h5 class="card-title mb-0">Global Page Loader</h5>
                                             <small class="text-muted">Animasi transisi halus saat halaman sedang dimuat</small>
                                         </div>
@@ -240,10 +296,9 @@
                                 <div class="card-body pt-4">
                                     {{-- Switch Enable Loader --}}
                                     <div class="p-3 border rounded mb-3 bg-light-subtle">
-                                        <div class="form-check form-switch d-flex align-items-center gap-2 ps-0 mb-0">
-                                            <input class="form-check-input ms-0 me-3" type="checkbox" role="switch" 
+                                        <div class="form-check form-switch d-flex align-items-start gap-3 ps-0 mb-0">
+                                            <input class="form-check-input ms-0 settings-switch-input" type="checkbox" role="switch" 
                                                 id="enable_loader" name="enable_loader" value="1"
-                                                style="width: 2.75rem; height: 1.4rem; cursor: pointer;"
                                                 {{ old('enable_loader', $enableLoader) ? 'checked' : '' }}>
                                             <div>
                                                 <label class="form-check-label fw-bold mb-0 cursor-pointer" for="enable_loader">
@@ -285,7 +340,7 @@
                                         <p class="text-muted small mb-3">
                                             Uji coba bagaimana tampilan animasi layar loading bekerja di browser Anda selama 2 detik.
                                         </p>
-                                        <button type="button" class="btn btn-outline-info px-4 py-2" id="btnPreviewLoader">
+                                        <button type="button" class="btn btn-outline-info px-4 py-2 settings-mobile-full" id="btnPreviewLoader">
                                             <i class="bi bi-play-circle me-1"></i> Tes Animasi Loader Sekarang
                                         </button>
                                     </div>
@@ -294,8 +349,8 @@
                         </div>
 
                         {{-- Tombol Simpan Tema & Loader --}}
-                        <div class="col-12 text-end mt-2">
-                            <button type="submit" class="btn btn-primary btn-lg px-5 shadow">
+                        <div class="col-12 text-sm-end mt-2">
+                            <button type="submit" class="btn btn-primary btn-lg px-5 shadow settings-mobile-full">
                                 <i class="bi bi-save me-1"></i> Simpan Pengaturan Tema & Loader
                             </button>
                         </div>
@@ -312,13 +367,13 @@
                     <div class="row g-4">
                         {{-- Kartu WhatsApp Gateway --}}
                         <div class="col-lg-6">
-                            <div class="card shadow-sm h-100 border">
-                                <div class="card-header border-bottom bg-transparent d-flex justify-content-between align-items-center py-3">
-                                    <div class="d-flex align-items-center">
-                                        <div class="avatar bg-success text-white me-3 p-2 rounded-circle d-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
+                            <div class="card shadow-sm h-100 border settings-card">
+                                <div class="card-header border-bottom bg-transparent d-flex flex-wrap justify-content-between align-items-center gap-2 py-3">
+                                    <div class="d-flex align-items-center" style="min-width: 0;">
+                                        <div class="avatar settings-avatar bg-success text-white me-3 p-2 rounded-circle d-flex align-items-center justify-content-center">
                                             <i class="bi bi-whatsapp fs-4"></i>
                                         </div>
-                                        <div>
+                                        <div style="min-width: 0;">
                                             <h5 class="card-title mb-0">Gateway WhatsApp (Fonnte API)</h5>
                                             <small class="text-muted">Kirim pemberitahuan otomatis langsung ke WhatsApp pengguna</small>
                                         </div>
@@ -334,10 +389,9 @@
                                 <div class="card-body pt-4">
                                     {{-- Switch Status WhatsApp --}}
                                     <div class="p-3 border rounded mb-3 bg-light-subtle">
-                                        <div class="form-check form-switch d-flex align-items-center gap-2 ps-0 mb-0">
-                                            <input class="form-check-input ms-0 me-3" type="checkbox" role="switch" 
+                                        <div class="form-check form-switch d-flex align-items-start gap-3 ps-0 mb-0">
+                                            <input class="form-check-input ms-0 settings-switch-input" type="checkbox" role="switch" 
                                                 id="wa_enabled" name="wa_enabled" value="1"
-                                                style="width: 2.75rem; height: 1.4rem; cursor: pointer;"
                                                 {{ old('wa_enabled', $waEnabled) ? 'checked' : '' }}>
                                             <div>
                                                 <label class="form-check-label fw-bold mb-0 cursor-pointer" for="wa_enabled">
@@ -352,7 +406,7 @@
 
                                     {{-- API Token Fonnte (Masking Tanpa Plaintext ke HTML) --}}
                                     <div class="mb-3">
-                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <div class="d-flex flex-wrap justify-content-between align-items-center gap-1 mb-1">
                                             <label class="form-label fw-bold mb-0" for="wa_token">
                                                 <i class="bi bi-key-fill text-success me-1"></i> API Token Fonnte
                                             </label>
@@ -438,10 +492,10 @@
                                     <div class="p-3 border rounded bg-light-subtle">
                                         <h6 class="fw-bold mb-1 text-success"><i class="bi bi-send-check me-1"></i> Uji Coba Pengiriman Pesan WhatsApp</h6>
                                         <p class="text-muted small mb-2">Kirim pesan uji coba untuk memverifikasi koneksi API Fonnte Anda.</p>
-                                        <div class="input-group">
+                                        <div class="d-flex flex-column flex-sm-row gap-2">
                                             <input type="text" class="form-control" id="test_wa_phone" 
                                                 value="{{ Auth::user()->no_hp }}" placeholder="Nomor WA (contoh: 081234567890)">
-                                            <button type="button" class="btn btn-outline-success" id="btnTestWA">
+                                            <button type="button" class="btn btn-outline-success text-nowrap" id="btnTestWA">
                                                 <i class="bi bi-whatsapp me-1"></i> Kirim Tes WA
                                             </button>
                                         </div>
@@ -452,13 +506,13 @@
 
                         {{-- Kartu Web Push Gateway --}}
                         <div class="col-lg-6">
-                            <div class="card shadow-sm h-100 border">
-                                <div class="card-header border-bottom bg-transparent d-flex justify-content-between align-items-center py-3">
-                                    <div class="d-flex align-items-center">
-                                        <div class="avatar bg-primary text-white me-3 p-2 rounded-circle d-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
+                            <div class="card shadow-sm h-100 border settings-card">
+                                <div class="card-header border-bottom bg-transparent d-flex flex-wrap justify-content-between align-items-center gap-2 py-3">
+                                    <div class="d-flex align-items-center" style="min-width: 0;">
+                                        <div class="avatar settings-avatar bg-primary text-white me-3 p-2 rounded-circle d-flex align-items-center justify-content-center">
                                             <i class="bi bi-app-indicator fs-4"></i>
                                         </div>
-                                        <div>
+                                        <div style="min-width: 0;">
                                             <h5 class="card-title mb-0">Browser Web Push (VAPID)</h5>
                                             <small class="text-muted">Notifikasi langsung pada desktop & browser mobile pengguna</small>
                                         </div>
@@ -474,10 +528,9 @@
                                 <div class="card-body pt-4">
                                     {{-- Switch Status Web Push --}}
                                     <div class="p-3 border rounded mb-3 bg-light-subtle">
-                                        <div class="form-check form-switch d-flex align-items-center gap-2 ps-0 mb-0">
-                                            <input class="form-check-input ms-0 me-3" type="checkbox" role="switch" 
+                                        <div class="form-check form-switch d-flex align-items-start gap-3 ps-0 mb-0">
+                                            <input class="form-check-input ms-0 settings-switch-input" type="checkbox" role="switch" 
                                                 id="push_enabled" name="push_enabled" value="1"
-                                                style="width: 2.75rem; height: 1.4rem; cursor: pointer;"
                                                 {{ old('push_enabled', $pushEnabled) ? 'checked' : '' }}>
                                             <div>
                                                 <label class="form-check-label fw-bold mb-0 cursor-pointer" for="push_enabled">
@@ -521,8 +574,8 @@
 
                                     {{-- VAPID Private Key & Generator (Masking Tanpa Plaintext ke HTML) --}}
                                     <div class="mb-3">
-                                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-1 mb-1">
-                                            <div class="d-flex align-items-center gap-2">
+                                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-1">
+                                            <div class="d-flex flex-wrap align-items-center gap-2">
                                                 <label class="form-label fw-bold mb-0" for="vapid_private_key">
                                                     <i class="bi bi-shield-lock text-primary me-1"></i> VAPID Private Key
                                                 </label>
@@ -538,7 +591,7 @@
                                                     <span class="badge bg-secondary-subtle text-secondary">Belum Diatur</span>
                                                 @endif
                                             </div>
-                                            <button type="button" class="btn btn-sm btn-outline-primary" id="btnGenerateVapid">
+                                            <button type="button" class="btn btn-sm btn-outline-primary settings-mobile-full" id="btnGenerateVapid">
                                                 <i class="bi bi-magic me-1"></i> Buat Kunci Baru Otomatis
                                             </button>
                                         </div>
@@ -607,8 +660,8 @@
                         </div>
 
                         {{-- Tombol Simpan Gateway & Notifikasi --}}
-                        <div class="col-12 text-end mt-2">
-                            <button type="submit" class="btn btn-primary btn-lg px-5 shadow">
+                        <div class="col-12 text-sm-end mt-2">
+                            <button type="submit" class="btn btn-primary btn-lg px-5 shadow settings-mobile-full">
                                 <i class="bi bi-save me-1"></i> Simpan Pengaturan Gateway & Notifikasi
                             </button>
                         </div>
@@ -620,8 +673,8 @@
                  TAB 3: KEBIJAKAN PEMINJAMAN ALAT
                  ========================================================================= --}}
             <div class="tab-pane fade {{ $activeTab === 'alat' ? 'show active' : '' }}" id="tab-alat" role="tabpanel" aria-labelledby="tab-alat-btn">
-                <div class="card shadow-sm border">
-                    <div class="card-header border-bottom d-flex align-items-center justify-content-between py-3">
+                <div class="card shadow-sm border settings-card">
+                    <div class="card-header border-bottom d-flex flex-wrap align-items-center justify-content-between gap-2 py-3">
                         <div>
                             <h5 class="card-title mb-1 text-primary">
                                 <i class="bi bi-tools me-2"></i>Kebijakan & Batasan Peminjaman Alat
@@ -680,10 +733,9 @@
 
                                 <div class="col-12 mt-3">
                                     <div class="p-3 border rounded bg-light-subtle">
-                                        <div class="form-check form-switch d-flex align-items-center gap-2 ps-0 mb-0">
-                                            <input class="form-check-input ms-0 me-3" type="checkbox" role="switch" 
+                                        <div class="form-check form-switch d-flex align-items-start gap-3 ps-0 mb-0">
+                                            <input class="form-check-input ms-0 settings-switch-input" type="checkbox" role="switch" 
                                                 id="allow_manual_input" name="allow_manual_input" value="1"
-                                                style="width: 2.75rem; height: 1.4rem; cursor: pointer;"
                                                 {{ old('allow_manual_input', $allowManual) ? 'checked' : '' }}>
                                             <div>
                                                 <label class="form-check-label fw-bold mb-0 cursor-pointer" for="allow_manual_input">
@@ -697,8 +749,8 @@
                                     </div>
                                 </div>
 
-                                <div class="col-12 text-end mt-4">
-                                    <button type="submit" class="btn btn-primary px-4">
+                                <div class="col-12 text-sm-end mt-4">
+                                    <button type="submit" class="btn btn-primary px-4 settings-mobile-full">
                                         <i class="bi bi-save me-1"></i> Simpan Kebijakan Alat
                                     </button>
                                 </div>
@@ -712,7 +764,7 @@
                  TAB 4: PERSETUJUAN RUANG LAB (AUTO-APPROVE KALAB)
                  ========================================================================= --}}
             <div class="tab-pane fade {{ $activeTab === 'approval' ? 'show active' : '' }}" id="tab-approval" role="tabpanel" aria-labelledby="tab-approval-btn">
-                <div class="card shadow-sm border">
+                <div class="card shadow-sm border settings-card">
                     <div class="card-header border-bottom py-3">
                         <h5 class="card-title mb-1 text-primary">
                             <i class="bi bi-shield-check me-2"></i>Pengaturan Persetujuan Ruang Laboratorium
@@ -720,56 +772,98 @@
                         <p class="text-muted mb-0 small">Atur perilaku persetujuan (approval) peminjaman ruangan dan laboratorium oleh Kepala Laboratorium (Kalab).</p>
                     </div>
                     <div class="card-body pt-3">
-                        <div class="table-responsive">
-                            <table class="table align-middle table-hover">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>Laboratorium</th>
-                                        <th>Kalab</th>
-                                        <th>Auto-approve Kalab</th>
-                                        <th class="text-end">Aksi</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @forelse ($labs as $lab)
-                                        @php
-                                            $setting = $settings->get(\App\Models\Setting::labScope($lab->id));
-                                            $enabled = $setting && $setting->is_active && filter_var($setting->value, FILTER_VALIDATE_BOOLEAN);
-                                        @endphp
+                        {{-- Tampilan Desktop (Tabel) --}}
+                        <div class="d-none d-md-block">
+                            <div class="table-responsive">
+                                <table class="table align-middle table-hover">
+                                    <thead class="table-light">
                                         <tr>
-                                            <td>
-                                                <strong>{{ $lab->nama_lab }}</strong><br>
-                                                <small class="text-muted">{{ $lab->kode_lab }} - {{ $lab->lokasi }}</small>
-                                            </td>
-                                            <td>{{ $lab->labManager->kalab->full_name ?? '-' }}</td>
-                                            <td>
-                                                <span class="badge {{ $enabled ? 'bg-success' : 'bg-secondary' }}">
-                                                    {{ $enabled ? 'Aktif' : 'Nonaktif' }}
-                                                </span>
-                                            </td>
-                                            <td class="text-end">
-                                                @if ($lab->labManager?->kalab)
-                                                    <form method="POST" action="{{ route('settings.auto-approve-kalab', $lab) }}">
-                                                        @csrf
-                                                        @method('PATCH')
-                                                        <input type="hidden" name="enabled" value="{{ $enabled ? '0' : '1' }}">
-                                                        <button type="submit" class="btn btn-sm {{ $enabled ? 'btn-outline-danger' : 'btn-outline-success' }}">
-                                                            <i class="bi {{ $enabled ? 'bi-toggle-off' : 'bi-toggle-on' }} me-1"></i>
-                                                            {{ $enabled ? 'Matikan' : 'Aktifkan' }}
-                                                        </button>
-                                                    </form>
-                                                @else
-                                                    <span class="text-muted small">Belum ada Kalab</span>
-                                                @endif
-                                            </td>
+                                            <th>Laboratorium</th>
+                                            <th>Kalab</th>
+                                            <th>Auto-approve Kalab</th>
+                                            <th class="text-end">Aksi</th>
                                         </tr>
-                                    @empty
-                                        <tr>
-                                            <td colspan="4" class="text-center text-muted py-4">Belum ada data laboratorium.</td>
-                                        </tr>
-                                    @endforelse
-                                </tbody>
-                            </table>
+                                    </thead>
+                                    <tbody>
+                                        @forelse ($labs as $lab)
+                                            @php
+                                                $setting = $settings->get(\App\Models\Setting::labScope($lab->id));
+                                                $enabled = $setting && $setting->is_active && filter_var($setting->value, FILTER_VALIDATE_BOOLEAN);
+                                            @endphp
+                                            <tr>
+                                                <td>
+                                                    <strong>{{ $lab->nama_lab }}</strong><br>
+                                                    <small class="text-muted">{{ $lab->kode_lab }} - {{ $lab->lokasi }}</small>
+                                                </td>
+                                                <td>{{ $lab->labManager->kalab->full_name ?? '-' }}</td>
+                                                <td>
+                                                    <span class="badge {{ $enabled ? 'bg-success' : 'bg-secondary' }}">
+                                                        {{ $enabled ? 'Aktif' : 'Nonaktif' }}
+                                                    </span>
+                                                </td>
+                                                <td class="text-end">
+                                                    @if ($lab->labManager?->kalab)
+                                                        <form method="POST" action="{{ route('settings.auto-approve-kalab', $lab) }}">
+                                                            @csrf
+                                                            @method('PATCH')
+                                                            <input type="hidden" name="enabled" value="{{ $enabled ? '0' : '1' }}">
+                                                            <button type="submit" class="btn btn-sm {{ $enabled ? 'btn-outline-danger' : 'btn-outline-success' }}">
+                                                                <i class="bi {{ $enabled ? 'bi-toggle-off' : 'bi-toggle-on' }} me-1"></i>
+                                                                {{ $enabled ? 'Matikan' : 'Aktifkan' }}
+                                                            </button>
+                                                        </form>
+                                                    @else
+                                                        <span class="text-muted small">Belum ada Kalab</span>
+                                                    @endif
+                                                </td>
+                                            </tr>
+                                        @empty
+                                            <tr>
+                                                <td colspan="4" class="text-center text-muted py-4">Belum ada data laboratorium.</td>
+                                            </tr>
+                                        @endforelse
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        {{-- Tampilan Mobile (Kartu) --}}
+                        <div class="d-md-none d-flex flex-column gap-2">
+                            @forelse ($labs as $lab)
+                                @php
+                                    $setting = $settings->get(\App\Models\Setting::labScope($lab->id));
+                                    $enabled = $setting && $setting->is_active && filter_var($setting->value, FILTER_VALIDATE_BOOLEAN);
+                                @endphp
+                                <div class="settings-approval-card p-3">
+                                    <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+                                        <div style="min-width: 0;">
+                                            <div class="fw-bold">{{ $lab->nama_lab }}</div>
+                                            <small class="text-muted d-block">{{ $lab->kode_lab }} - {{ $lab->lokasi }}</small>
+                                        </div>
+                                        <span class="badge flex-shrink-0 {{ $enabled ? 'bg-success' : 'bg-secondary' }}">
+                                            {{ $enabled ? 'Aktif' : 'Nonaktif' }}
+                                        </span>
+                                    </div>
+                                    <div class="small text-muted mb-2">
+                                        <i class="bi bi-person-badge me-1"></i>Kalab: <span class="text-body fw-semibold">{{ $lab->labManager->kalab->full_name ?? '-' }}</span>
+                                    </div>
+                                    @if ($lab->labManager?->kalab)
+                                        <form method="POST" action="{{ route('settings.auto-approve-kalab', $lab) }}">
+                                            @csrf
+                                            @method('PATCH')
+                                            <input type="hidden" name="enabled" value="{{ $enabled ? '0' : '1' }}">
+                                            <button type="submit" class="btn btn-sm w-100 {{ $enabled ? 'btn-outline-danger' : 'btn-outline-success' }}">
+                                                <i class="bi {{ $enabled ? 'bi-toggle-off' : 'bi-toggle-on' }} me-1"></i>
+                                                {{ $enabled ? 'Matikan Auto-approve' : 'Aktifkan Auto-approve' }}
+                                            </button>
+                                        </form>
+                                    @else
+                                        <div class="text-muted small fst-italic">Belum ada Kalab ditugaskan</div>
+                                    @endif
+                                </div>
+                            @empty
+                                <div class="text-center text-muted py-4">Belum ada data laboratorium.</div>
+                            @endforelse
                         </div>
                     </div>
                 </div>
@@ -783,6 +877,9 @@
 $(document).ready(function() {
     // 1. Sinkronisasi Tab dengan URL
     $('#settingsTab button[data-bs-toggle="pill"]').on('shown.bs.tab', function(e) {
+        if (window.innerWidth < 768 && e.target && typeof e.target.scrollIntoView === 'function') {
+            e.target.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+        }
         const targetId = $(e.target).attr('data-bs-target').replace('#tab-', '');
         const newUrl = new URL(window.location);
         newUrl.searchParams.set('tab', targetId);

@@ -25,6 +25,71 @@
     html[data-bs-theme="dark"] .nav-pills .nav-link.room-tab {
         border-color: rgba(255, 255, 255, 0.12);
     }
+    .mobile-day-group {
+        border: 1px solid var(--bs-border-color, #dee2e6);
+        border-radius: 0.75rem;
+        overflow: hidden;
+        background-color: var(--bs-body-bg, #ffffff);
+    }
+    .mobile-day-header {
+        background-color: rgba(var(--bs-primary-rgb), 0.08);
+        padding: 0.6rem 0.85rem;
+        border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+    }
+    .mobile-session-card {
+        border: 1px solid var(--bs-border-color, #dee2e6);
+        border-radius: 0.6rem;
+        padding: 0.75rem;
+        background-color: var(--bs-tertiary-bg, rgba(0, 0, 0, 0.02));
+    }
+    .mobile-session-card.conflict {
+        border-color: var(--bs-danger, #dc3545);
+        background-color: rgba(var(--bs-danger-rgb), 0.08);
+    }
+    @media (max-width: 767.98px) {
+        .jadwal-room-tabs {
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: thin;
+            padding-bottom: 0.35rem;
+        }
+        .jadwal-room-tabs .nav-item {
+            flex: 0 0 auto;
+        }
+        .jadwal-room-tabs .nav-link.room-tab {
+            white-space: nowrap;
+            font-size: 0.85rem;
+            padding: 0.4rem 0.75rem;
+        }
+    }
+    @media (max-width: 575.98px) {
+        .jadwal-action-bar {
+            display: grid !important;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 0.5rem !important;
+        }
+        .jadwal-action-bar > .btn-group,
+        .jadwal-action-bar > a.btn,
+        .jadwal-action-bar > button.btn,
+        .jadwal-action-bar > form {
+            width: 100%;
+        }
+        .jadwal-action-bar > .btn-group > .btn,
+        .jadwal-action-bar > form > .btn {
+            width: 100%;
+        }
+        .jadwal-action-bar .btn {
+            font-size: 0.84rem;
+            padding: 0.45rem 0.55rem;
+        }
+        .jadwal-action-bar .dropdown-menu {
+            min-width: 100%;
+        }
+        .jadwal-delete-periode-form {
+            grid-column: 1 / -1;
+        }
+    }
 </style>
 @endsection
 
@@ -85,20 +150,20 @@
                             @endif
                         </div>
                         @if ($selectedPeriode && $selectedPeriode->source_filename)
-                            <small class="text-muted d-block mt-1">
+                            <small class="text-muted d-block mt-1 text-truncate" title="{{ $selectedPeriode->source_filename }}">
                                 <i class="bi bi-file-earmark-excel me-1"></i>Sumber: {{ $selectedPeriode->source_filename }}
                             </small>
                         @endif
                     </form>
                 </div>
 
-                <div class="col-lg-7 d-flex flex-wrap gap-2 justify-content-lg-end">
+                <div class="col-lg-7 d-flex flex-wrap gap-2 justify-content-lg-end jadwal-action-bar">
                     @if ($selectedPeriode && !empty($roomsData))
                         <div class="btn-group">
                             <button type="button" class="btn btn-danger dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
                                 <i class="bi bi-file-earmark-pdf me-1"></i> Cetak PDF
                             </button>
-                            <ul class="dropdown-menu dropdown-menu-end">
+                            <ul class="dropdown-menu dropdown-menu-sm-end">
                                 @if ($isDosen && ($mySchedule['total'] ?? 0) > 0)
                                     <li>
                                         <a class="dropdown-item fw-semibold text-primary" target="_blank"
@@ -128,7 +193,7 @@
                                 <button type="button" class="btn btn-success dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
                                     <i class="bi bi-file-earmark-excel me-1"></i> Export Excel
                                 </button>
-                                <ul class="dropdown-menu dropdown-menu-end">
+                                <ul class="dropdown-menu dropdown-menu-sm-end">
                                     <li>
                                         <a class="dropdown-item fw-semibold text-primary"
                                            href="{{ route('jadwal-lab.export-excel', ['periode_id' => $selectedPeriode->id, 'scope' => 'mine']) }}">
@@ -172,11 +237,11 @@
                             @endif
 
                             <form method="POST" action="{{ route('jadwal-lab.periode.destroy', $selectedPeriode->id) }}"
-                                  class="d-inline form-confirm-delete" data-confirm-text="Hapus periode {{ $selectedPeriode->nama_periode }} beserta seluruh jadwal di dalamnya?">
+                                  class="d-inline form-confirm-delete jadwal-delete-periode-form" data-confirm-text="Hapus periode {{ $selectedPeriode->nama_periode }} beserta seluruh jadwal di dalamnya?">
                                 @csrf
                                 @method('DELETE')
                                 <button type="submit" class="btn btn-outline-danger" title="Hapus Periode">
-                                    <i class="bi bi-trash"></i>
+                                    <i class="bi bi-trash"></i><span class="d-sm-none ms-1">Hapus Periode</span>
                                 </button>
                             </form>
                         @endif
@@ -204,7 +269,7 @@
     @if ($selectedPeriode && !empty($roomsData))
         <div class="card">
             <div class="card-header pb-2">
-                <ul class="nav nav-pills gap-2 flex-wrap" id="roomTabs" role="tablist">
+                <ul class="nav nav-pills gap-2 flex-md-wrap jadwal-room-tabs" id="roomTabs" role="tablist">
                     @if ($isDosen)
                         <li class="nav-item" role="presentation">
                             <button class="nav-link room-tab {{ $activeTab === 'mine' ? 'active' : '' }}"
@@ -259,7 +324,7 @@
                                         {{ Auth::user()->full_name }} — Semester {{ $selectedPeriode->semester }} Tahun Ajaran {{ $selectedPeriode->tahun_ajaran }}
                                     </small>
                                 </div>
-                                <div class="d-flex gap-2 align-items-center">
+                                <div class="d-flex flex-wrap gap-2 align-items-center">
                                     <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2">
                                         {{ $mySchedule['total'] }} Sesi Mengajar
                                     </span>
@@ -278,42 +343,101 @@
                                     </p>
                                 </div>
                             @else
-                                <div class="table-responsive">
-                                    <table class="table table-bordered jadwal-table align-middle mb-0">
-                                        <thead class="table-light">
-                                            <tr class="text-center">
-                                                <th>Hari</th>
-                                                <th>Ruangan / Lab</th>
-                                                <th>Mata Kuliah</th>
-                                                <th>Waktu Mulai</th>
-                                                <th>Waktu Berakhir</th>
-                                                <th>Semester</th>
-                                                <th>Program Studi</th>
-                                                <th>Catatan</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            @foreach (\App\Models\JadwalLab::HARI_ORDER as $hari)
-                                                @php $dayItems = $mySchedule['days'][$hari] ?? []; @endphp
-                                                @foreach ($dayItems as $idx => $item)
-                                                    @php $isConflict = isset($conflictIds[$item->id]); @endphp
-                                                    <tr class="{{ $isConflict ? 'table-danger' : '' }}">
-                                                        @if ($idx === 0)
-                                                            <td class="hari-cell" rowspan="{{ count($dayItems) }}">{{ $hari }}</td>
-                                                        @endif
-                                                        <td class="text-center text-nowrap">
-                                                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle fw-semibold">
-                                                                {{ $item->nama_ruangan }}
-                                                            </span>
-                                                        </td>
-                                                        <td>
-                                                            <div class="fw-semibold">
+                                {{-- Tampilan Desktop (Tabel) --}}
+                                <div class="d-none d-md-block">
+                                    <div class="table-responsive">
+                                        <table class="table table-bordered jadwal-table align-middle mb-0">
+                                            <thead class="table-light">
+                                                <tr class="text-center">
+                                                    <th>Hari</th>
+                                                    <th>Ruangan / Lab</th>
+                                                    <th>Mata Kuliah</th>
+                                                    <th>Waktu Mulai</th>
+                                                    <th>Waktu Berakhir</th>
+                                                    <th>Semester</th>
+                                                    <th>Program Studi</th>
+                                                    <th>Catatan</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach (\App\Models\JadwalLab::HARI_ORDER as $hari)
+                                                    @php $dayItems = $mySchedule['days'][$hari] ?? []; @endphp
+                                                    @foreach ($dayItems as $idx => $item)
+                                                        @php $isConflict = isset($conflictIds[$item->id]); @endphp
+                                                        <tr class="{{ $isConflict ? 'table-danger' : '' }}">
+                                                            @if ($idx === 0)
+                                                                <td class="hari-cell" rowspan="{{ count($dayItems) }}">{{ $hari }}</td>
+                                                            @endif
+                                                            <td class="text-center text-nowrap">
+                                                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle fw-semibold">
+                                                                    {{ $item->nama_ruangan }}
+                                                                </span>
+                                                            </td>
+                                                            <td>
+                                                                <div class="fw-semibold">
+                                                                    @if ($isConflict)
+                                                                        <i class="bi bi-exclamation-triangle-fill text-danger me-1" title="Jadwal bentrok"></i>
+                                                                    @endif
+                                                                    {{ $item->mata_kuliah }}
+                                                                </div>
+                                                                <div class="d-flex flex-wrap gap-1 mt-1">
+                                                                    @if ($item->jenis)
+                                                                        @php
+                                                                            $jenisClass = match($item->jenis) {
+                                                                                'Praktek' => 'bg-primary',
+                                                                                'Teori & Praktek' => 'bg-info text-dark',
+                                                                                default => 'bg-secondary',
+                                                                            };
+                                                                        @endphp
+                                                                        <span class="badge {{ $jenisClass }}" style="font-size: 0.72rem;">{{ $item->jenis }}</span>
+                                                                    @endif
+                                                                    @if ($item->kelas)
+                                                                        <span class="badge bg-light text-dark border" style="font-size: 0.72rem;">{{ $item->kelas }}</span>
+                                                                    @endif
+                                                                </div>
+                                                            </td>
+                                                            <td class="text-center fw-semibold text-nowrap">{{ $item->waktu_mulai }}</td>
+                                                            <td class="text-center fw-semibold text-nowrap">{{ $item->waktu_berakhir }}</td>
+                                                            <td class="text-center">{{ $item->semester ?: '-' }}</td>
+                                                            <td class="text-center">{{ $item->program_studi ?: '-' }}</td>
+                                                            <td>{{ $item->catatan ?: '-' }}</td>
+                                                        </tr>
+                                                    @endforeach
+                                                @endforeach
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+
+                                {{-- Tampilan Mobile (Kartu per Hari) --}}
+                                <div class="d-md-none d-flex flex-column gap-3">
+                                    @foreach (\App\Models\JadwalLab::HARI_ORDER as $hari)
+                                        @php $dayItems = $mySchedule['days'][$hari] ?? []; @endphp
+                                        @if (!empty($dayItems))
+                                            <div class="mobile-day-group">
+                                                <div class="mobile-day-header d-flex justify-content-between align-items-center">
+                                                    <span class="fw-bold">{{ $hari }}</span>
+                                                    <span class="badge bg-primary">{{ count($dayItems) }} sesi</span>
+                                                </div>
+                                                <div class="p-2 d-flex flex-column gap-2">
+                                                    @foreach ($dayItems as $item)
+                                                        @php $isConflict = isset($conflictIds[$item->id]); @endphp
+                                                        <div class="mobile-session-card {{ $isConflict ? 'conflict' : '' }}">
+                                                            <div class="d-flex justify-content-between align-items-center gap-2 mb-1">
+                                                                <span class="small fw-semibold text-primary text-nowrap">
+                                                                    <i class="bi bi-clock me-1"></i>{{ $item->waktu_mulai }} – {{ $item->waktu_berakhir }}
+                                                                </span>
+                                                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle fw-semibold">
+                                                                    {{ $item->nama_ruangan }}
+                                                                </span>
+                                                            </div>
+                                                            <div class="fw-semibold mb-1">
                                                                 @if ($isConflict)
                                                                     <i class="bi bi-exclamation-triangle-fill text-danger me-1" title="Jadwal bentrok"></i>
                                                                 @endif
                                                                 {{ $item->mata_kuliah }}
                                                             </div>
-                                                            <div class="d-flex flex-wrap gap-1 mt-1">
+                                                            <div class="d-flex flex-wrap gap-1">
                                                                 @if ($item->jenis)
                                                                     @php
                                                                         $jenisClass = match($item->jenis) {
@@ -327,18 +451,24 @@
                                                                 @if ($item->kelas)
                                                                     <span class="badge bg-light text-dark border" style="font-size: 0.72rem;">{{ $item->kelas }}</span>
                                                                 @endif
+                                                                @if ($item->semester)
+                                                                    <span class="badge bg-secondary-subtle text-secondary-emphasis border" style="font-size: 0.72rem;">Smt {{ $item->semester }}</span>
+                                                                @endif
+                                                                @if ($item->program_studi)
+                                                                    <span class="badge bg-secondary-subtle text-secondary-emphasis border" style="font-size: 0.72rem;">{{ $item->program_studi }}</span>
+                                                                @endif
                                                             </div>
-                                                        </td>
-                                                        <td class="text-center fw-semibold text-nowrap">{{ $item->waktu_mulai }}</td>
-                                                        <td class="text-center fw-semibold text-nowrap">{{ $item->waktu_berakhir }}</td>
-                                                        <td class="text-center">{{ $item->semester ?: '-' }}</td>
-                                                        <td class="text-center">{{ $item->program_studi ?: '-' }}</td>
-                                                        <td>{{ $item->catatan ?: '-' }}</td>
-                                                    </tr>
-                                                @endforeach
-                                            @endforeach
-                                        </tbody>
-                                    </table>
+                                                            @if (trim((string) $item->catatan) !== '')
+                                                                <div class="small text-muted mt-2 pt-1 border-top">
+                                                                    <i class="bi bi-sticky me-1"></i>{{ $item->catatan }}
+                                                                </div>
+                                                            @endif
+                                                        </div>
+                                                    @endforeach
+                                                </div>
+                                            </div>
+                                        @endif
+                                    @endforeach
                                 </div>
                             @endif
                         </div>
@@ -358,103 +488,196 @@
                                 </div>
                             </div>
 
-                            <div class="table-responsive">
-                                <table class="table table-bordered jadwal-table align-middle mb-0">
-                                    <thead class="table-light">
-                                        <tr class="text-center">
-                                            <th>Hari</th>
-                                            <th>Mata Kuliah</th>
-                                            <th>Waktu Mulai</th>
-                                            <th>Waktu Berakhir</th>
-                                            <th>Dosen Pengajar</th>
-                                            <th>Semester</th>
-                                            <th>Program Studi</th>
-                                            <th>Catatan</th>
-                                            @if ($canManage)
-                                                <th style="width: 100px;">Aksi</th>
-                                            @endif
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @foreach (\App\Models\JadwalLab::HARI_ORDER as $hari)
-                                            @php $dayItems = $roomInfo['days'][$hari] ?? []; @endphp
-                                            @if (empty($dayItems))
-                                                <tr>
-                                                    <td class="hari-cell">{{ $hari }}</td>
-                                                    <td class="text-center text-muted">-</td>
-                                                    <td class="text-center text-muted">-</td>
-                                                    <td class="text-center text-muted">-</td>
-                                                    <td class="text-center text-muted">-</td>
-                                                    <td class="text-center text-muted">-</td>
-                                                    <td class="text-center text-muted">-</td>
-                                                    <td class="text-muted"></td>
-                                                    @if ($canManage)
-                                                        <td class="text-center">
-                                                            <button type="button" class="btn btn-sm btn-outline-primary btn-quick-add"
-                                                                    data-room="{{ $roomName }}" data-hari="{{ $hari }}" title="Tambah jadwal hari {{ $hari }}">
-                                                                <i class="bi bi-plus"></i>
-                                                            </button>
-                                                        </td>
-                                                    @endif
-                                                </tr>
-                                            @else
-                                                @foreach ($dayItems as $idx => $item)
-                                                    @php $isConflict = isset($conflictIds[$item->id]); @endphp
-                                                    <tr class="{{ $isConflict ? 'table-danger' : '' }}">
-                                                        @if ($idx === 0)
-                                                            <td class="hari-cell" rowspan="{{ count($dayItems) }}">{{ $hari }}</td>
-                                                        @endif
-                                                        <td>
-                                                            <div class="fw-semibold">
-                                                                @if ($isConflict)
-                                                                    <i class="bi bi-exclamation-triangle-fill text-danger me-1" title="Jadwal bentrok"></i>
-                                                                @endif
-                                                                {{ $item->mata_kuliah }}
-                                                            </div>
-                                                            <div class="d-flex flex-wrap gap-1 mt-1">
-                                                                @if ($item->jenis)
-                                                                    @php
-                                                                        $jenisClass = match($item->jenis) {
-                                                                            'Praktek' => 'bg-primary',
-                                                                            'Teori & Praktek' => 'bg-info text-dark',
-                                                                            default => 'bg-secondary',
-                                                                        };
-                                                                    @endphp
-                                                                    <span class="badge {{ $jenisClass }}" style="font-size: 0.72rem;">{{ $item->jenis }}</span>
-                                                                @endif
-                                                                @if ($item->kelas)
-                                                                    <span class="badge bg-light text-dark border" style="font-size: 0.72rem;">{{ $item->kelas }}</span>
-                                                                @endif
-                                                            </div>
-                                                        </td>
-                                                        <td class="text-center fw-semibold text-nowrap">{{ $item->waktu_mulai }}</td>
-                                                        <td class="text-center fw-semibold text-nowrap">{{ $item->waktu_berakhir }}</td>
-                                                        <td>{{ $item->display_dosen }}</td>
-                                                        <td class="text-center">{{ $item->semester ?: '-' }}</td>
-                                                        <td class="text-center">{{ $item->program_studi ?: '-' }}</td>
-                                                        <td>{{ $item->catatan ?: '-' }}</td>
+                            {{-- Tampilan Desktop (Tabel) --}}
+                            <div class="d-none d-md-block">
+                                <div class="table-responsive">
+                                    <table class="table table-bordered jadwal-table align-middle mb-0">
+                                        <thead class="table-light">
+                                            <tr class="text-center">
+                                                <th>Hari</th>
+                                                <th>Mata Kuliah</th>
+                                                <th>Waktu Mulai</th>
+                                                <th>Waktu Berakhir</th>
+                                                <th>Dosen Pengajar</th>
+                                                <th>Semester</th>
+                                                <th>Program Studi</th>
+                                                <th>Catatan</th>
+                                                @if ($canManage)
+                                                    <th style="width: 100px;">Aksi</th>
+                                                @endif
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (\App\Models\JadwalLab::HARI_ORDER as $hari)
+                                                @php $dayItems = $roomInfo['days'][$hari] ?? []; @endphp
+                                                @if (empty($dayItems))
+                                                    <tr>
+                                                        <td class="hari-cell">{{ $hari }}</td>
+                                                        <td class="text-center text-muted">-</td>
+                                                        <td class="text-center text-muted">-</td>
+                                                        <td class="text-center text-muted">-</td>
+                                                        <td class="text-center text-muted">-</td>
+                                                        <td class="text-center text-muted">-</td>
+                                                        <td class="text-center text-muted">-</td>
+                                                        <td class="text-muted"></td>
                                                         @if ($canManage)
-                                                            <td class="text-center text-nowrap">
-                                                                <button type="button" class="btn btn-sm btn-warning btn-edit-entry"
-                                                                        data-entry="{{ json_encode($item) }}" title="Edit">
-                                                                    <i class="bi bi-pencil-square"></i>
+                                                            <td class="text-center">
+                                                                <button type="button" class="btn btn-sm btn-outline-primary btn-quick-add"
+                                                                        data-room="{{ $roomName }}" data-hari="{{ $hari }}" title="Tambah jadwal hari {{ $hari }}">
+                                                                    <i class="bi bi-plus"></i>
                                                                 </button>
-                                                                <form method="POST" action="{{ route('jadwal-lab.destroy', $item->id) }}"
-                                                                      class="d-inline form-confirm-delete" data-confirm-text="Hapus jadwal {{ $item->mata_kuliah }}?">
-                                                                    @csrf
-                                                                    @method('DELETE')
-                                                                    <button type="submit" class="btn btn-sm btn-danger" title="Hapus">
-                                                                        <i class="bi bi-trash"></i>
-                                                                    </button>
-                                                                </form>
                                                             </td>
                                                         @endif
                                                     </tr>
-                                                @endforeach
+                                                @else
+                                                    @foreach ($dayItems as $idx => $item)
+                                                        @php $isConflict = isset($conflictIds[$item->id]); @endphp
+                                                        <tr class="{{ $isConflict ? 'table-danger' : '' }}">
+                                                            @if ($idx === 0)
+                                                                <td class="hari-cell" rowspan="{{ count($dayItems) }}">{{ $hari }}</td>
+                                                            @endif
+                                                            <td>
+                                                                <div class="fw-semibold">
+                                                                    @if ($isConflict)
+                                                                        <i class="bi bi-exclamation-triangle-fill text-danger me-1" title="Jadwal bentrok"></i>
+                                                                    @endif
+                                                                    {{ $item->mata_kuliah }}
+                                                                </div>
+                                                                <div class="d-flex flex-wrap gap-1 mt-1">
+                                                                    @if ($item->jenis)
+                                                                        @php
+                                                                            $jenisClass = match($item->jenis) {
+                                                                                'Praktek' => 'bg-primary',
+                                                                                'Teori & Praktek' => 'bg-info text-dark',
+                                                                                default => 'bg-secondary',
+                                                                            };
+                                                                        @endphp
+                                                                        <span class="badge {{ $jenisClass }}" style="font-size: 0.72rem;">{{ $item->jenis }}</span>
+                                                                    @endif
+                                                                    @if ($item->kelas)
+                                                                        <span class="badge bg-light text-dark border" style="font-size: 0.72rem;">{{ $item->kelas }}</span>
+                                                                    @endif
+                                                                </div>
+                                                            </td>
+                                                            <td class="text-center fw-semibold text-nowrap">{{ $item->waktu_mulai }}</td>
+                                                            <td class="text-center fw-semibold text-nowrap">{{ $item->waktu_berakhir }}</td>
+                                                            <td>{{ $item->display_dosen }}</td>
+                                                            <td class="text-center">{{ $item->semester ?: '-' }}</td>
+                                                            <td class="text-center">{{ $item->program_studi ?: '-' }}</td>
+                                                            <td>{{ $item->catatan ?: '-' }}</td>
+                                                            @if ($canManage)
+                                                                <td class="text-center text-nowrap">
+                                                                    <button type="button" class="btn btn-sm btn-warning btn-edit-entry"
+                                                                            data-entry="{{ json_encode($item) }}" title="Edit">
+                                                                        <i class="bi bi-pencil-square"></i>
+                                                                    </button>
+                                                                    <form method="POST" action="{{ route('jadwal-lab.destroy', $item->id) }}"
+                                                                          class="d-inline form-confirm-delete" data-confirm-text="Hapus jadwal {{ $item->mata_kuliah }}?">
+                                                                        @csrf
+                                                                        @method('DELETE')
+                                                                        <button type="submit" class="btn btn-sm btn-danger" title="Hapus">
+                                                                            <i class="bi bi-trash"></i>
+                                                                        </button>
+                                                                    </form>
+                                                                </td>
+                                                            @endif
+                                                        </tr>
+                                                    @endforeach
+                                                @endif
+                                            @endforeach
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            {{-- Tampilan Mobile (Kartu per Hari) --}}
+                            <div class="d-md-none d-flex flex-column gap-3">
+                                @foreach (\App\Models\JadwalLab::HARI_ORDER as $hari)
+                                    @php $dayItems = $roomInfo['days'][$hari] ?? []; @endphp
+                                    <div class="mobile-day-group">
+                                        <div class="mobile-day-header d-flex justify-content-between align-items-center">
+                                            <div class="d-flex align-items-center gap-2">
+                                                <span class="fw-bold">{{ $hari }}</span>
+                                                <span class="badge {{ empty($dayItems) ? 'bg-secondary' : 'bg-primary' }}">
+                                                    {{ count($dayItems) }} sesi
+                                                </span>
+                                            </div>
+                                            @if ($canManage)
+                                                <button type="button" class="btn btn-sm btn-outline-primary py-0 px-2 btn-quick-add"
+                                                        data-room="{{ $roomName }}" data-hari="{{ $hari }}" title="Tambah jadwal hari {{ $hari }}">
+                                                    <i class="bi bi-plus"></i>
+                                                </button>
                                             @endif
-                                        @endforeach
-                                    </tbody>
-                                </table>
+                                        </div>
+                                        @if (empty($dayItems))
+                                            <div class="px-3 py-2 text-muted small fst-italic">Tidak ada jadwal</div>
+                                        @else
+                                            <div class="p-2 d-flex flex-column gap-2">
+                                                @foreach ($dayItems as $item)
+                                                    @php $isConflict = isset($conflictIds[$item->id]); @endphp
+                                                    <div class="mobile-session-card {{ $isConflict ? 'conflict' : '' }}">
+                                                        <div class="d-flex justify-content-between align-items-center gap-2 mb-1">
+                                                            <span class="small fw-semibold text-primary text-nowrap">
+                                                                <i class="bi bi-clock me-1"></i>{{ $item->waktu_mulai }} – {{ $item->waktu_berakhir }}
+                                                            </span>
+                                                            @if ($item->kelas)
+                                                                <span class="badge bg-light text-dark border" style="font-size: 0.72rem;">{{ $item->kelas }}</span>
+                                                            @endif
+                                                        </div>
+                                                        <div class="fw-semibold mb-1">
+                                                            @if ($isConflict)
+                                                                <i class="bi bi-exclamation-triangle-fill text-danger me-1" title="Jadwal bentrok"></i>
+                                                            @endif
+                                                            {{ $item->mata_kuliah }}
+                                                        </div>
+                                                        <div class="d-flex flex-wrap gap-1 mb-2">
+                                                            @if ($item->jenis)
+                                                                @php
+                                                                    $jenisClass = match($item->jenis) {
+                                                                        'Praktek' => 'bg-primary',
+                                                                        'Teori & Praktek' => 'bg-info text-dark',
+                                                                        default => 'bg-secondary',
+                                                                    };
+                                                                @endphp
+                                                                <span class="badge {{ $jenisClass }}" style="font-size: 0.72rem;">{{ $item->jenis }}</span>
+                                                            @endif
+                                                            @if ($item->semester)
+                                                                <span class="badge bg-secondary-subtle text-secondary-emphasis border" style="font-size: 0.72rem;">Smt {{ $item->semester }}</span>
+                                                            @endif
+                                                            @if ($item->program_studi)
+                                                                <span class="badge bg-secondary-subtle text-secondary-emphasis border" style="font-size: 0.72rem;">{{ $item->program_studi }}</span>
+                                                            @endif
+                                                        </div>
+                                                        <div class="small text-muted">
+                                                            <i class="bi bi-person me-1"></i>{{ $item->display_dosen }}
+                                                        </div>
+                                                        @if (trim((string) $item->catatan) !== '')
+                                                            <div class="small text-muted mt-1">
+                                                                <i class="bi bi-sticky me-1"></i>{{ $item->catatan }}
+                                                            </div>
+                                                        @endif
+                                                        @if ($canManage)
+                                                            <div class="d-flex gap-2 mt-2 pt-2 border-top">
+                                                                <button type="button" class="btn btn-sm btn-warning flex-fill btn-edit-entry"
+                                                                        data-entry="{{ json_encode($item) }}">
+                                                                    <i class="bi bi-pencil-square me-1"></i> Edit
+                                                                </button>
+                                                                <form method="POST" action="{{ route('jadwal-lab.destroy', $item->id) }}"
+                                                                      class="flex-fill form-confirm-delete" data-confirm-text="Hapus jadwal {{ $item->mata_kuliah }}?">
+                                                                    @csrf
+                                                                    @method('DELETE')
+                                                                    <button type="submit" class="btn btn-sm btn-danger w-100">
+                                                                        <i class="bi bi-trash me-1"></i> Hapus
+                                                                    </button>
+                                                                </form>
+                                                            </div>
+                                                        @endif
+                                                    </div>
+                                                @endforeach
+                                            </div>
+                                        @endif
+                                    </div>
+                                @endforeach
                             </div>
                         </div>
                     @endforeach
@@ -463,23 +686,25 @@
                 {{-- Legenda Jam Ke --}}
                 <div class="mt-4 pt-3 border-top">
                     <div class="row g-3 small text-muted">
-                        <div class="col-md-4">
+                        <div class="col-12 col-md-6 col-lg-4">
                             <div class="fw-bold text-body mb-1">Hari Senin s/d Kamis — Jam ke</div>
                             <div class="row row-cols-2 g-1">
                                 @foreach ([1, 2, 3, 4, 5] as $jam)
-                                    <div class="col">{{ $jam }} : {{ \App\Models\JadwalLab::JAM_KE_MAP[$jam]['start'] }} - {{ \App\Models\JadwalLab::JAM_KE_MAP[$jam]['end'] }}</div>
+                                    <div class="col text-nowrap">{{ $jam }} : {{ \App\Models\JadwalLab::JAM_KE_MAP[$jam]['start'] }} - {{ \App\Models\JadwalLab::JAM_KE_MAP[$jam]['end'] }}</div>
                                 @endforeach
                                 <div class="col-12 fw-semibold text-warning-emphasis">ISTIRAHAT (12.10 - 13.00)</div>
                                 @foreach ([6, 7, 8, 9, 10] as $jam)
-                                    <div class="col">{{ $jam }} : {{ \App\Models\JadwalLab::JAM_KE_MAP[$jam]['start'] }} - {{ \App\Models\JadwalLab::JAM_KE_MAP[$jam]['end'] }}</div>
+                                    <div class="col text-nowrap">{{ $jam }} : {{ \App\Models\JadwalLab::JAM_KE_MAP[$jam]['start'] }} - {{ \App\Models\JadwalLab::JAM_KE_MAP[$jam]['end'] }}</div>
                                 @endforeach
                             </div>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-12 col-md-6 col-lg-4">
                             <div class="fw-bold text-body mb-1">Hari Jum'at — Jam ke</div>
-                            @foreach ([1, 2, 3, 4] as $jam)
-                                <div>{{ $jam }} : {{ \App\Models\JadwalLab::JAM_KE_MAP[$jam]['start'] }} - {{ \App\Models\JadwalLab::JAM_KE_MAP[$jam]['end'] }}</div>
-                            @endforeach
+                            <div class="row row-cols-2 row-cols-md-1 g-1">
+                                @foreach ([1, 2, 3, 4] as $jam)
+                                    <div class="col text-nowrap">{{ $jam }} : {{ \App\Models\JadwalLab::JAM_KE_MAP[$jam]['start'] }} - {{ \App\Models\JadwalLab::JAM_KE_MAP[$jam]['end'] }}</div>
+                                @endforeach
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -510,7 +735,7 @@
 @if ($canManage)
     {{-- Modal Import Excel --}}
     <div class="modal fade" id="importJadwalModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog">
+        <div class="modal-dialog modal-dialog-centered">
             <form method="POST" action="{{ route('jadwal-lab.preview-import') }}" enctype="multipart/form-data" class="modal-content">
                 @csrf
                 <div class="modal-header">
@@ -522,7 +747,7 @@
                         <label for="excelFileInput" class="form-label fw-semibold">Pilih File Excel (.xlsx)</label>
                         <input type="file" name="file" id="excelFileInput" class="form-control" accept=".xlsx" required>
                         <small class="text-muted d-block mt-1">
-                            Format yang didukung: file Jadwal Perkuliahan multi-sheet per prodi (contoh: <code>Jadwal Perkuliahan Ganjil 2026_2027.xlsx</code>).
+                            Format yang didukung: file Jadwal Perkuliahan multi-sheet per prodi (contoh: <code class="text-break">Jadwal Perkuliahan Ganjil 2026_2027.xlsx</code>).
                         </small>
                     </div>
                     <div class="alert alert-info mb-0 small">
@@ -543,7 +768,7 @@
     {{-- Modal Tambah / Edit Manual Jadwal --}}
     @if ($selectedPeriode)
         <div class="modal fade" id="entryModal" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog modal-lg">
+            <div class="modal-dialog modal-lg modal-dialog-scrollable modal-fullscreen-sm-down">
                 <form method="POST" id="entryForm" action="{{ route('jadwal-lab.store') }}" class="modal-content">
                     @csrf
                     <input type="hidden" name="_method" id="entryMethod" value="POST">
@@ -578,7 +803,7 @@
                                 </select>
                             </div>
 
-                            <div class="col-md-4">
+                            <div class="col-12 col-md-4">
                                 <label class="form-label fw-semibold">Hari <span class="text-danger">*</span></label>
                                 <select name="hari" id="entry_hari" class="form-select" required>
                                     @foreach (\App\Models\JadwalLab::HARI_ORDER as $h)
@@ -586,7 +811,7 @@
                                     @endforeach
                                 </select>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-6 col-md-4">
                                 <label class="form-label fw-semibold">Jam Ke Mulai</label>
                                 <select name="jam_ke_mulai" id="entry_jam_ke_mulai" class="form-select">
                                     <option value="">-- Manual --</option>
@@ -595,7 +820,7 @@
                                     @endforeach
                                 </select>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-6 col-md-4">
                                 <label class="form-label fw-semibold">Jam Ke Selesai</label>
                                 <select name="jam_ke_selesai" id="entry_jam_ke_selesai" class="form-select">
                                     <option value="">-- Manual --</option>
@@ -605,11 +830,11 @@
                                 </select>
                             </div>
 
-                            <div class="col-md-3">
+                            <div class="col-6 col-md-3">
                                 <label class="form-label fw-semibold">Waktu Mulai <span class="text-danger">*</span></label>
                                 <input type="text" name="waktu_mulai" id="entry_waktu_mulai" class="form-control" placeholder="08.00" required>
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-6 col-md-3">
                                 <label class="form-label fw-semibold">Waktu Berakhir <span class="text-danger">*</span></label>
                                 <input type="text" name="waktu_berakhir" id="entry_waktu_berakhir" class="form-control" placeholder="09.40" required>
                             </div>
@@ -632,11 +857,11 @@
                                 <input type="text" name="kelas" id="entry_kelas" class="form-control" placeholder="Contoh: 3D3TI">
                             </div>
 
-                            <div class="col-md-3">
+                            <div class="col-6 col-md-3">
                                 <label class="form-label fw-semibold">Semester</label>
                                 <input type="text" name="semester" id="entry_semester" class="form-control" placeholder="1 / 3 / 5">
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-6 col-md-3">
                                 <label class="form-label fw-semibold">Program Studi</label>
                                 <input type="text" name="program_studi" id="entry_program_studi" class="form-control" placeholder="TI / MMB">
                             </div>
@@ -681,6 +906,10 @@
 
         // Update link PDF ruangan aktif & warna badge saat tab berpindah
         $('button[data-bs-toggle="tab"]').on('shown.bs.tab', function(e) {
+            if (window.innerWidth < 768 && e.target && typeof e.target.scrollIntoView === 'function') {
+                e.target.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+            }
+
             if (e.relatedTarget) {
                 const prevTab = $(e.relatedTarget);
                 const prevBadge = prevTab.find('.badge');
