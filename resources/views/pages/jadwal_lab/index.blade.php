@@ -99,6 +99,15 @@
                                 <i class="bi bi-file-earmark-pdf me-1"></i> Cetak PDF
                             </button>
                             <ul class="dropdown-menu dropdown-menu-end">
+                                @if ($isDosen && ($mySchedule['total'] ?? 0) > 0)
+                                    <li>
+                                        <a class="dropdown-item fw-semibold text-primary" target="_blank"
+                                           href="{{ route('jadwal-lab.export-pdf', ['periode_id' => $selectedPeriode->id, 'scope' => 'mine']) }}">
+                                            <i class="bi bi-person-workspace me-1"></i> Jadwal Mengajar Saya (1 Tabel)
+                                        </a>
+                                    </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                @endif
                                 <li>
                                     <a class="dropdown-item" id="btnPrintCurrentRoom" target="_blank"
                                        href="{{ route('jadwal-lab.export-pdf', ['periode_id' => $selectedPeriode->id, 'ruangan' => $activeRoom]) }}">
@@ -114,10 +123,32 @@
                             </ul>
                         </div>
 
-                        <a href="{{ route('jadwal-lab.export-excel', ['periode_id' => $selectedPeriode->id]) }}"
-                           class="btn btn-success">
-                            <i class="bi bi-file-earmark-excel me-1"></i> Export Excel
-                        </a>
+                        @if ($isDosen && ($mySchedule['total'] ?? 0) > 0)
+                            <div class="btn-group">
+                                <button type="button" class="btn btn-success dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="bi bi-file-earmark-excel me-1"></i> Export Excel
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li>
+                                        <a class="dropdown-item fw-semibold text-primary"
+                                           href="{{ route('jadwal-lab.export-excel', ['periode_id' => $selectedPeriode->id, 'scope' => 'mine']) }}">
+                                            <i class="bi bi-person-workspace me-1"></i> Jadwal Mengajar Saya (1 Sheet)
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item"
+                                           href="{{ route('jadwal-lab.export-excel', ['periode_id' => $selectedPeriode->id]) }}">
+                                            <i class="bi bi-files me-1"></i> Semua Ruangan ({{ count($roomsData) }} Sheet)
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                        @else
+                            <a href="{{ route('jadwal-lab.export-excel', ['periode_id' => $selectedPeriode->id]) }}"
+                               class="btn btn-success">
+                                <i class="bi bi-file-earmark-excel me-1"></i> Export Excel
+                            </a>
+                        @endif
                     @endif
 
                     @if ($canManage)
@@ -174,17 +205,38 @@
         <div class="card">
             <div class="card-header pb-2">
                 <ul class="nav nav-pills gap-2 flex-wrap" id="roomTabs" role="tablist">
-                    @foreach ($roomsData as $roomName => $roomInfo)
-                        @php $tabId = 'room-' . \Illuminate\Support\Str::slug($roomName); @endphp
+                    @if ($isDosen)
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link room-tab {{ $activeRoom === $roomName ? 'active' : '' }}"
+                            <button class="nav-link room-tab {{ $activeTab === 'mine' ? 'active' : '' }}"
+                                    id="my-schedule-tab"
+                                    data-bs-toggle="tab"
+                                    data-bs-target="#my-schedule"
+                                    data-scope="mine"
+                                    type="button" role="tab">
+                                <i class="bi bi-person-workspace me-1"></i>Jadwal Saya
+                                <span class="badge {{ $activeTab === 'mine' ? 'bg-white text-dark' : 'bg-primary' }} ms-1">
+                                    {{ $mySchedule['total'] }}
+                                </span>
+                            </button>
+                        </li>
+                        <li class="nav-item d-none d-md-flex align-items-center" aria-hidden="true">
+                            <span class="vr mx-1 my-1"></span>
+                        </li>
+                    @endif
+                    @foreach ($roomsData as $roomName => $roomInfo)
+                        @php
+                            $tabId = 'room-' . \Illuminate\Support\Str::slug($roomName);
+                            $isRoomActive = $activeTab === 'room' && $activeRoom === $roomName;
+                        @endphp
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link room-tab {{ $isRoomActive ? 'active' : '' }}"
                                     id="{{ $tabId }}-tab"
                                     data-bs-toggle="tab"
                                     data-bs-target="#{{ $tabId }}"
                                     data-room-name="{{ $roomName }}"
                                     type="button" role="tab">
                                 {{ $roomName }}
-                                <span class="badge {{ $activeRoom === $roomName ? 'bg-white text-dark' : 'bg-secondary' }} ms-1">
+                                <span class="badge {{ $isRoomActive ? 'bg-white text-dark' : 'bg-secondary' }} ms-1">
                                     {{ $roomInfo['total'] }}
                                 </span>
                             </button>
@@ -195,9 +247,109 @@
 
             <div class="card-body">
                 <div class="tab-content" id="roomTabsContent">
+                    @if ($isDosen)
+                        <div class="tab-pane fade {{ $activeTab === 'mine' ? 'show active' : '' }}"
+                             id="my-schedule" role="tabpanel">
+                            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                                <div>
+                                    <h5 class="mb-0 fw-bold">
+                                        <i class="bi bi-person-workspace text-primary me-1"></i> Jadwal Mengajar Saya
+                                    </h5>
+                                    <small class="text-muted">
+                                        {{ Auth::user()->full_name }} — Semester {{ $selectedPeriode->semester }} Tahun Ajaran {{ $selectedPeriode->tahun_ajaran }}
+                                    </small>
+                                </div>
+                                <div class="d-flex gap-2 align-items-center">
+                                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2">
+                                        {{ $mySchedule['total'] }} Sesi Mengajar
+                                    </span>
+                                    <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle px-3 py-2">
+                                        {{ $mySchedule['rooms_count'] }} Ruangan
+                                    </span>
+                                </div>
+                            </div>
+
+                            @if ($mySchedule['total'] === 0)
+                                <div class="alert alert-light border text-center py-4 mb-0">
+                                    <i class="bi bi-calendar2-check fs-2 text-muted d-block mb-2"></i>
+                                    <h6 class="fw-bold mb-1">Belum Ada Mata Kuliah yang Anda Ampu di Periode Ini</h6>
+                                    <p class="text-muted small mb-0">
+                                        Anda tetap dapat melihat jadwal seluruh mata kuliah per ruangan melalui tab ruangan di atas.
+                                    </p>
+                                </div>
+                            @else
+                                <div class="table-responsive">
+                                    <table class="table table-bordered jadwal-table align-middle mb-0">
+                                        <thead class="table-light">
+                                            <tr class="text-center">
+                                                <th>Hari</th>
+                                                <th>Ruangan / Lab</th>
+                                                <th>Mata Kuliah</th>
+                                                <th>Waktu Mulai</th>
+                                                <th>Waktu Berakhir</th>
+                                                <th>Semester</th>
+                                                <th>Program Studi</th>
+                                                <th>Catatan</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (\App\Models\JadwalLab::HARI_ORDER as $hari)
+                                                @php $dayItems = $mySchedule['days'][$hari] ?? []; @endphp
+                                                @foreach ($dayItems as $idx => $item)
+                                                    @php $isConflict = isset($conflictIds[$item->id]); @endphp
+                                                    <tr class="{{ $isConflict ? 'table-danger' : '' }}">
+                                                        @if ($idx === 0)
+                                                            <td class="hari-cell" rowspan="{{ count($dayItems) }}">{{ $hari }}</td>
+                                                        @endif
+                                                        <td class="text-center text-nowrap">
+                                                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle fw-semibold">
+                                                                {{ $item->nama_ruangan }}
+                                                            </span>
+                                                        </td>
+                                                        <td>
+                                                            <div class="fw-semibold">
+                                                                @if ($isConflict)
+                                                                    <i class="bi bi-exclamation-triangle-fill text-danger me-1" title="Jadwal bentrok"></i>
+                                                                @endif
+                                                                {{ $item->mata_kuliah }}
+                                                            </div>
+                                                            <div class="d-flex flex-wrap gap-1 mt-1">
+                                                                @if ($item->jenis)
+                                                                    @php
+                                                                        $jenisClass = match($item->jenis) {
+                                                                            'Praktek' => 'bg-primary',
+                                                                            'Teori & Praktek' => 'bg-info text-dark',
+                                                                            default => 'bg-secondary',
+                                                                        };
+                                                                    @endphp
+                                                                    <span class="badge {{ $jenisClass }}" style="font-size: 0.72rem;">{{ $item->jenis }}</span>
+                                                                @endif
+                                                                @if ($item->kelas)
+                                                                    <span class="badge bg-light text-dark border" style="font-size: 0.72rem;">{{ $item->kelas }}</span>
+                                                                @endif
+                                                            </div>
+                                                        </td>
+                                                        <td class="text-center fw-semibold text-nowrap">{{ $item->waktu_mulai }}</td>
+                                                        <td class="text-center fw-semibold text-nowrap">{{ $item->waktu_berakhir }}</td>
+                                                        <td class="text-center">{{ $item->semester ?: '-' }}</td>
+                                                        <td class="text-center">{{ $item->program_studi ?: '-' }}</td>
+                                                        <td>{{ $item->catatan ?: '-' }}</td>
+                                                    </tr>
+                                                @endforeach
+                                            @endforeach
+                                        </tbody>
+                                    </table>
+                                </div>
+                            @endif
+                        </div>
+                    @endif
+
                     @foreach ($roomsData as $roomName => $roomInfo)
-                        @php $tabId = 'room-' . \Illuminate\Support\Str::slug($roomName); @endphp
-                        <div class="tab-pane fade {{ $activeRoom === $roomName ? 'show active' : '' }}"
+                        @php
+                            $tabId = 'room-' . \Illuminate\Support\Str::slug($roomName);
+                            $isRoomActive = $activeTab === 'room' && $activeRoom === $roomName;
+                        @endphp
+                        <div class="tab-pane fade {{ $isRoomActive ? 'show active' : '' }}"
                              id="{{ $tabId }}" role="tabpanel">
                             <div class="d-flex justify-content-between align-items-center mb-3">
                                 <div>
@@ -527,15 +679,28 @@
         const baseEntryUrl = @json(url('/jadwal-lab'));
         let currentRoom = @json($activeRoom);
 
-        // Update link PDF ruangan aktif saat tab ruangan diklik
+        // Update link PDF ruangan aktif & warna badge saat tab berpindah
         $('button[data-bs-toggle="tab"]').on('shown.bs.tab', function(e) {
-            currentRoom = $(e.target).data('room-name');
-            $('#printRoomLabel').text(currentRoom);
-            if (periodeId) {
-                $('#btnPrintCurrentRoom').attr(
-                    'href',
-                    exportPdfBaseUrl + '?periode_id=' + encodeURIComponent(periodeId) + '&ruangan=' + encodeURIComponent(currentRoom)
-                );
+            if (e.relatedTarget) {
+                const prevTab = $(e.relatedTarget);
+                const prevBadge = prevTab.find('.badge');
+                prevBadge.removeClass('bg-white text-dark')
+                    .addClass(prevTab.attr('id') === 'my-schedule-tab' ? 'bg-primary' : 'bg-secondary');
+            }
+
+            const activeTabBtn = $(e.target);
+            activeTabBtn.find('.badge').removeClass('bg-primary bg-secondary').addClass('bg-white text-dark');
+
+            const roomName = activeTabBtn.data('room-name');
+            if (roomName) {
+                currentRoom = roomName;
+                $('#printRoomLabel').text(currentRoom);
+                if (periodeId) {
+                    $('#btnPrintCurrentRoom').attr(
+                        'href',
+                        exportPdfBaseUrl + '?periode_id=' + encodeURIComponent(periodeId) + '&ruangan=' + encodeURIComponent(currentRoom)
+                    );
+                }
             }
         });
 

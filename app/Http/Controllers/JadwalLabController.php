@@ -55,10 +55,20 @@ class JadwalLabController extends Controller
             ->orderBy('nama_asli')
             ->get();
 
+        $user = Auth::user();
+        $isDosen = $user && $user->role?->slug === 'dosen';
+        $mySchedule = ['days' => [], 'total' => 0, 'rooms_count' => 0];
+        if ($isDosen) {
+            $myEntries = $this->filterEntriesForDosen($entries, $user);
+            $mySchedule = $this->buildDosenScheduleData($myEntries);
+        }
+
         $activeRoom = $request->get('ruangan');
         if (!$activeRoom || !isset($roomsData[$activeRoom])) {
             $activeRoom = array_key_first($roomsData);
         }
+
+        $activeTab = ($isDosen && !$request->filled('ruangan')) ? 'mine' : 'room';
 
         return view('pages.jadwal_lab.index', compact(
             'title',
@@ -66,6 +76,9 @@ class JadwalLabController extends Controller
             'selectedPeriode',
             'roomsData',
             'activeRoom',
+            'activeTab',
+            'isDosen',
+            'mySchedule',
             'conflictIds',
             'conflictMessages',
             'labs',
@@ -331,6 +344,37 @@ class JadwalLabController extends Controller
                 ->with('error', 'Belum ada periode jadwal untuk dicetak.');
         }
 
+        if ($request->get('scope') === 'mine') {
+            $user = Auth::user();
+            if (!$user || $user->role?->slug !== 'dosen') {
+                abort(403, 'Cetak jadwal mengajar hanya tersedia untuk akun dosen.');
+            }
+
+            $allEntries = JadwalLab::with(['lab', 'dosen'])
+                ->where('periode_jadwal_id', $periode->id)
+                ->get();
+            $myEntries = $this->filterEntriesForDosen($allEntries, $user);
+
+            if ($myEntries->isEmpty()) {
+                return redirect()->route('jadwal-lab.index', ['periode_id' => $periode->id])
+                    ->with('error', 'Anda belum memiliki jadwal mengajar pada periode ini.');
+            }
+
+            $mySchedule = $this->buildDosenScheduleData($myEntries);
+            $jamKeMap = JadwalLab::JAM_KE_MAP;
+            $dosen = $user;
+            $fileName = ExcelSecurity::safeFileName(
+                'Jadwal_Mengajar_' . $user->nama_asli . '_' . str_replace('/', '-', $periode->tahun_ajaran),
+                'pdf'
+            );
+
+            $pdf = Pdf::loadView('pages.jadwal_lab.pdf_dosen', compact('periode', 'mySchedule', 'jamKeMap', 'dosen'))
+                ->setOption('isRemoteEnabled', false)
+                ->setPaper('a4', 'landscape');
+
+            return $pdf->stream($fileName);
+        }
+
         $query = JadwalLab::with(['lab', 'dosen'])
             ->where('periode_jadwal_id', $periode->id);
 
@@ -368,6 +412,25 @@ class JadwalLabController extends Controller
         if (!$periode) {
             return redirect()->route('jadwal-lab.index')
                 ->with('error', 'Belum ada periode jadwal untuk diexport.');
+        }
+
+        if ($request->get('scope') === 'mine') {
+            $user = Auth::user();
+            if (!$user || $user->role?->slug !== 'dosen') {
+                abort(403, 'Export jadwal mengajar hanya tersedia untuk akun dosen.');
+            }
+
+            $allEntries = JadwalLab::with(['lab', 'dosen'])
+                ->where('periode_jadwal_id', $periode->id)
+                ->get();
+            $myEntries = $this->filterEntriesForDosen($allEntries, $user);
+
+            if ($myEntries->isEmpty()) {
+                return redirect()->route('jadwal-lab.index', ['periode_id' => $periode->id])
+                    ->with('error', 'Anda belum memiliki jadwal mengajar pada periode ini.');
+            }
+
+            return $this->exportDosenExcel($periode, $user, $myEntries);
         }
 
         $query = JadwalLab::with(['lab', 'dosen'])
@@ -485,32 +548,7 @@ class JadwalLabController extends Controller
             }
 
             // Baris kosong pemisah & Keterangan Jam Ke (polos seperti format acuan)
-            $rows[] = $padRow(['']);
-            $rows[] = $padRow(['', '<b>Hari Senin s/d Kamis</b>', '', '<b>Hari Jum\'at</b>']);
-            $rows[] = $padRow(['', '<b>Jam ke</b>', '', '<b>Jam ke</b>']);
-
-            foreach (range(1, 5) as $jam) {
-                $map = JadwalLab::JAM_KE_MAP[$jam];
-                $seninText = $jam . ' : ' . $map['start'] . ' - ' . $map['end'];
-                $jumatText = $jam <= 4 ? ('<raw>' . $seninText . '</raw>') : '';
-                $rows[] = $padRow([
-                    '',
-                    '<raw>' . $seninText . '</raw>',
-                    '',
-                    $jumatText,
-                ]);
-            }
-
-            $rows[] = $padRow(['', '<b>ISTIRAHAT (12.10-13.00)</b>']);
-
-            foreach (range(6, 10) as $jam) {
-                $map = JadwalLab::JAM_KE_MAP[$jam];
-                $seninText = $jam . ' : ' . $map['start'] . ' - ' . $map['end'];
-                $rows[] = $padRow([
-                    '',
-                    '<raw>' . $seninText . '</raw>',
-                ]);
-            }
+            $this->appendJamKeLegendRows($rows, $padRow);
 
             $sheetTitle = str_replace(['[', ']', ':', '*', '?', '/', '\\'], ' ', $roomName);
             $xlsx->addSheet($rows, mb_substr(trim($sheetTitle), 0, 31));
@@ -661,5 +699,191 @@ class JadwalLabController extends Controller
     private function xmlSafe(string $value): string
     {
         return htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
+    }
+
+    /**
+     * Filter entri jadwal lab yang diampu oleh dosen tertentu (berdasarkan dosen_id atau fallback nama_asli).
+     */
+    private function filterEntriesForDosen(Collection $entries, User $user): Collection
+    {
+        $normalizedName = mb_strtolower(trim((string) $user->nama_asli));
+
+        return $entries->filter(function (JadwalLab $item) use ($user, $normalizedName): bool {
+            if ($item->dosen_id !== null) {
+                return (int) $item->dosen_id === (int) $user->id;
+            }
+
+            return $normalizedName !== ''
+                && mb_strtolower(trim((string) $item->nama_dosen)) === $normalizedName;
+        })->values();
+    }
+
+    /**
+     * Kelompokkan dan urutkan jadwal mengajar dosen ke dalam 1 struktur tabel lintas ruangan per hari.
+     */
+    private function buildDosenScheduleData(Collection $entries): array
+    {
+        $days = [];
+        foreach (JadwalLab::HARI_ORDER as $hari) {
+            $days[$hari] = $entries
+                ->where('hari', $hari)
+                ->sort(function (JadwalLab $a, JadwalLab $b) {
+                    return (($a->jam_ke_mulai ?? 99) <=> ($b->jam_ke_mulai ?? 99))
+                        ?: strcmp($a->waktu_mulai, $b->waktu_mulai)
+                        ?: strcmp($a->nama_ruangan, $b->nama_ruangan)
+                        ?: strcmp($a->mata_kuliah, $b->mata_kuliah);
+                })
+                ->values()
+                ->all();
+        }
+
+        return [
+            'days' => $days,
+            'total' => $entries->count(),
+            'rooms_count' => $entries->pluck('nama_ruangan')->unique()->count(),
+        ];
+    }
+
+    /**
+     * Bangun file Excel 1 sheet khusus jadwal mengajar seorang dosen.
+     */
+    private function exportDosenExcel(PeriodeJadwal $periode, User $dosen, Collection $entries)
+    {
+        $mySchedule = $this->buildDosenScheduleData($entries);
+        $hasCatatan = $entries->contains(fn(JadwalLab $item) => trim((string) $item->catatan) !== '');
+
+        $lastCol = $hasCatatan ? 'H' : 'G';
+        $colCount = $hasCatatan ? 8 : 7;
+
+        $padRow = static function (array $cells) use ($colCount): array {
+            return array_pad($cells, $colCount, '');
+        };
+
+        $rows = [];
+        $merges = ["A1:{$lastCol}1", "A2:{$lastCol}2"];
+
+        $rows[] = $padRow([
+            '<style font-size="14" height="24"><center><middle><b>' . ExcelSecurity::rawCell('Jadwal Mengajar ' . $dosen->full_name) . '</b></middle></center></style>',
+        ]);
+        $rows[] = $padRow([
+            '<style font-size="11" height="20"><center><middle><b>' . ExcelSecurity::rawCell('Semester ' . ucfirst(strtolower($periode->semester)) . ' Tahun Ajaran ' . $periode->tahun_ajaran) . '</b></middle></center></style>',
+        ]);
+        $rows[] = $padRow(['<style height="8"></style>']);
+
+        $headerStyle = 'bgcolor="#D9E1F2" color="#000000" font-size="10" border="thin#808080" height="22"';
+        $headerRow = [
+            "<style {$headerStyle}><center><middle><b>Hari</b></middle></center></style>",
+            "<style {$headerStyle}><center><middle><b>Ruangan / Lab</b></middle></center></style>",
+            "<style {$headerStyle}><center><middle><b>Mata Kuliah</b></middle></center></style>",
+            "<style {$headerStyle}><center><middle><b>Waktu Mulai</b></middle></center></style>",
+            "<style {$headerStyle}><center><middle><b>Waktu Berakhir</b></middle></center></style>",
+            "<style {$headerStyle}><center><middle><b>Semester</b></middle></center></style>",
+            "<style {$headerStyle}><center><middle><b>Program Studi</b></middle></center></style>",
+        ];
+        if ($hasCatatan) {
+            $headerRow[] = "<style {$headerStyle}><center><middle><b>Catatan</b></middle></center></style>";
+        }
+        $rows[] = $headerRow;
+
+        $currentRow = 5;
+        $dataRowIdx = 0;
+        foreach (JadwalLab::HARI_ORDER as $hari) {
+            $dayEntries = $mySchedule['days'][$hari] ?? [];
+            if (empty($dayEntries)) {
+                continue;
+            }
+
+            $hariCell = '<style bgcolor="#FFFFFF" color="#000000" font-size="10" border="thin#BFBFBF"><center><middle><b>' . ExcelSecurity::rawCell($hari) . '</b></middle></center></style>';
+            $startMerge = $currentRow;
+
+            foreach ($dayEntries as $idx => $item) {
+                $rowBg = $dataRowIdx % 2 === 0 ? '#FFFFFF' : '#EEF3FA';
+                $row = [
+                    $idx === 0 ? $hariCell : '<style bgcolor="#FFFFFF" border="thin#BFBFBF"></style>',
+                    "<style bgcolor=\"{$rowBg}\" color=\"#000000\" font-size=\"10\" border=\"thin#BFBFBF\"><center><middle><b>" . ExcelSecurity::rawCell($item->nama_ruangan, '-') . '</b></middle></center></style>',
+                    "<style bgcolor=\"{$rowBg}\" color=\"#000000\" font-size=\"10\" border=\"thin#BFBFBF\"><middle><wraptext>" . ExcelSecurity::rawCell($item->mata_kuliah, '-') . '</wraptext></middle></style>',
+                    "<style bgcolor=\"{$rowBg}\" color=\"#000000\" font-size=\"10\" border=\"thin#BFBFBF\"><center><middle>" . ExcelSecurity::rawCell($item->waktu_mulai, '-') . '</middle></center></style>',
+                    "<style bgcolor=\"{$rowBg}\" color=\"#000000\" font-size=\"10\" border=\"thin#BFBFBF\"><center><middle>" . ExcelSecurity::rawCell($item->waktu_berakhir, '-') . '</middle></center></style>',
+                    "<style bgcolor=\"{$rowBg}\" color=\"#000000\" font-size=\"10\" border=\"thin#BFBFBF\"><center><middle>" . ExcelSecurity::rawCell($item->semester ?: '-', '-') . '</middle></center></style>',
+                    "<style bgcolor=\"{$rowBg}\" color=\"#000000\" font-size=\"10\" border=\"thin#BFBFBF\"><center><middle>" . ExcelSecurity::rawCell($item->program_studi ?: '-', '-') . '</middle></center></style>',
+                ];
+                if ($hasCatatan) {
+                    $row[] = "<style bgcolor=\"{$rowBg}\" color=\"#000000\" font-size=\"10\" border=\"thin#BFBFBF\"><middle><wraptext>" . ExcelSecurity::rawCell($item->catatan ?: '', '') . '</wraptext></middle></style>';
+                }
+                $rows[] = $row;
+                $currentRow++;
+                $dataRowIdx++;
+            }
+
+            if (count($dayEntries) > 1) {
+                $merges[] = 'A' . $startMerge . ':A' . ($currentRow - 1);
+            }
+        }
+
+        $this->appendJamKeLegendRows($rows, $padRow);
+
+        $xlsx = (new SimpleXLSXGen())
+            ->setDefaultFont('Calibri')
+            ->setDefaultFontSize(10);
+
+        $xlsx->addSheet($rows, 'Jadwal Mengajar Saya');
+        foreach ($merges as $range) {
+            $xlsx->mergeCells($range);
+        }
+        $xlsx->setColWidth(1, 14)
+            ->setColWidth(2, 18)
+            ->setColWidth(3, 38)
+            ->setColWidth(4, 15)
+            ->setColWidth(5, 16)
+            ->setColWidth(6, 12)
+            ->setColWidth(7, 16);
+
+        if ($hasCatatan) {
+            $xlsx->setColWidth(8, 26);
+        }
+
+        $fileName = ExcelSecurity::safeFileName(
+            'Jadwal_Mengajar_' . $dosen->nama_asli . '_' . str_replace('/', '-', $periode->tahun_ajaran),
+            'xlsx'
+        );
+
+        return response((string) $xlsx, 200, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
+            'Cache-Control' => 'max-age=0',
+        ]);
+    }
+
+    /**
+     * Tambahkan blok legenda Jam Ke pada sheet Excel jadwal lab.
+     */
+    private function appendJamKeLegendRows(array &$rows, callable $padRow): void
+    {
+        $rows[] = $padRow(['']);
+        $rows[] = $padRow(['', '<b>Hari Senin s/d Kamis</b>', '', '<b>Hari Jum\'at</b>']);
+        $rows[] = $padRow(['', '<b>Jam ke</b>', '', '<b>Jam ke</b>']);
+
+        foreach (range(1, 5) as $jam) {
+            $map = JadwalLab::JAM_KE_MAP[$jam];
+            $seninText = $jam . ' : ' . $map['start'] . ' - ' . $map['end'];
+            $jumatText = $jam <= 4 ? ('<raw>' . $seninText . '</raw>') : '';
+            $rows[] = $padRow([
+                '',
+                '<raw>' . $seninText . '</raw>',
+                '',
+                $jumatText,
+            ]);
+        }
+
+        $rows[] = $padRow(['', '<b>ISTIRAHAT (12.10-13.00)</b>']);
+
+        foreach (range(6, 10) as $jam) {
+            $map = JadwalLab::JAM_KE_MAP[$jam];
+            $seninText = $jam . ' : ' . $map['start'] . ' - ' . $map['end'];
+            $rows[] = $padRow([
+                '',
+                '<raw>' . $seninText . '</raw>',
+            ]);
+        }
     }
 }

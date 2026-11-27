@@ -469,4 +469,150 @@ class JadwalLabTest extends TestCase
         $this->actingAs($this->plp)->delete(route('jadwal-lab.periode.destroy', $periode->id))->assertRedirect();
         $this->assertDatabaseMissing('periode_jadwals', ['id' => $periode->id]);
     }
+
+    public function test_dosen_sees_consolidated_personal_schedule_and_can_export_mine(): void
+    {
+        $dosenTaufik = User::create([
+            'role_id' => $this->dosenLusiana->role_id,
+            'nama_asli' => 'Taufikurrahman',
+            'gelar_belakang' => 'S.ST., M.Tr.Kom.',
+            'nip' => '198801012015121002',
+            'email' => 'taufik@test.com',
+            'password' => bcrypt('password'),
+            'is_verified' => true,
+            'is_active' => true,
+        ]);
+
+        $periode = PeriodeJadwal::create([
+            'nama_periode' => 'Semester Genap 2025/2026',
+            'semester' => 'Genap',
+            'tahun_ajaran' => '2025/2026',
+            'is_active' => true,
+        ]);
+
+        // Matkul 1 Lusiana (by dosen_id) di Lab L-201
+        JadwalLab::create([
+            'periode_jadwal_id' => $periode->id,
+            'lab_id' => $this->lab201->id,
+            'nama_ruangan' => 'Lab L-201',
+            'hari' => 'Senin',
+            'jam_ke_mulai' => 1,
+            'jam_ke_selesai' => 2,
+            'waktu_mulai' => '08.00',
+            'waktu_berakhir' => '09.40',
+            'mata_kuliah' => 'Basis Data Lanjut',
+            'jenis' => 'Praktek',
+            'kelas' => '2D3TI',
+            'semester' => '4',
+            'program_studi' => 'TI',
+            'dosen_id' => $this->dosenLusiana->id,
+            'nama_dosen' => 'Lusiana Agustien',
+            'catatan' => 'Bawa modul',
+        ]);
+
+        // Matkul 2 Lusiana (by fallback nama_dosen saat dosen_id null) di Lab L-203
+        JadwalLab::create([
+            'periode_jadwal_id' => $periode->id,
+            'lab_id' => $this->lab203->id,
+            'nama_ruangan' => 'Lab L-203',
+            'hari' => 'Rabu',
+            'jam_ke_mulai' => 3,
+            'jam_ke_selesai' => 4,
+            'waktu_mulai' => '09.40',
+            'waktu_berakhir' => '11.20',
+            'mata_kuliah' => 'Konsep Pemrograman',
+            'jenis' => 'Teori & Praktek',
+            'kelas' => '1D3TI',
+            'semester' => '2',
+            'program_studi' => 'TI',
+            'dosen_id' => null,
+            'nama_dosen' => 'Lusiana Agustien',
+            'catatan' => '=SUM(1+1)',
+        ]);
+
+        // Matkul dosen lain (Taufik) di Lab L-202
+        JadwalLab::create([
+            'periode_jadwal_id' => $periode->id,
+            'lab_id' => null,
+            'nama_ruangan' => 'Lab L-202',
+            'hari' => 'Selasa',
+            'jam_ke_mulai' => 1,
+            'jam_ke_selesai' => 2,
+            'waktu_mulai' => '08.00',
+            'waktu_berakhir' => '09.40',
+            'mata_kuliah' => 'Pemrograman Web',
+            'jenis' => 'Praktek',
+            'kelas' => '2D4TI',
+            'semester' => '4',
+            'program_studi' => 'TI',
+            'dosen_id' => $dosenTaufik->id,
+            'nama_dosen' => 'Taufikurrahman',
+        ]);
+
+        // 1. Dosen melihat tab Jadwal Saya (1 tabel konsolidasi hanya matkul yang diampu) + semua tab ruangan
+        $response = $this->actingAs($this->dosenLusiana)->get(route('jadwal-lab.index'));
+        $response->assertStatus(200);
+        $response->assertSee('id="my-schedule-tab"', false);
+        $response->assertSee('id="my-schedule"', false);
+        $response->assertSee('Pemrograman Web'); // tetap terlihat di tab semua ruangan
+
+        $html = $response->getContent();
+        $startPos = strpos($html, 'id="my-schedule"');
+        $endPos = strpos($html, 'id="room-', (int) $startPos);
+        $this->assertNotFalse($startPos);
+        $this->assertNotFalse($endPos);
+        $myPaneHtml = substr($html, $startPos, $endPos - $startPos);
+
+        $this->assertStringContainsString('Basis Data Lanjut', $myPaneHtml);
+        $this->assertStringContainsString('Lab L-201', $myPaneHtml);
+        $this->assertStringContainsString('Konsep Pemrograman', $myPaneHtml);
+        $this->assertStringContainsString('Lab L-203', $myPaneHtml);
+        $this->assertStringNotContainsString('Pemrograman Web', $myPaneHtml);
+        $this->assertStringNotContainsString('Lab L-202', $myPaneHtml);
+
+        // 2. Non-dosen tidak melihat tab Jadwal Saya dan ditolak pada scope=mine
+        foreach ([$this->mahasiswa, $this->admin] as $nonDosen) {
+            $this->actingAs($nonDosen)->get(route('jadwal-lab.index'))
+                ->assertStatus(200)
+                ->assertDontSee('id="my-schedule-tab"', false);
+
+            $this->actingAs($nonDosen)
+                ->get(route('jadwal-lab.export-pdf', ['periode_id' => $periode->id, 'scope' => 'mine']))
+                ->assertStatus(403);
+
+            $this->actingAs($nonDosen)
+                ->get(route('jadwal-lab.export-excel', ['periode_id' => $periode->id, 'scope' => 'mine']))
+                ->assertStatus(403);
+        }
+
+        // 3. Dosen bisa export PDF & Excel 1 tabel khusus jadwal mengajar sendiri (?scope=mine)
+        $pdfResp = $this->actingAs($this->dosenLusiana)
+            ->get(route('jadwal-lab.export-pdf', ['periode_id' => $periode->id, 'scope' => 'mine']));
+        $pdfResp->assertStatus(200);
+        $this->assertStringContainsString('application/pdf', (string) $pdfResp->headers->get('content-type'));
+
+        $excelResp = $this->actingAs($this->dosenLusiana)
+            ->get(route('jadwal-lab.export-excel', ['periode_id' => $periode->id, 'scope' => 'mine']));
+        $excelResp->assertStatus(200);
+        $this->assertStringContainsString(
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            (string) $excelResp->headers->get('content-type')
+        );
+
+        $xlsx = SimpleXLSX::parseData($excelResp->getContent());
+        $this->assertNotFalse($xlsx);
+        $sheetNames = $xlsx->sheetNames();
+        $this->assertSame(['Jadwal Mengajar Saya'], $sheetNames);
+
+        $rows = $xlsx->rows(0);
+        $this->assertSame('Ruangan / Lab', $rows[3][1]);
+        $this->assertSame('Lab L-201', $rows[4][1]);
+        $this->assertSame('Basis Data Lanjut', $rows[4][2]);
+        $this->assertSame('Lab L-203', $rows[5][1]);
+        $this->assertSame('Konsep Pemrograman', $rows[5][2]);
+        $this->assertSame("'=SUM(1+1)", $rows[5][7]);
+
+        $flatCells = collect($rows)->flatten()->implode(' ');
+        $this->assertStringNotContainsString('Pemrograman Web', $flatCells);
+    }
 }
