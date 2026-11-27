@@ -134,6 +134,72 @@
             border-color: {{ $globalAccentColor }} !important;
             color: #ffffff !important;
         }
+        .app-header-title {
+            line-height: 1.25;
+        }
+        .burger-btn {
+            flex-shrink: 0;
+        }
+        .app-notif-dropdown {
+            width: 360px;
+            max-width: calc(100vw - 24px);
+            max-height: 420px;
+            overflow-y: auto;
+            border-radius: 12px;
+        }
+        .scroll-cue-wrapper {
+            position: relative;
+        }
+        .scroll-cue-chevron {
+            display: none;
+        }
+        @media (max-width: 767.98px) {
+            .app-header-title {
+                font-size: 1.15rem;
+            }
+            .scroll-cue-wrapper.has-scroll-right:not(.has-scroll-left) .scroll-cue-list {
+                -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent 100%);
+                mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent 100%);
+            }
+            .scroll-cue-wrapper.has-scroll-left:not(.has-scroll-right) .scroll-cue-list {
+                -webkit-mask-image: linear-gradient(to right, transparent 0, #000 24px);
+                mask-image: linear-gradient(to right, transparent 0, #000 24px);
+            }
+            .scroll-cue-wrapper.has-scroll-left.has-scroll-right .scroll-cue-list {
+                -webkit-mask-image: linear-gradient(to right, transparent 0, #000 24px, #000 calc(100% - 32px), transparent 100%);
+                mask-image: linear-gradient(to right, transparent 0, #000 24px, #000 calc(100% - 32px), transparent 100%);
+            }
+            .scroll-cue-wrapper.has-scroll-right .scroll-cue-chevron {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                position: absolute;
+                right: 0;
+                top: calc(50% - 2px);
+                transform: translateY(-50%);
+                width: 24px;
+                height: 24px;
+                border-radius: 999px;
+                background-color: var(--bs-body-bg, #ffffff);
+                color: var(--bs-primary, #435ebe);
+                border: 1px solid var(--bs-border-color, #dee2e6);
+                box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+                font-size: 0.75rem;
+                z-index: 2;
+                cursor: pointer;
+            }
+        }
+        @media (max-width: 575.98px) {
+            .app-header-title {
+                font-size: 1.05rem;
+            }
+            #notificationRecommendationPrompt {
+                left: 12px !important;
+                right: 12px !important;
+                bottom: 12px !important;
+                max-width: none !important;
+            }
+        }
     </style>
 </head>
 
@@ -166,15 +232,15 @@
         @include('layouts.sidebar')
         <div id="main">
             <header class="mb-3">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div class="d-flex align-items-center">
+                <div class="d-flex justify-content-between align-items-center gap-2">
+                    <div class="d-flex align-items-center" style="min-width: 0;">
                         <a href="#" class="burger-btn d-block {{ ($globalSidebarDefault ?? 'expanded') === 'collapsed' ? '' : 'd-xl-none' }}">
                             <i class="bi bi-justify fs-3"></i>
                         </a>
-                        <h3 class="mb-0 ms-3">{{ $title }}</h3>
+                        <h3 class="mb-0 ms-2 ms-sm-3 app-header-title text-truncate" title="{{ $title }}">{{ $title }}</h3>
                     </div>
 
-                    <div class="d-flex align-items-center gap-3">
+                    <div class="d-flex align-items-center gap-2 gap-sm-3 flex-shrink-0">
                         {{-- Notification Bell --}}
                         <div class="dropdown" id="notificationDropdown">
                             <a href="#" class="position-relative" data-bs-toggle="dropdown"
@@ -186,8 +252,7 @@
                                     0
                                 </span>
                             </a>
-                            <div class="dropdown-menu dropdown-menu-end shadow-lg p-0"
-                                style="width: 360px; max-height: 420px; overflow-y: auto; border-radius: 12px;">
+                            <div class="dropdown-menu dropdown-menu-end shadow-lg p-0 app-notif-dropdown">
                                 <div
                                     class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom">
                                     <h6 class="mb-0 fw-bold">Notifikasi</h6>
@@ -295,6 +360,42 @@
                 document.addEventListener('DOMContentLoaded', enforceInitialSidebarState);
             } else {
                 enforceInitialSidebarState();
+            }
+
+            function initScrollCueWrappers() {
+                document.querySelectorAll('.scroll-cue-wrapper').forEach(function(wrapper) {
+                    const list = wrapper.querySelector('.scroll-cue-list');
+                    if (!list) return;
+
+                    function updateCue() {
+                        if (window.innerWidth >= 768) {
+                            wrapper.classList.remove('has-scroll-left', 'has-scroll-right');
+                            return;
+                        }
+                        const maxScroll = list.scrollWidth - list.clientWidth;
+                        wrapper.classList.toggle('has-scroll-left', list.scrollLeft > 6);
+                        wrapper.classList.toggle('has-scroll-right', maxScroll - list.scrollLeft > 6);
+                    }
+
+                    list.addEventListener('scroll', updateCue, { passive: true });
+                    window.addEventListener('resize', updateCue);
+
+                    const chevron = wrapper.querySelector('.scroll-cue-chevron');
+                    if (chevron) {
+                        chevron.addEventListener('click', function() {
+                            list.scrollBy({ left: 150, behavior: 'smooth' });
+                        });
+                    }
+
+                    updateCue();
+                    setTimeout(updateCue, 150);
+                });
+            }
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initScrollCueWrappers);
+            } else {
+                initScrollCueWrappers();
             }
         })();
     </script>

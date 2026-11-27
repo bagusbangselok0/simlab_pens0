@@ -19,32 +19,178 @@
         text-align: center;
         width: 100px;
     }
-    .nav-pills .nav-link.room-tab {
-        border: 1px solid rgba(0, 0, 0, 0.08);
+    .nav-pills .nav-link.room-tab:not(.active) {
+        color: #334155;
+        background-color: #f8fafc;
+        border: 1px solid #e2e8f0;
     }
-    html[data-bs-theme="dark"] .nav-pills .nav-link.room-tab {
-        border-color: rgba(255, 255, 255, 0.12);
+    .nav-pills .nav-link.room-tab:not(.active):hover {
+        color: #0f172a;
+        background-color: #eef2f7;
+    }
+    .nav-pills .nav-link.room-tab.active {
+        border: 1px solid transparent;
+    }
+    .jadwal-time-text {
+        color: var(--bs-primary, #435ebe);
+    }
+    .jadwal-chip-accent {
+        background-color: rgba(var(--bs-primary-rgb), 0.1);
+        color: var(--bs-primary, #435ebe);
+        border: 1px solid rgba(var(--bs-primary-rgb), 0.24);
+    }
+    .jadwal-chip-info {
+        background-color: #e0f2fe;
+        color: #0369a1;
+        border: 1px solid #bae6fd;
+    }
+    .jadwal-chip-kelas {
+        background-color: #eef2ff;
+        color: #3730a3;
+        border: 1px solid #c7d2fe;
+    }
+    .jadwal-chip-meta {
+        background-color: #f1f5f9;
+        color: #475569;
+        border: 1px solid #cbd5e1;
+    }
+    .jadwal-badge-tp {
+        background-color: #0284c7;
+        color: #ffffff;
+    }
+    .jadwal-subtext {
+        color: #475569;
+    }
+    .jadwal-istirahat-text {
+        color: #b45309;
+    }
+    .jadwal-empty-box {
+        background-color: #f8fafc;
+        border: 1px dashed #cbd5e1;
+        border-radius: 0.75rem;
     }
     .mobile-day-group {
-        border: 1px solid var(--bs-border-color, #dee2e6);
+        border: 1px solid #e2e8f0;
         border-radius: 0.75rem;
         overflow: hidden;
-        background-color: var(--bs-body-bg, #ffffff);
+        background-color: #ffffff;
+    }
+    .mobile-day-group.is-today {
+        border-color: var(--bs-primary, #435ebe);
+        box-shadow: 0 2px 8px rgba(var(--bs-primary-rgb), 0.12);
     }
     .mobile-day-header {
-        background-color: rgba(var(--bs-primary-rgb), 0.08);
+        background-color: #f8fafc;
+        color: #1e293b;
         padding: 0.6rem 0.85rem;
-        border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+        border-bottom: 1px solid #e2e8f0;
+    }
+    .mobile-day-group.is-today .mobile-day-header {
+        background-color: rgba(var(--bs-primary-rgb), 0.1);
     }
     .mobile-session-card {
-        border: 1px solid var(--bs-border-color, #dee2e6);
+        border: 1px solid #e2e8f0;
         border-radius: 0.6rem;
         padding: 0.75rem;
-        background-color: var(--bs-tertiary-bg, rgba(0, 0, 0, 0.02));
+        background-color: #f8fafc;
+        color: #0f172a;
     }
     .mobile-session-card.conflict {
-        border-color: var(--bs-danger, #dc3545);
-        background-color: rgba(var(--bs-danger-rgb), 0.08);
+        border-color: #ef4444;
+        background-color: #fef2f2;
+    }
+
+    /* Penyesuaian kontras khusus Dark Mode (Mazer #1e1e2d) */
+    html[data-bs-theme="dark"] .nav-pills .nav-link.room-tab:not(.active) {
+        color: #cbd5e1 !important;
+        background-color: rgba(255, 255, 255, 0.04);
+        border-color: rgba(255, 255, 255, 0.12);
+    }
+    html[data-bs-theme="dark"] .nav-pills .nav-link.room-tab:not(.active):hover {
+        color: #f8fafc !important;
+        background-color: rgba(255, 255, 255, 0.09);
+    }
+    html[data-bs-theme="dark"] .jadwal-table thead th {
+        background-color: #252538;
+        color: #e2e8f0;
+        border-color: rgba(255, 255, 255, 0.1);
+    }
+    html[data-bs-theme="dark"] .jadwal-table td {
+        border-color: rgba(255, 255, 255, 0.08);
+    }
+    html[data-bs-theme="dark"] .hari-cell {
+        background-color: rgba(255, 255, 255, 0.03);
+        color: #f1f5f9;
+    }
+    html[data-bs-theme="dark"] .jadwal-time-text {
+        color: #93c5fd !important;
+    }
+    html[data-bs-theme="dark"] .jadwal-chip-accent {
+        background-color: rgba(99, 102, 241, 0.2);
+        color: #bfdbfe !important;
+        border-color: rgba(147, 197, 253, 0.32);
+    }
+    html[data-bs-theme="dark"] .jadwal-chip-info {
+        background-color: rgba(14, 165, 233, 0.18);
+        color: #7dd3fc;
+        border-color: rgba(125, 211, 252, 0.28);
+    }
+    html[data-bs-theme="dark"] .jadwal-chip-kelas {
+        background-color: rgba(129, 140, 248, 0.18);
+        color: #e0e7ff;
+        border-color: rgba(129, 140, 248, 0.34);
+    }
+    html[data-bs-theme="dark"] .jadwal-chip-meta {
+        background-color: rgba(148, 163, 184, 0.14);
+        color: #cbd5e1;
+        border-color: rgba(148, 163, 184, 0.26);
+    }
+    html[data-bs-theme="dark"] .jadwal-badge-tp {
+        background-color: #0369a1;
+        color: #e0f2fe;
+    }
+    html[data-bs-theme="dark"] .jadwal-subtext {
+        color: #94a3b8;
+    }
+    html[data-bs-theme="dark"] .jadwal-istirahat-text {
+        color: #fbbf24;
+    }
+    html[data-bs-theme="dark"] .jadwal-empty-box {
+        background-color: #181826;
+        border-color: rgba(255, 255, 255, 0.15);
+        color: #cbd5e1;
+    }
+    html[data-bs-theme="dark"] .mobile-day-group {
+        background-color: #181826;
+        border-color: rgba(255, 255, 255, 0.09);
+    }
+    html[data-bs-theme="dark"] .mobile-day-group.is-today {
+        border-color: #60a5fa;
+        box-shadow: 0 0 0 1px rgba(96, 165, 250, 0.28);
+    }
+    html[data-bs-theme="dark"] .mobile-day-header {
+        background-color: #222236;
+        color: #f1f5f9;
+        border-bottom-color: rgba(255, 255, 255, 0.08);
+    }
+    html[data-bs-theme="dark"] .mobile-day-group.is-today .mobile-day-header {
+        background-color: rgba(59, 130, 246, 0.2);
+    }
+    html[data-bs-theme="dark"] .mobile-day-header .btn-quick-add {
+        color: #93c5fd !important;
+        border-color: rgba(147, 197, 253, 0.45) !important;
+    }
+    html[data-bs-theme="dark"] .mobile-session-card {
+        background-color: #232336;
+        border-color: rgba(255, 255, 255, 0.08);
+        color: #f1f5f9;
+    }
+    html[data-bs-theme="dark"] .mobile-session-card .border-top {
+        border-color: rgba(255, 255, 255, 0.08) !important;
+    }
+    html[data-bs-theme="dark"] .mobile-session-card.conflict {
+        border-color: rgba(248, 113, 113, 0.55);
+        background-color: rgba(239, 68, 68, 0.14);
     }
     @media (max-width: 767.98px) {
         .jadwal-room-tabs {
@@ -96,6 +242,16 @@
 @section('content')
 @php
     $canManage = Auth::check() && in_array(Auth::user()->role->slug, ['admin', 'plp'], true);
+    $isoDayMap = [
+        1 => 'Senin',
+        2 => 'Selasa',
+        3 => 'Rabu',
+        4 => 'Kamis',
+        5 => "Jum'at",
+    ];
+    $todayHari = ($selectedPeriode && $selectedPeriode->is_active)
+        ? ($isoDayMap[(int) now()->dayOfWeekIso] ?? null)
+        : null;
 @endphp
 
 <section class="section">
@@ -269,45 +425,50 @@
     @if ($selectedPeriode && !empty($roomsData))
         <div class="card">
             <div class="card-header pb-2">
-                <ul class="nav nav-pills gap-2 flex-md-wrap jadwal-room-tabs" id="roomTabs" role="tablist">
-                    @if ($isDosen)
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link room-tab {{ $activeTab === 'mine' ? 'active' : '' }}"
-                                    id="my-schedule-tab"
-                                    data-bs-toggle="tab"
-                                    data-bs-target="#my-schedule"
-                                    data-scope="mine"
-                                    type="button" role="tab">
-                                <i class="bi bi-person-workspace me-1"></i>Jadwal Saya
-                                <span class="badge {{ $activeTab === 'mine' ? 'bg-white text-dark' : 'bg-primary' }} ms-1">
-                                    {{ $mySchedule['total'] }}
-                                </span>
-                            </button>
-                        </li>
-                        <li class="nav-item d-none d-md-flex align-items-center" aria-hidden="true">
-                            <span class="vr mx-1 my-1"></span>
-                        </li>
-                    @endif
-                    @foreach ($roomsData as $roomName => $roomInfo)
-                        @php
-                            $tabId = 'room-' . \Illuminate\Support\Str::slug($roomName);
-                            $isRoomActive = $activeTab === 'room' && $activeRoom === $roomName;
-                        @endphp
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link room-tab {{ $isRoomActive ? 'active' : '' }}"
-                                    id="{{ $tabId }}-tab"
-                                    data-bs-toggle="tab"
-                                    data-bs-target="#{{ $tabId }}"
-                                    data-room-name="{{ $roomName }}"
-                                    type="button" role="tab">
-                                {{ $roomName }}
-                                <span class="badge {{ $isRoomActive ? 'bg-white text-dark' : 'bg-secondary' }} ms-1">
-                                    {{ $roomInfo['total'] }}
-                                </span>
-                            </button>
-                        </li>
-                    @endforeach
-                </ul>
+                <div class="scroll-cue-wrapper">
+                    <ul class="nav nav-pills gap-2 flex-md-wrap jadwal-room-tabs scroll-cue-list" id="roomTabs" role="tablist">
+                        @if ($isDosen)
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link room-tab {{ $activeTab === 'mine' ? 'active' : '' }}"
+                                        id="my-schedule-tab"
+                                        data-bs-toggle="tab"
+                                        data-bs-target="#my-schedule"
+                                        data-scope="mine"
+                                        type="button" role="tab">
+                                    <i class="bi bi-person-workspace me-1"></i>Jadwal Saya
+                                    <span class="badge {{ $activeTab === 'mine' ? 'bg-white text-dark' : 'bg-primary' }} ms-1">
+                                        {{ $mySchedule['total'] }}
+                                    </span>
+                                </button>
+                            </li>
+                            <li class="nav-item d-none d-md-flex align-items-center" aria-hidden="true">
+                                <span class="vr mx-1 my-1"></span>
+                            </li>
+                        @endif
+                        @foreach ($roomsData as $roomName => $roomInfo)
+                            @php
+                                $tabId = 'room-' . \Illuminate\Support\Str::slug($roomName);
+                                $isRoomActive = $activeTab === 'room' && $activeRoom === $roomName;
+                            @endphp
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link room-tab {{ $isRoomActive ? 'active' : '' }}"
+                                        id="{{ $tabId }}-tab"
+                                        data-bs-toggle="tab"
+                                        data-bs-target="#{{ $tabId }}"
+                                        data-room-name="{{ $roomName }}"
+                                        type="button" role="tab">
+                                    {{ $roomName }}
+                                    <span class="badge {{ $isRoomActive ? 'bg-white text-dark' : 'bg-secondary' }} ms-1">
+                                        {{ $roomInfo['total'] }}
+                                    </span>
+                                </button>
+                            </li>
+                        @endforeach
+                    </ul>
+                    <button type="button" class="scroll-cue-chevron" aria-label="Geser tab ruangan ke kanan">
+                        <i class="bi bi-chevron-right"></i>
+                    </button>
+                </div>
             </div>
 
             <div class="card-body">
@@ -318,27 +479,27 @@
                             <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
                                 <div>
                                     <h5 class="mb-0 fw-bold">
-                                        <i class="bi bi-person-workspace text-primary me-1"></i> Jadwal Mengajar Saya
+                                        <i class="bi bi-person-workspace jadwal-time-text me-1"></i> Jadwal Mengajar Saya
                                     </h5>
                                     <small class="text-muted">
                                         {{ Auth::user()->full_name }} — Semester {{ $selectedPeriode->semester }} Tahun Ajaran {{ $selectedPeriode->tahun_ajaran }}
                                     </small>
                                 </div>
                                 <div class="d-flex flex-wrap gap-2 align-items-center">
-                                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2">
+                                    <span class="badge jadwal-chip-accent px-3 py-2">
                                         {{ $mySchedule['total'] }} Sesi Mengajar
                                     </span>
-                                    <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle px-3 py-2">
+                                    <span class="badge jadwal-chip-info px-3 py-2">
                                         {{ $mySchedule['rooms_count'] }} Ruangan
                                     </span>
                                 </div>
                             </div>
 
                             @if ($mySchedule['total'] === 0)
-                                <div class="alert alert-light border text-center py-4 mb-0">
-                                    <i class="bi bi-calendar2-check fs-2 text-muted d-block mb-2"></i>
+                                <div class="jadwal-empty-box text-center py-4 px-3 mb-0">
+                                    <i class="bi bi-calendar2-check fs-2 jadwal-subtext d-block mb-2"></i>
                                     <h6 class="fw-bold mb-1">Belum Ada Mata Kuliah yang Anda Ampu di Periode Ini</h6>
-                                    <p class="text-muted small mb-0">
+                                    <p class="jadwal-subtext small mb-0">
                                         Anda tetap dapat melihat jadwal seluruh mata kuliah per ruangan melalui tab ruangan di atas.
                                     </p>
                                 </div>
@@ -369,7 +530,7 @@
                                                                 <td class="hari-cell" rowspan="{{ count($dayItems) }}">{{ $hari }}</td>
                                                             @endif
                                                             <td class="text-center text-nowrap">
-                                                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle fw-semibold">
+                                                                <span class="badge jadwal-chip-accent fw-semibold">
                                                                     {{ $item->nama_ruangan }}
                                                                 </span>
                                                             </td>
@@ -385,14 +546,14 @@
                                                                         @php
                                                                             $jenisClass = match($item->jenis) {
                                                                                 'Praktek' => 'bg-primary',
-                                                                                'Teori & Praktek' => 'bg-info text-dark',
+                                                                                'Teori & Praktek' => 'jadwal-badge-tp',
                                                                                 default => 'bg-secondary',
                                                                             };
                                                                         @endphp
                                                                         <span class="badge {{ $jenisClass }}" style="font-size: 0.72rem;">{{ $item->jenis }}</span>
                                                                     @endif
                                                                     @if ($item->kelas)
-                                                                        <span class="badge bg-light text-dark border" style="font-size: 0.72rem;">{{ $item->kelas }}</span>
+                                                                        <span class="badge jadwal-chip-kelas" style="font-size: 0.72rem;">{{ $item->kelas }}</span>
                                                                     @endif
                                                                 </div>
                                                             </td>
@@ -412,11 +573,19 @@
                                 {{-- Tampilan Mobile (Kartu per Hari) --}}
                                 <div class="d-md-none d-flex flex-column gap-3">
                                     @foreach (\App\Models\JadwalLab::HARI_ORDER as $hari)
-                                        @php $dayItems = $mySchedule['days'][$hari] ?? []; @endphp
+                                        @php
+                                            $dayItems = $mySchedule['days'][$hari] ?? [];
+                                            $isToday = $todayHari === $hari;
+                                        @endphp
                                         @if (!empty($dayItems))
-                                            <div class="mobile-day-group">
+                                            <div class="mobile-day-group {{ $isToday ? 'is-today' : '' }}">
                                                 <div class="mobile-day-header d-flex justify-content-between align-items-center">
-                                                    <span class="fw-bold">{{ $hari }}</span>
+                                                    <div class="d-flex align-items-center gap-2">
+                                                        <span class="fw-bold">{{ $hari }}</span>
+                                                        @if ($isToday)
+                                                            <span class="badge bg-warning text-dark">Hari Ini</span>
+                                                        @endif
+                                                    </div>
                                                     <span class="badge bg-primary">{{ count($dayItems) }} sesi</span>
                                                 </div>
                                                 <div class="p-2 d-flex flex-column gap-2">
@@ -424,10 +593,10 @@
                                                         @php $isConflict = isset($conflictIds[$item->id]); @endphp
                                                         <div class="mobile-session-card {{ $isConflict ? 'conflict' : '' }}">
                                                             <div class="d-flex justify-content-between align-items-center gap-2 mb-1">
-                                                                <span class="small fw-semibold text-primary text-nowrap">
+                                                                <span class="small fw-semibold jadwal-time-text text-nowrap">
                                                                     <i class="bi bi-clock me-1"></i>{{ $item->waktu_mulai }} – {{ $item->waktu_berakhir }}
                                                                 </span>
-                                                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle fw-semibold">
+                                                                <span class="badge jadwal-chip-accent fw-semibold">
                                                                     {{ $item->nama_ruangan }}
                                                                 </span>
                                                             </div>
@@ -442,24 +611,24 @@
                                                                     @php
                                                                         $jenisClass = match($item->jenis) {
                                                                             'Praktek' => 'bg-primary',
-                                                                            'Teori & Praktek' => 'bg-info text-dark',
+                                                                            'Teori & Praktek' => 'jadwal-badge-tp',
                                                                             default => 'bg-secondary',
                                                                         };
                                                                     @endphp
                                                                     <span class="badge {{ $jenisClass }}" style="font-size: 0.72rem;">{{ $item->jenis }}</span>
                                                                 @endif
                                                                 @if ($item->kelas)
-                                                                    <span class="badge bg-light text-dark border" style="font-size: 0.72rem;">{{ $item->kelas }}</span>
+                                                                    <span class="badge jadwal-chip-kelas" style="font-size: 0.72rem;">{{ $item->kelas }}</span>
                                                                 @endif
                                                                 @if ($item->semester)
-                                                                    <span class="badge bg-secondary-subtle text-secondary-emphasis border" style="font-size: 0.72rem;">Smt {{ $item->semester }}</span>
+                                                                    <span class="badge jadwal-chip-meta" style="font-size: 0.72rem;">Smt {{ $item->semester }}</span>
                                                                 @endif
                                                                 @if ($item->program_studi)
-                                                                    <span class="badge bg-secondary-subtle text-secondary-emphasis border" style="font-size: 0.72rem;">{{ $item->program_studi }}</span>
+                                                                    <span class="badge jadwal-chip-meta" style="font-size: 0.72rem;">{{ $item->program_studi }}</span>
                                                                 @endif
                                                             </div>
                                                             @if (trim((string) $item->catatan) !== '')
-                                                                <div class="small text-muted mt-2 pt-1 border-top">
+                                                                <div class="small jadwal-subtext mt-2 pt-1 border-top">
                                                                     <i class="bi bi-sticky me-1"></i>{{ $item->catatan }}
                                                                 </div>
                                                             @endif
@@ -548,14 +717,14 @@
                                                                         @php
                                                                             $jenisClass = match($item->jenis) {
                                                                                 'Praktek' => 'bg-primary',
-                                                                                'Teori & Praktek' => 'bg-info text-dark',
+                                                                                'Teori & Praktek' => 'jadwal-badge-tp',
                                                                                 default => 'bg-secondary',
                                                                             };
                                                                         @endphp
                                                                         <span class="badge {{ $jenisClass }}" style="font-size: 0.72rem;">{{ $item->jenis }}</span>
                                                                     @endif
                                                                     @if ($item->kelas)
-                                                                        <span class="badge bg-light text-dark border" style="font-size: 0.72rem;">{{ $item->kelas }}</span>
+                                                                        <span class="badge jadwal-chip-kelas" style="font-size: 0.72rem;">{{ $item->kelas }}</span>
                                                                     @endif
                                                                 </div>
                                                             </td>
@@ -593,11 +762,17 @@
                             {{-- Tampilan Mobile (Kartu per Hari) --}}
                             <div class="d-md-none d-flex flex-column gap-3">
                                 @foreach (\App\Models\JadwalLab::HARI_ORDER as $hari)
-                                    @php $dayItems = $roomInfo['days'][$hari] ?? []; @endphp
-                                    <div class="mobile-day-group">
+                                    @php
+                                        $dayItems = $roomInfo['days'][$hari] ?? [];
+                                        $isToday = $todayHari === $hari;
+                                    @endphp
+                                    <div class="mobile-day-group {{ $isToday ? 'is-today' : '' }}">
                                         <div class="mobile-day-header d-flex justify-content-between align-items-center">
-                                            <div class="d-flex align-items-center gap-2">
+                                            <div class="d-flex align-items-center gap-2 flex-wrap">
                                                 <span class="fw-bold">{{ $hari }}</span>
+                                                @if ($isToday)
+                                                    <span class="badge bg-warning text-dark">Hari Ini</span>
+                                                @endif
                                                 <span class="badge {{ empty($dayItems) ? 'bg-secondary' : 'bg-primary' }}">
                                                     {{ count($dayItems) }} sesi
                                                 </span>
@@ -610,18 +785,18 @@
                                             @endif
                                         </div>
                                         @if (empty($dayItems))
-                                            <div class="px-3 py-2 text-muted small fst-italic">Tidak ada jadwal</div>
+                                            <div class="px-3 py-2 jadwal-subtext small fst-italic">Tidak ada jadwal</div>
                                         @else
                                             <div class="p-2 d-flex flex-column gap-2">
                                                 @foreach ($dayItems as $item)
                                                     @php $isConflict = isset($conflictIds[$item->id]); @endphp
                                                     <div class="mobile-session-card {{ $isConflict ? 'conflict' : '' }}">
                                                         <div class="d-flex justify-content-between align-items-center gap-2 mb-1">
-                                                            <span class="small fw-semibold text-primary text-nowrap">
+                                                            <span class="small fw-semibold jadwal-time-text text-nowrap">
                                                                 <i class="bi bi-clock me-1"></i>{{ $item->waktu_mulai }} – {{ $item->waktu_berakhir }}
                                                             </span>
                                                             @if ($item->kelas)
-                                                                <span class="badge bg-light text-dark border" style="font-size: 0.72rem;">{{ $item->kelas }}</span>
+                                                                <span class="badge jadwal-chip-kelas" style="font-size: 0.72rem;">{{ $item->kelas }}</span>
                                                             @endif
                                                         </div>
                                                         <div class="fw-semibold mb-1">
@@ -635,24 +810,24 @@
                                                                 @php
                                                                     $jenisClass = match($item->jenis) {
                                                                         'Praktek' => 'bg-primary',
-                                                                        'Teori & Praktek' => 'bg-info text-dark',
+                                                                        'Teori & Praktek' => 'jadwal-badge-tp',
                                                                         default => 'bg-secondary',
                                                                     };
                                                                 @endphp
                                                                 <span class="badge {{ $jenisClass }}" style="font-size: 0.72rem;">{{ $item->jenis }}</span>
                                                             @endif
                                                             @if ($item->semester)
-                                                                <span class="badge bg-secondary-subtle text-secondary-emphasis border" style="font-size: 0.72rem;">Smt {{ $item->semester }}</span>
+                                                                <span class="badge jadwal-chip-meta" style="font-size: 0.72rem;">Smt {{ $item->semester }}</span>
                                                             @endif
                                                             @if ($item->program_studi)
-                                                                <span class="badge bg-secondary-subtle text-secondary-emphasis border" style="font-size: 0.72rem;">{{ $item->program_studi }}</span>
+                                                                <span class="badge jadwal-chip-meta" style="font-size: 0.72rem;">{{ $item->program_studi }}</span>
                                                             @endif
                                                         </div>
-                                                        <div class="small text-muted">
+                                                        <div class="small jadwal-subtext">
                                                             <i class="bi bi-person me-1"></i>{{ $item->display_dosen }}
                                                         </div>
                                                         @if (trim((string) $item->catatan) !== '')
-                                                            <div class="small text-muted mt-1">
+                                                            <div class="small jadwal-subtext mt-1">
                                                                 <i class="bi bi-sticky me-1"></i>{{ $item->catatan }}
                                                             </div>
                                                         @endif
@@ -692,7 +867,7 @@
                                 @foreach ([1, 2, 3, 4, 5] as $jam)
                                     <div class="col text-nowrap">{{ $jam }} : {{ \App\Models\JadwalLab::JAM_KE_MAP[$jam]['start'] }} - {{ \App\Models\JadwalLab::JAM_KE_MAP[$jam]['end'] }}</div>
                                 @endforeach
-                                <div class="col-12 fw-semibold text-warning-emphasis">ISTIRAHAT (12.10 - 13.00)</div>
+                                <div class="col-12 fw-semibold jadwal-istirahat-text">ISTIRAHAT (12.10 - 13.00)</div>
                                 @foreach ([6, 7, 8, 9, 10] as $jam)
                                     <div class="col text-nowrap">{{ $jam }} : {{ \App\Models\JadwalLab::JAM_KE_MAP[$jam]['start'] }} - {{ \App\Models\JadwalLab::JAM_KE_MAP[$jam]['end'] }}</div>
                                 @endforeach

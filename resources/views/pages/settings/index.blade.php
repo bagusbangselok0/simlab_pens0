@@ -128,36 +128,41 @@
         @endphp
 
         {{-- Navigasi Tab Pengaturan --}}
-        <ul class="nav nav-pills mb-4 gap-2 settings-nav-tabs" id="settingsTab" role="tablist">
-            <li class="nav-item" role="presentation">
-                <button class="nav-link {{ $activeTab === 'theme' ? 'active' : '' }} fw-semibold px-4 py-2" 
-                    id="tab-theme-btn" data-bs-toggle="pill" data-bs-target="#tab-theme" type="button" role="tab"
-                    aria-controls="tab-theme" aria-selected="{{ $activeTab === 'theme' ? 'true' : 'false' }}">
-                    <i class="bi bi-palette-fill me-2"></i>Tema & Tampilan
-                </button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link {{ $activeTab === 'notif' ? 'active' : '' }} fw-semibold px-4 py-2" 
-                    id="tab-notif-btn" data-bs-toggle="pill" data-bs-target="#tab-notif" type="button" role="tab"
-                    aria-controls="tab-notif" aria-selected="{{ $activeTab === 'notif' ? 'true' : 'false' }}">
-                    <i class="bi bi-bell-fill me-2"></i>Gateway & Notifikasi
-                </button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link {{ $activeTab === 'alat' ? 'active' : '' }} fw-semibold px-4 py-2" 
-                    id="tab-alat-btn" data-bs-toggle="pill" data-bs-target="#tab-alat" type="button" role="tab"
-                    aria-controls="tab-alat" aria-selected="{{ $activeTab === 'alat' ? 'true' : 'false' }}">
-                    <i class="bi bi-tools me-2"></i>Kebijakan Peminjaman Alat
-                </button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link {{ $activeTab === 'approval' ? 'active' : '' }} fw-semibold px-4 py-2" 
-                    id="tab-approval-btn" data-bs-toggle="pill" data-bs-target="#tab-approval" type="button" role="tab"
-                    aria-controls="tab-approval" aria-selected="{{ $activeTab === 'approval' ? 'true' : 'false' }}">
-                    <i class="bi bi-shield-check me-2"></i>Persetujuan Ruang Lab
-                </button>
-            </li>
-        </ul>
+        <div class="scroll-cue-wrapper mb-4">
+            <ul class="nav nav-pills mb-0 gap-2 settings-nav-tabs scroll-cue-list" id="settingsTab" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link {{ $activeTab === 'theme' ? 'active' : '' }} fw-semibold px-4 py-2" 
+                        id="tab-theme-btn" data-bs-toggle="pill" data-bs-target="#tab-theme" type="button" role="tab"
+                        aria-controls="tab-theme" aria-selected="{{ $activeTab === 'theme' ? 'true' : 'false' }}">
+                        <i class="bi bi-palette-fill me-2"></i>Tema & Tampilan
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link {{ $activeTab === 'notif' ? 'active' : '' }} fw-semibold px-4 py-2" 
+                        id="tab-notif-btn" data-bs-toggle="pill" data-bs-target="#tab-notif" type="button" role="tab"
+                        aria-controls="tab-notif" aria-selected="{{ $activeTab === 'notif' ? 'true' : 'false' }}">
+                        <i class="bi bi-bell-fill me-2"></i>Gateway & Notifikasi
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link {{ $activeTab === 'alat' ? 'active' : '' }} fw-semibold px-4 py-2" 
+                        id="tab-alat-btn" data-bs-toggle="pill" data-bs-target="#tab-alat" type="button" role="tab"
+                        aria-controls="tab-alat" aria-selected="{{ $activeTab === 'alat' ? 'true' : 'false' }}">
+                        <i class="bi bi-tools me-2"></i>Kebijakan Peminjaman Alat
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link {{ $activeTab === 'approval' ? 'active' : '' }} fw-semibold px-4 py-2" 
+                        id="tab-approval-btn" data-bs-toggle="pill" data-bs-target="#tab-approval" type="button" role="tab"
+                        aria-controls="tab-approval" aria-selected="{{ $activeTab === 'approval' ? 'true' : 'false' }}">
+                        <i class="bi bi-shield-check me-2"></i>Persetujuan Ruang Lab
+                    </button>
+                </li>
+            </ul>
+            <button type="button" class="scroll-cue-chevron" aria-label="Geser tab ke kanan">
+                <i class="bi bi-chevron-right"></i>
+            </button>
+        </div>
 
         {{-- Konten Tab --}}
         <div class="tab-content" id="settingsTabContent">

@@ -157,21 +157,26 @@
                     </button>
                 </div>
 
-                <ul class="nav nav-pills gap-2 mt-3 flex-wrap preview-room-tabs" id="previewRoomFilter">
-                    <li class="nav-item">
-                        <button type="button" class="nav-link active py-1 px-3 filter-room-btn" data-room="__ALL__">
-                            Semua Ruangan ({{ count($parsed['entries']) }})
-                        </button>
-                    </li>
-                    @foreach ($parsed['rooms'] as $roomName)
-                        @php $roomCount = count(array_filter($parsed['entries'], fn($e) => $e['nama_ruangan'] === $roomName)); @endphp
+                <div class="scroll-cue-wrapper mt-3">
+                    <ul class="nav nav-pills gap-2 flex-wrap preview-room-tabs scroll-cue-list" id="previewRoomFilter">
                         <li class="nav-item">
-                            <button type="button" class="nav-link py-1 px-3 filter-room-btn" data-room="{{ $roomName }}">
-                                {{ $roomName }} ({{ $roomCount }})
+                            <button type="button" class="nav-link active py-1 px-3 filter-room-btn" data-room="__ALL__">
+                                Semua Ruangan ({{ count($parsed['entries']) }})
                             </button>
                         </li>
-                    @endforeach
-                </ul>
+                        @foreach ($parsed['rooms'] as $roomName)
+                            @php $roomCount = count(array_filter($parsed['entries'], fn($e) => $e['nama_ruangan'] === $roomName)); @endphp
+                            <li class="nav-item">
+                                <button type="button" class="nav-link py-1 px-3 filter-room-btn" data-room="{{ $roomName }}">
+                                    {{ $roomName }} ({{ $roomCount }})
+                                </button>
+                            </li>
+                        @endforeach
+                    </ul>
+                    <button type="button" class="scroll-cue-chevron" aria-label="Geser ruangan ke kanan">
+                        <i class="bi bi-chevron-right"></i>
+                    </button>
+                </div>
             </div>
 
             <div class="card-body">
