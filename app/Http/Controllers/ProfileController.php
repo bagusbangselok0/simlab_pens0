@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Services\SignatureStorageService;
+use App\Support\SecurityAudit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -126,6 +127,11 @@ class ProfileController extends Controller
 
             // Hapus file TTD lama bila sudah tidak direferensikan oleh transaksi PDF
             $storage->deleteUserSignatureIfUnused($oldSignature, $user->id);
+
+            SecurityAudit::log('user_signature_uploaded', [
+                'target_user_id' => $user->id,
+                'filename' => $filename,
+            ]);
 
             return response()->json([
                 'success' => true,

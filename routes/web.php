@@ -33,15 +33,21 @@ Route::get('/', function () {
 // 2. Guest Routes (Hanya untuk yang belum login)
 Route::middleware('guest')->group(function () {
     Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
-    Route::post('/login', [LoginController::class, 'authenticate'])->name('login.post');
+    Route::post('/login', [LoginController::class, 'authenticate'])
+        ->middleware('throttle:login')
+        ->name('login.post');
 
     // Registrasi
     Route::get('/register', [RegisterController::class, 'showRegistrationForm'])->name('register');
-    Route::post('/register', [RegisterController::class, 'register'])->name('register.post');
+    Route::post('/register', [RegisterController::class, 'register'])
+        ->middleware('throttle:register')
+        ->name('register.post');
 
     // Reset Password (Public)
     Route::get('/reset-password/{token}', [ResetPasswordController::class, 'showResetForm'])->name('password.reset');
-    Route::post('/reset-password', [ResetPasswordController::class, 'reset'])->name('password.update');
+    Route::post('/reset-password', [ResetPasswordController::class, 'reset'])
+        ->middleware('throttle:password-reset')
+        ->name('password.update');
 });
 
 // Public Signed Routes untuk TTD Perwakilan Mahasiswa (Tanpa Login)
@@ -69,8 +75,12 @@ Route::middleware('auth')->group(function () {
 
     Route::prefix('profile')->group(function () {
         Route::get('/', [ProfileController::class, 'index'])->name('profile.index');
-        Route::post('/update-password', [ProfileController::class, 'updatePassword'])->name('profile.update_password');
-        Route::post('/upload-ttd/{id}', [ProfileController::class, 'uploadFileTtd'])->name('profile.upload_ttd');
+        Route::post('/update-password', [ProfileController::class, 'updatePassword'])
+            ->middleware('throttle:password-reset')
+            ->name('profile.update_password');
+        Route::post('/upload-ttd/{id}', [ProfileController::class, 'uploadFileTtd'])
+            ->middleware('throttle:signature-upload')
+            ->name('profile.upload_ttd');
         Route::post('/update-photo/{id}', [ProfileController::class, 'updatePhoto'])->name('profile.update_photo');
         Route::post('/update-nohp', [ProfileController::class, 'updateNoHp'])->name('profile.update_nohp');
         // Tambahkan route lain untuk edit profile jika diperlukan
@@ -99,7 +109,9 @@ Route::middleware('auth')->group(function () {
 
         Route::middleware('role:admin,plp')->group(function () {
             Route::get('/import/preview', [JadwalLabController::class, 'showPreview'])->name('preview-show');
-            Route::post('/import/preview', [JadwalLabController::class, 'previewImport'])->name('preview-import');
+            Route::post('/import/preview', [JadwalLabController::class, 'previewImport'])
+                ->middleware('throttle:excel-import')
+                ->name('preview-import');
             Route::post('/import/commit', [JadwalLabController::class, 'commitImport'])->name('commit-import');
             Route::post('/', [JadwalLabController::class, 'store'])->name('store');
             Route::put('/{jadwalLab}', [JadwalLabController::class, 'update'])->name('update');
@@ -116,7 +128,9 @@ Route::middleware('auth')->group(function () {
         Route::get('/', [LogbookPraktikumController::class, 'index'])->name('index');
         Route::post('/from-jadwal', [LogbookPraktikumController::class, 'storeFromJadwal'])->name('store-from-jadwal');
         Route::post('/', [LogbookPraktikumController::class, 'store'])->name('store');
-        Route::post('/mahasiswa-signature', [LogbookPraktikumController::class, 'saveMahasiswaSignature'])->name('mahasiswa-signature');
+        Route::post('/mahasiswa-signature', [LogbookPraktikumController::class, 'saveMahasiswaSignature'])
+            ->middleware('throttle:signature-upload')
+            ->name('mahasiswa-signature');
         Route::post('/sign-link', [LogbookPraktikumController::class, 'generateSignLink'])->name('sign-link');
         Route::post('/templates', [LogbookPraktikumController::class, 'storeTemplate'])->name('templates.store');
         Route::delete('/templates/{template}', [LogbookPraktikumController::class, 'destroyTemplate'])->name('templates.destroy');
@@ -237,7 +251,9 @@ Route::middleware('auth')->group(function () {
             Route::put('/{id}', [UserController::class, 'update'])->name('users.update');
             Route::delete('/{id}', [UserController::class, 'destroy'])->name('users.destroy');
             Route::patch('/{id}/verify', [UserController::class, 'verifyUser'])->name('users.verify');
-            Route::post('/{id}/generate-reset-link', [UserController::class, 'generateResetLink'])->name('users.reset_link');
+            Route::post('/{id}/generate-reset-link', [UserController::class, 'generateResetLink'])
+                ->middleware('throttle:password-reset')
+                ->name('users.reset_link');
         });
 
         // Manajemen Jabatan
@@ -296,7 +312,9 @@ Route::middleware('auth')->group(function () {
     Route::middleware('role:plp,admin')->group(function () {
         Route::get('/inventaris', [InventarisBarangController::class, 'index'])->name('inventaris.index');
         Route::post('/inventaris', [InventarisBarangController::class, 'store'])->name('inventaris.store');
-        Route::post('/inventaris/import', [InventarisBarangController::class, 'import'])->name('inventaris.import');
+        Route::post('/inventaris/import', [InventarisBarangController::class, 'import'])
+            ->middleware('throttle:excel-import')
+            ->name('inventaris.import');
         Route::get('/inventaris/template', [InventarisBarangController::class, 'downloadTemplate'])->name('inventaris.template');
         Route::get('/inventaris/{id}/detail', [InventarisBarangController::class, 'show'])->name('inventaris.show');
         Route::put('/inventaris/{id}', [InventarisBarangController::class, 'update'])->name('inventaris.update');

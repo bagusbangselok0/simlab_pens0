@@ -487,10 +487,11 @@ class InventarisRuanganController extends Controller
         $items = InventarisRuangan::where('lab_id', $lab_id)->orderBy('nama_barang')->get();
 
         $pdf = Pdf::loadView('pages.inventaris_ruangan.pdf_dir', compact('lab', 'items'))
+            ->setOption('isRemoteEnabled', false)
             ->setPaper('a4', 'landscape');
 
-        $cleanKodeLab = preg_replace('/[^A-Za-z0-9_\-]/', '_', $lab->kode_lab ?? 'LAB');
-        return $pdf->stream("DIR_{$cleanKodeLab}.pdf");
+        $fileName = \App\Support\ExcelSecurity::safeFileName('DIR_' . ($lab->kode_lab ?? 'LAB'), 'pdf');
+        return $pdf->stream($fileName);
     }
 
     private function normalizeNupList(?string $nup): array

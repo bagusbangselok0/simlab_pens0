@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Notifications\SimpleDatabaseNotification;
 use App\Services\SignatureStorageService;
+use App\Support\SecurityAudit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Yajra\DataTables\DataTables;
@@ -109,6 +110,11 @@ class SignatureVerificationController extends Controller
             'signature_verified_by' => Auth::id(),
         ]);
 
+        SecurityAudit::log('admin_signature_approved', [
+            'target_user_id' => $user->id,
+            'target_email' => $user->email,
+        ]);
+
         return response()->json([
             'success' => true,
             'message' => "Tanda tangan {$user->nama_asli} berhasil disetujui.",
@@ -136,6 +142,12 @@ class SignatureVerificationController extends Controller
             'signature_verified_at' => now(),
             'signature_verified_by' => Auth::id(),
         ]);
+
+        SecurityAudit::log('admin_signature_rejected', [
+            'target_user_id' => $user->id,
+            'target_email' => $user->email,
+            'reason' => $request->rejection_note,
+        ], 'warning');
 
         return response()->json([
             'success' => true,

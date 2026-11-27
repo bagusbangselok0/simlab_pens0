@@ -306,4 +306,43 @@ class SignatureVerificationTest extends TestCase
         $peminjaman->refresh();
         $this->assertEquals('pending_kalab', $peminjaman->status);
     }
+
+    public function test_dosen_non_kalab_sees_upload_ttd_tab_on_profile_and_can_upload_signature(): void
+    {
+        $roleDosenId = DB::table('roles')->where('slug', 'dosen')->value('id');
+        $dosenNonKalab = User::create([
+            'role_id' => $roleDosenId,
+            'jabatan_id' => null,
+            'nama_asli' => 'Dosen Pengampu Non Kalab',
+            'nip' => '198202022008121003',
+            'email' => 'dosen-non-kalab@test.com',
+            'password' => bcrypt('password'),
+            'signature_path' => null,
+            'signature_status' => 'none',
+            'is_verified' => true,
+            'is_active' => true,
+        ]);
+
+        $profileResp = $this->actingAs($dosenNonKalab)->get(route('profile.index'));
+        $profileResp->assertStatus(200)
+            ->assertSee('id="ttd-tab"', false)
+            ->assertSee('id="uploadTtdForm"', false);
+
+        $dummyPng = "\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15c4\x00\x00\x00\nIDATx\x9cc\x00\x01\x00\x00\x05\x00\x01\r\n-\xb4\x00\x00\x00\x00IEND\xaeB`\x82";
+        $file = UploadedFile::fake()->createWithContent('ttd_dosen.png', $dummyPng);
+
+        $uploadResp = $this->actingAs($dosenNonKalab)->post(route('profile.upload_ttd', $dosenNonKalab->id), [
+            'signature_path' => $file,
+        ]);
+
+        $uploadResp->assertStatus(200)->assertJson(['success' => true]);
+
+        $dosenNonKalab->refresh();
+        $this->assertEquals('pending', $dosenNonKalab->signature_status);
+        $this->assertNotNull($dosenNonKalab->signature_path);
+
+        $privateFile = storage_path('app/private/signatures/' . $dosenNonKalab->signature_path);
+        $this->assertFileExists($privateFile);
+        @unlink($privateFile);
+    }
 }

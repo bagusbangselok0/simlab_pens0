@@ -6,10 +6,13 @@ use App\Models\InventarisBarang;
 use App\Models\InventarisRuangan;
 use App\Models\Lab;
 use App\Models\LabManager;
+use App\Support\ExcelSecurity;
+use App\Support\SecurityAudit;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 use Shuchkin\SimpleXLSX;
 use Yajra\DataTables\DataTables;
 
@@ -386,14 +389,35 @@ class InventarisBarangController extends Controller
     public function import(Request $request)
     {
         $request->validate([
-            'file' => 'required|file|mimes:xlsx,xls,csv,txt|max:10240',
+            'file' => [
+                'required',
+                'file',
+                'max:' . ExcelSecurity::MAX_IMPORT_KB,
+                'mimes:xlsx,csv,txt',
+                'mimetypes:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/zip,text/csv,text/plain,application/csv,application/vnd.ms-excel,text/x-comma-separated-values',
+            ],
+        ], [
+            'file.max' => 'Ukuran file maksimal 5 MB.',
+            'file.mimes' => 'Format file harus berupa .xlsx, .csv, atau .txt.',
+            'file.mimetypes' => 'Tipe MIME file tidak sesuai dengan format spreadsheet/CSV yang diizinkan.',
         ]);
 
         $file = $request->file('file');
+
+        try {
+            ExcelSecurity::validateImportFile($file, ['xlsx', 'csv', 'txt']);
+        } catch (ValidationException $e) {
+            SecurityAudit::log('inventaris_import_rejected', [
+                'filename' => $file->getClientOriginalName(),
+                'reason' => 'invalid_file_structure',
+            ], 'warning');
+            throw $e;
+        }
+
         $extension = strtolower($file->getClientOriginalExtension());
         $rows = [];
 
-        if (in_array($extension, ['xlsx', 'xls'])) {
+        if ($extension === 'xlsx') {
             if ($xlsx = SimpleXLSX::parse($file->getRealPath())) {
                 $rows = $xlsx->rows();
             } else {
@@ -524,6 +548,12 @@ class InventarisBarangController extends Controller
             ]);
             $importedCount++;
         }
+
+        SecurityAudit::log('inventaris_imported', [
+            'imported' => $importedCount,
+            'updated' => $updatedCount,
+            'extension' => $extension,
+        ]);
 
         return redirect()->route('inventaris.index')
             ->with('success', "Proses import selesai. {$importedCount} data baru ditambahkan, {$updatedCount} data diperbarui.");

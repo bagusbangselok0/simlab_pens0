@@ -7,6 +7,8 @@ use App\Models\Lab;
 use App\Models\PeriodeJadwal;
 use App\Models\User;
 use App\Services\JadwalPerkuliahanParser;
+use App\Support\ExcelSecurity;
+use App\Support\SecurityAudit;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -49,7 +51,7 @@ class JadwalLabController extends Controller
         $conflictMessages = $conflicts['messages'];
 
         $labs = Lab::orderBy('kode_lab')->get();
-        $dosens = User::whereHas('role', fn ($q) => $q->where('slug', 'dosen'))
+        $dosens = User::whereHas('role', fn($q) => $q->where('slug', 'dosen'))
             ->orderBy('nama_asli')
             ->get();
 
@@ -74,15 +76,33 @@ class JadwalLabController extends Controller
     public function previewImport(Request $request, JadwalPerkuliahanParser $parser)
     {
         $request->validate([
-            'file' => ['required', 'file', 'mimes:xlsx', 'max:10240'],
+            'file' => [
+                'required',
+                'file',
+                'max:' . ExcelSecurity::MAX_IMPORT_KB,
+                'mimes:xlsx',
+                'mimetypes:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/zip',
+            ],
         ], [
             'file.required' => 'Silakan pilih file Excel jadwal perkuliahan terlebih dahulu.',
             'file.mimes' => 'Format file harus berupa Excel (.xlsx).',
-            'file.max' => 'Ukuran file maksimal 10 MB.',
+            'file.mimetypes' => 'Tipe konten file tidak valid. Unggah file Excel (.xlsx) asli.',
+            'file.max' => 'Ukuran file maksimal 5 MB.',
         ]);
 
+        $uploadedFile = $request->file('file');
+
         try {
-            $uploadedFile = $request->file('file');
+            ExcelSecurity::validateImportFile($uploadedFile, ['xlsx']);
+        } catch (ValidationException $e) {
+            SecurityAudit::log('jadwal_import_rejected', [
+                'filename' => $uploadedFile->getClientOriginalName(),
+                'reason' => 'invalid_file_structure',
+            ], 'warning');
+            throw $e;
+        }
+
+        try {
             $parsed = $parser->parse($uploadedFile->getRealPath());
         } catch (Throwable $e) {
             return redirect()->route('jadwal-lab.index')
@@ -93,6 +113,11 @@ class JadwalLabController extends Controller
             return redirect()->route('jadwal-lab.index')
                 ->with('error', 'Tidak ada data jadwal yang berhasil terbaca dari file Excel tersebut. Pastikan format sesuai template jadwal perkuliahan.');
         }
+
+        SecurityAudit::log('jadwal_import_previewed', [
+            'filename' => $uploadedFile->getClientOriginalName(),
+            'entries' => count($parsed['entries']),
+        ]);
 
         $request->session()->put('jadwal_lab_import_preview', [
             'parsed' => $parsed,
@@ -114,7 +139,7 @@ class JadwalLabController extends Controller
         $parsed = $previewData['parsed'];
         $sourceFilename = $previewData['sourceFilename'] ?? 'jadwal.xlsx';
         $labs = Lab::orderBy('kode_lab')->get();
-        $dosens = User::whereHas('role', fn ($q) => $q->where('slug', 'dosen'))
+        $dosens = User::whereHas('role', fn($q) => $q->where('slug', 'dosen'))
             ->orderBy('nama_asli')
             ->get();
 
@@ -229,6 +254,11 @@ class JadwalLabController extends Controller
 
         $request->session()->forget('jadwal_lab_import_preview');
 
+        SecurityAudit::log('jadwal_import_committed', [
+            'periode_id' => $periode->id,
+            'entries' => count($validated['entries']),
+        ]);
+
         return redirect()->route('jadwal-lab.index', ['periode_id' => $periode->id])
             ->with('success', 'Berhasil mengimpor ' . count($validated['entries']) . ' sesi jadwal ke periode "' . $periode->nama_periode . '".');
     }
@@ -320,9 +350,13 @@ class JadwalLabController extends Controller
         $suffix = $request->filled('ruangan')
             ? '_' . preg_replace('/[^A-Za-z0-9_-]+/', '_', (string) $request->get('ruangan'))
             : '_Semua_Ruangan';
-        $fileName = 'Jadwal_Pemakaian_Lab_' . str_replace('/', '-', $periode->tahun_ajaran) . $suffix . '.pdf';
+        $fileName = ExcelSecurity::safeFileName(
+            'Jadwal_Pemakaian_Lab_' . str_replace('/', '-', $periode->tahun_ajaran) . $suffix,
+            'pdf'
+        );
 
         $pdf = Pdf::loadView('pages.jadwal_lab.pdf', compact('periode', 'roomsData', 'jamKeMap'))
+            ->setOption('isRemoteEnabled', false)
             ->setPaper('a4', 'landscape');
 
         return $pdf->stream($fileName);
@@ -357,7 +391,7 @@ class JadwalLabController extends Controller
         foreach ($roomsData as $roomName => $roomInfo) {
             $hasCatatan = collect($roomInfo['days'])
                 ->flatten(1)
-                ->contains(fn (JadwalLab $item) => trim((string) $item->catatan) !== '');
+                ->contains(fn(JadwalLab $item) => trim((string) $item->catatan) !== '');
 
             $lastCol = $hasCatatan ? 'H' : 'G';
             $colCount = $hasCatatan ? 8 : 7;
@@ -371,12 +405,12 @@ class JadwalLabController extends Controller
 
             // Baris 1: Judul Utama (Simpel tanpa blok warna penuh)
             $rows[] = $padRow([
-                '<style font-size="14" height="24"><center><middle><b><raw>' . $this->xmlSafe('Jadwal Penggunaan ' . $roomName) . '</raw></b></middle></center></style>',
+                '<style font-size="14" height="24"><center><middle><b>' . ExcelSecurity::rawCell('Jadwal Penggunaan ' . $roomName) . '</b></middle></center></style>',
             ]);
 
             // Baris 2: Subjudul Semester & Tahun Ajaran
             $rows[] = $padRow([
-                '<style font-size="11" height="20"><center><middle><b><raw>' . $this->xmlSafe('Semester ' . ucfirst(strtolower($periode->semester)) . ' Tahun Ajaran ' . $periode->tahun_ajaran) . '</raw></b></middle></center></style>',
+                '<style font-size="11" height="20"><center><middle><b>' . ExcelSecurity::rawCell('Semester ' . ucfirst(strtolower($periode->semester)) . ' Tahun Ajaran ' . $periode->tahun_ajaran) . '</b></middle></center></style>',
             ]);
 
             // Baris 3: Spasi pemisah tipis
@@ -402,7 +436,7 @@ class JadwalLabController extends Controller
             $dataRowIdx = 0;
             foreach (JadwalLab::HARI_ORDER as $hari) {
                 $dayEntries = $roomInfo['days'][$hari] ?? [];
-                $hariCell = '<style bgcolor="#FFFFFF" color="#000000" font-size="10" border="thin#BFBFBF"><center><middle><b><raw>' . $this->xmlSafe($hari) . '</raw></b></middle></center></style>';
+                $hariCell = '<style bgcolor="#FFFFFF" color="#000000" font-size="10" border="thin#BFBFBF"><center><middle><b>' . ExcelSecurity::rawCell($hari) . '</b></middle></center></style>';
 
                 if (empty($dayEntries)) {
                     $rowBg = $dataRowIdx % 2 === 0 ? '#FFFFFF' : '#EEF3FA';
@@ -430,15 +464,15 @@ class JadwalLabController extends Controller
                     $rowBg = $dataRowIdx % 2 === 0 ? '#FFFFFF' : '#EEF3FA';
                     $row = [
                         $idx === 0 ? $hariCell : '<style bgcolor="#FFFFFF" border="thin#BFBFBF"></style>',
-                        "<style bgcolor=\"{$rowBg}\" color=\"#000000\" font-size=\"10\" border=\"thin#BFBFBF\"><middle><wraptext><raw>" . $this->xmlSafe($item->mata_kuliah) . '</raw></wraptext></middle></style>',
-                        "<style bgcolor=\"{$rowBg}\" color=\"#000000\" font-size=\"10\" border=\"thin#BFBFBF\"><center><middle><raw>" . $this->xmlSafe($item->waktu_mulai) . '</raw></middle></center></style>',
-                        "<style bgcolor=\"{$rowBg}\" color=\"#000000\" font-size=\"10\" border=\"thin#BFBFBF\"><center><middle><raw>" . $this->xmlSafe($item->waktu_berakhir) . '</raw></middle></center></style>',
-                        "<style bgcolor=\"{$rowBg}\" color=\"#000000\" font-size=\"10\" border=\"thin#BFBFBF\"><middle><wraptext><raw>" . $this->xmlSafe($item->display_dosen) . '</raw></wraptext></middle></style>',
-                        "<style bgcolor=\"{$rowBg}\" color=\"#000000\" font-size=\"10\" border=\"thin#BFBFBF\"><center><middle><raw>" . $this->xmlSafe($item->semester ?: '-') . '</raw></middle></center></style>',
-                        "<style bgcolor=\"{$rowBg}\" color=\"#000000\" font-size=\"10\" border=\"thin#BFBFBF\"><center><middle><raw>" . $this->xmlSafe($item->program_studi ?: '-') . '</raw></middle></center></style>',
+                        "<style bgcolor=\"{$rowBg}\" color=\"#000000\" font-size=\"10\" border=\"thin#BFBFBF\"><middle><wraptext>" . ExcelSecurity::rawCell($item->mata_kuliah, '-') . '</wraptext></middle></style>',
+                        "<style bgcolor=\"{$rowBg}\" color=\"#000000\" font-size=\"10\" border=\"thin#BFBFBF\"><center><middle>" . ExcelSecurity::rawCell($item->waktu_mulai, '-') . '</middle></center></style>',
+                        "<style bgcolor=\"{$rowBg}\" color=\"#000000\" font-size=\"10\" border=\"thin#BFBFBF\"><center><middle>" . ExcelSecurity::rawCell($item->waktu_berakhir, '-') . '</middle></center></style>',
+                        "<style bgcolor=\"{$rowBg}\" color=\"#000000\" font-size=\"10\" border=\"thin#BFBFBF\"><middle><wraptext>" . ExcelSecurity::rawCell($item->display_dosen, '-') . '</wraptext></middle></style>',
+                        "<style bgcolor=\"{$rowBg}\" color=\"#000000\" font-size=\"10\" border=\"thin#BFBFBF\"><center><middle>" . ExcelSecurity::rawCell($item->semester ?: '-', '-') . '</middle></center></style>',
+                        "<style bgcolor=\"{$rowBg}\" color=\"#000000\" font-size=\"10\" border=\"thin#BFBFBF\"><center><middle>" . ExcelSecurity::rawCell($item->program_studi ?: '-', '-') . '</middle></center></style>',
                     ];
                     if ($hasCatatan) {
-                        $row[] = "<style bgcolor=\"{$rowBg}\" color=\"#000000\" font-size=\"10\" border=\"thin#BFBFBF\"><middle><wraptext><raw>" . $this->xmlSafe($item->catatan ?: '') . '</raw></wraptext></middle></style>';
+                        $row[] = "<style bgcolor=\"{$rowBg}\" color=\"#000000\" font-size=\"10\" border=\"thin#BFBFBF\"><middle><wraptext>" . ExcelSecurity::rawCell($item->catatan ?: '', '') . '</wraptext></middle></style>';
                     }
                     $rows[] = $row;
                     $currentRow++;
@@ -496,7 +530,10 @@ class JadwalLabController extends Controller
             }
         }
 
-        $fileName = 'Jadwal_Pemakaian_Lab_' . str_replace('/', '-', $periode->tahun_ajaran) . '.xlsx';
+        $fileName = ExcelSecurity::safeFileName(
+            'Jadwal_Pemakaian_Lab_' . str_replace('/', '-', $periode->tahun_ajaran),
+            'xlsx'
+        );
 
         return response((string) $xlsx, 200, [
             'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
@@ -585,7 +622,7 @@ class JadwalLabController extends Controller
         $conflictIds = [];
         $messages = [];
 
-        $grouped = $entries->groupBy(fn (JadwalLab $item) => $item->nama_ruangan . '|' . $item->hari);
+        $grouped = $entries->groupBy(fn(JadwalLab $item) => $item->nama_ruangan . '|' . $item->hari);
 
         foreach ($grouped as $group) {
             $list = $group->values();

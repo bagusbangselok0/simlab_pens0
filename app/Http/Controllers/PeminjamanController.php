@@ -6,6 +6,7 @@ use App\Models\PeminjamanLab;
 use App\Models\Lab;
 use App\Models\User;
 use App\Notifications\PeminjamanNotification;
+use App\Support\ExcelSecurity;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -92,10 +93,11 @@ class PeminjamanController extends Controller
         $peminjamans = $query->get();
 
         $pdf = Pdf::loadView('pages.peminjaman.export_pdf_admin', compact('peminjamans', 'selectedStudent'))
+            ->setOption('isRemoteEnabled', false)
             ->setPaper('a4', 'landscape');
 
         $cleanName = $selectedStudent ? '_' . str_replace(' ', '_', $selectedStudent->nama_asli) : '_Semua';
-        $namaFile = 'Rekap_Peminjaman_Lab' . $cleanName . '_' . date('Ymd_His') . '.pdf';
+        $namaFile = ExcelSecurity::safeFileName('Rekap_Peminjaman_Lab' . $cleanName . '_' . date('Ymd_His'), 'pdf');
 
         return $pdf->stream($namaFile);
     }
@@ -127,7 +129,12 @@ class PeminjamanController extends Controller
         $rows[] = ['<center>Status: Disetujui & Kadaluarsa</center>'];
 
         if ($selectedStudent) {
-            $rows[] = ['<center><b>Filter Mahasiswa: ' . ($selectedStudent->nama_asli ?? '-') . ' (NRP: ' . ($selectedStudent->nrp ?? '-') . ')</b></center>'];
+            $filterLabel = 'Filter Mahasiswa: '
+                . ExcelSecurity::sanitizeFormula($selectedStudent->nama_asli ?? '-')
+                . ' (NRP: '
+                . ExcelSecurity::sanitizeFormula($selectedStudent->nrp ?? '-')
+                . ')';
+            $rows[] = ['<center><b>' . ExcelSecurity::rawCell($filterLabel) . '</b></center>'];
         } else {
             $rows[] = ['<center><b>Filter: Semua Mahasiswa</b></center>'];
         }
@@ -160,17 +167,16 @@ class PeminjamanController extends Controller
             foreach ($peminjamans as $index => $row) {
                 $waktuMulai = $row->waktu_mulai ? Carbon::parse($row->waktu_mulai)->format('d-m-Y H:i') : '-';
                 $waktuSelesai = $row->waktu_selesai ? Carbon::parse($row->waktu_selesai)->format('d-m-Y H:i') : '-';
-                $labText = ($row->lab->nama_lab ?? '-') . ' (' . ($row->lab->kode_lab ?? '-') . ')';
-                $nrpText = $row->mahasiswa && $row->mahasiswa->nrp ? "\0" . $row->mahasiswa->nrp : '-';
+                $labText = ($row->lab?->nama_lab ?? '-') . ' (' . ($row->lab?->kode_lab ?? '-') . ')';
 
                 $rows[] = [
                     '<style border="thin"><center>' . ($index + 1) . '</center></style>',
-                    '<style border="thin">' . ($row->mahasiswa->nama_asli ?? '-') . '</style>',
-                    '<style border="thin"><center>' . $nrpText . '</center></style>',
-                    '<style border="thin">' . $labText . '</style>',
-                    '<style border="thin">' . ($row->tujuan ?? '-') . '</style>',
-                    '<style border="thin"><center>' . $waktuMulai . '</center></style>',
-                    '<style border="thin"><center>' . $waktuSelesai . '</center></style>',
+                    '<style border="thin">' . ExcelSecurity::rawCell($row->mahasiswa?->nama_asli, '-') . '</style>',
+                    '<style border="thin"><center>' . ExcelSecurity::rawCell($row->mahasiswa?->nrp, '-') . '</center></style>',
+                    '<style border="thin">' . ExcelSecurity::rawCell($labText, '-') . '</style>',
+                    '<style border="thin">' . ExcelSecurity::rawCell($row->tujuan, '-') . '</style>',
+                    '<style border="thin"><center>' . ExcelSecurity::rawCell($waktuMulai, '-') . '</center></style>',
+                    '<style border="thin"><center>' . ExcelSecurity::rawCell($waktuSelesai, '-') . '</center></style>',
                 ];
             }
         }
@@ -198,7 +204,7 @@ class PeminjamanController extends Controller
             ->setColWidth(7, 20);
 
         $cleanName = $selectedStudent ? '_' . str_replace(' ', '_', $selectedStudent->nama_asli) : '_Semua';
-        $fileName = 'Rekap_Peminjaman_Lab' . $cleanName . '_' . date('Ymd_His') . '.xlsx';
+        $fileName = ExcelSecurity::safeFileName('Rekap_Peminjaman_Lab' . $cleanName . '_' . date('Ymd_His'), 'xlsx');
 
         return response((string) $xlsx, 200, [
             'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
@@ -333,31 +339,42 @@ class PeminjamanController extends Controller
         Gate::authorize('downloadPdf', $peminjaman);
 
         // 1. Render HTML ke PDF biasa via DomPDF
-        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pages.peminjaman.cetak', compact('peminjaman'));
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pages.peminjaman.cetak', compact('peminjaman'))
+            ->setOption('isRemoteEnabled', false);
         $pdfContent = $pdf->output();
 
-        // 2. Convert PDF ke image menggunakan Imagick (flatten)
-        $imagick = new \Imagick();
-        $imagick->setResolution(200, 200); // 200 DPI untuk kualitas cetak yang baik
-        $imagick->readImageBlob($pdfContent);
-
+        // 2. Convert PDF ke image menggunakan Imagick (flatten) dengan batas halaman & cleanup aman
         $pageImages = [];
-        $pageCount = $imagick->getNumberImages();
+        $imagick = new \Imagick();
+        try {
+            $imagick->setResolution(200, 200); // 200 DPI untuk kualitas cetak yang baik
+            $imagick->readImageBlob($pdfContent);
 
-        for ($i = 0; $i < $pageCount; $i++) {
-            $imagick->setIteratorIndex($i);
-            $img = clone $imagick;
-            $img->setImageFormat('png');
-            $img->setImageAlphaChannel(\Imagick::ALPHACHANNEL_REMOVE);
-            $img->setImageBackgroundColor('white');
-            $img = $img->mergeImageLayers(\Imagick::LAYERMETHOD_FLATTEN);
-            $pageImages[] = $img->getImageBlob();
-            $img->clear();
-            $img->destroy();
+            $pageCount = min($imagick->getNumberImages(), 20);
+
+            for ($i = 0; $i < $pageCount; $i++) {
+                $imagick->setIteratorIndex($i);
+                $img = clone $imagick;
+                $flattened = null;
+                try {
+                    $img->setImageFormat('png');
+                    $img->setImageAlphaChannel(\Imagick::ALPHACHANNEL_REMOVE);
+                    $img->setImageBackgroundColor('white');
+                    $flattened = $img->mergeImageLayers(\Imagick::LAYERMETHOD_FLATTEN);
+                    $pageImages[] = $flattened->getImageBlob();
+                } finally {
+                    if ($flattened instanceof \Imagick && $flattened !== $img) {
+                        $flattened->clear();
+                        $flattened->destroy();
+                    }
+                    $img->clear();
+                    $img->destroy();
+                }
+            }
+        } finally {
+            $imagick->clear();
+            $imagick->destroy();
         }
-
-        $imagick->clear();
-        $imagick->destroy();
 
         // 3. Buat PDF baru yang isinya hanya gambar (flat/tidak bisa select teks)
         $htmlPages = '<html><head><style>';
@@ -378,9 +395,13 @@ class PeminjamanController extends Controller
         $htmlPages .= '</body></html>';
 
         $flatPdfObj = \Barryvdh\DomPDF\Facade\Pdf::loadHTML($htmlPages)
+            ->setOption('isRemoteEnabled', false)
             ->setPaper('a4', 'portrait');
 
-        $nama_file = 'Peminjaman_Lab_' . str_replace(' ', '_', $peminjaman->lab->nama_lab) . '_' . date('YmdHis') . '.pdf';
+        $nama_file = ExcelSecurity::safeFileName(
+            'Peminjaman_Lab_' . ($peminjaman->lab?->nama_lab ?? 'Lab') . '_' . date('YmdHis'),
+            'pdf'
+        );
         return $flatPdfObj->stream($nama_file);
     }
 

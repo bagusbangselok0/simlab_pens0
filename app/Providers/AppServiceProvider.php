@@ -44,6 +44,38 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perMinute(10)->by($request->ip());
         });
 
+        RateLimiter::for('login', function (Request $request) {
+            $email = strtolower(trim((string) $request->input('email', '')));
+            return [
+                Limit::perMinute(5)->by('login:' . $email . '|' . $request->ip()),
+                Limit::perMinute(15)->by('login-ip:' . $request->ip()),
+            ];
+        });
+
+        RateLimiter::for('register', function (Request $request) {
+            return Limit::perMinute(5)->by('register:' . $request->ip());
+        });
+
+        RateLimiter::for('signature-upload', function (Request $request) {
+            $key = $request->user()?->id ? 'user:' . $request->user()->id : 'ip:' . $request->ip();
+            return Limit::perMinute(6)->by('sig-upload:' . $key);
+        });
+
+        RateLimiter::for('password-reset', function (Request $request) {
+            $actor = $request->user()?->id
+                ? 'user:' . $request->user()->id
+                : strtolower(trim((string) $request->input('email', ''))) . '|' . $request->ip();
+            return [
+                Limit::perMinute(5)->by('pw-reset:' . $actor),
+                Limit::perMinute(10)->by('pw-reset-ip:' . $request->ip()),
+            ];
+        });
+
+        RateLimiter::for('excel-import', function (Request $request) {
+            $key = $request->user()?->id ? 'user:' . $request->user()->id : 'ip:' . $request->ip();
+            return Limit::perMinute(10)->by('excel-import:' . $key);
+        });
+
         // Paksa HTTPS jika diakses via Cloudflare / production
         if (app()->environment('production') || request()->header('x-forwarded-proto') === 'https') {
             URL::forceScheme('https');

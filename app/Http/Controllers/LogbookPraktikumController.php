@@ -837,15 +837,15 @@ class LogbookPraktikumController extends Controller
             ];
         });
 
-        $cleanMk = preg_replace('/[^A-Za-z0-9_\-]+/', '_', $logbook->nama_mk);
-        $fileName = 'FM_LAB_02_' . $cleanMk . ($request->filled('pertemuan_id') ? '_Minggu_' . $pertemuans->first()->minggu_ke : '_Full') . '.pdf';
+        $baseName = 'FM_LAB_02_' . $logbook->nama_mk . ($request->filled('pertemuan_id') ? '_Minggu_' . $pertemuans->first()->minggu_ke : '_Full');
+        $fileName = \App\Support\ExcelSecurity::safeFileName($baseName, 'pdf');
 
         $pdf = Pdf::loadView('pages.logbook.pdf', compact(
             'logbook',
             'pages',
             'logoPensBase64',
             'plpTtdBase64'
-        ))->setPaper('a4', 'portrait');
+        ))->setOption('isRemoteEnabled', false)->setPaper('a4', 'portrait');
 
         return $pdf->stream($fileName);
     }

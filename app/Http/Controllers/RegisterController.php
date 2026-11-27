@@ -4,8 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\Prodi;
+use App\Support\SecurityAudit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 
 class RegisterController extends Controller
@@ -69,6 +71,12 @@ class RegisterController extends Controller
                 'is_active'   => true,  // Akun aktif secara sistem, tapi verifikasi data menyusul
             ]);
 
+            SecurityAudit::log('mahasiswa_registered', [
+                'registered_user_id' => $user->id,
+                'nrp' => $user->nrp,
+                'email' => $user->email,
+            ]);
+
             session()->flash('registered_success', 'Registrasi berhasil! Silakan hubungi Admin untuk verifikasi data Anda agar dapat login.');
 
             if ($request->ajax()) {
@@ -81,13 +89,20 @@ class RegisterController extends Controller
 
             return redirect()->route('login', ['registered' => '1'])->with('registered_success', 'Registrasi berhasil! Silakan hubungi Admin untuk verifikasi data Anda agar dapat login.');
         } catch (\Exception $e) {
+            Log::error('RegisterController: Gagal memproses pendaftaran mahasiswa.', [
+                'exception' => $e->getMessage(),
+                'email' => $request->email,
+                'nrp' => $request->nrp,
+            ]);
+
+            $safeMessage = 'Terjadi kesalahan sistem saat memproses pendaftaran. Silakan coba beberapa saat lagi.';
             if ($request->ajax()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Terjadi kesalahan saat menyimpan data: ' . $e->getMessage()
+                    'message' => $safeMessage,
                 ], 500);
             }
-            return back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage())->withInput();
+            return back()->with('error', $safeMessage)->withInput();
         }
     }
 }

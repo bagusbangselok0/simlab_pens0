@@ -6,6 +6,7 @@ use App\Models\Role;
 use App\Models\User;
 use App\Models\Prodi;
 use App\Models\Jabatan;
+use App\Support\SecurityAudit;
 use Yajra\DataTables\Facades\DataTables;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -397,6 +398,11 @@ class UserController extends Controller
         $resetUrl = route('password.reset', [
             'token' => $token,
             'email' => $user->email
+        ]);
+
+        SecurityAudit::log('admin_generated_reset_link', [
+            'target_user_id' => $user->id,
+            'target_email' => $user->email,
         ]);
 
         return response()->json([

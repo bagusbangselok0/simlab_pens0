@@ -224,9 +224,13 @@ class PresensiController extends Controller
 
         \Illuminate\Support\Facades\Gate::authorize('downloadPdf', $peminjaman);
 
-        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pages.peminjaman.cetak', compact('peminjaman'));
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pages.peminjaman.cetak', compact('peminjaman'))
+            ->setOption('isRemoteEnabled', false);
 
-        $nama_file = 'Peminjaman_Lab_' . str_replace(' ', '_', $peminjaman->lab->nama_lab) . '_' . date('YmdHis') . '.pdf';
+        $nama_file = \App\Support\ExcelSecurity::safeFileName(
+            'Peminjaman_Lab_' . ($peminjaman->lab?->nama_lab ?? 'Lab') . '_' . date('YmdHis'),
+            'pdf'
+        );
         return $pdf->stream($nama_file);
     }
 

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Support\SecurityAudit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
@@ -45,8 +46,17 @@ class ResetPasswordController extends Controller
         );
 
         if ($status == Password::PASSWORD_RESET) {
+            SecurityAudit::log('password_reset_success', [
+                'target_email' => $request->email,
+            ]);
+
             return redirect()->route('login')->with('status', 'Password Anda telah berhasil diubah! Silakan login kembali.');
         }
+
+        SecurityAudit::log('password_reset_failed', [
+            'target_email' => $request->email,
+            'status' => $status,
+        ], 'warning');
 
         return back()->withErrors(['email' => [__($status)]]);
     }

@@ -881,8 +881,10 @@ class PeminjamanAlatController extends Controller
 
         Gate::authorize('downloadPdf', $peminjaman);
 
-        $pdf = Pdf::loadView('pages.peminjaman_alat.cetak', compact('peminjaman'));
-        return $pdf->stream('Peminjaman_Alat_' . $peminjaman->kode_peminjaman . '.pdf');
+        $pdf = Pdf::loadView('pages.peminjaman_alat.cetak', compact('peminjaman'))
+            ->setOption('isRemoteEnabled', false);
+        $fileName = \App\Support\ExcelSecurity::safeFileName('Peminjaman_Alat_' . ($peminjaman->kode_peminjaman ?? $peminjaman->id), 'pdf');
+        return $pdf->stream($fileName);
     }
 }
 

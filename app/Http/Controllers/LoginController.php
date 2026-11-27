@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\LoginRequest;
+use App\Support\SecurityAudit;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -36,6 +37,10 @@ class LoginController extends Controller
 
                 // Cek apakah akun aktif
                 if (!$user->is_active) {
+                    SecurityAudit::log('login_blocked_inactive', [
+                        'target_user_id' => $user->id,
+                        'attempted_email' => $credentials['email'],
+                    ], 'warning');
                     Auth::logout();
 
                     if ($request->ajax()) {
@@ -52,6 +57,10 @@ class LoginController extends Controller
 
                 // Cek apakah akun diverifikasi
                 if (!$user->is_verified) {
+                    SecurityAudit::log('login_blocked_unverified', [
+                        'target_user_id' => $user->id,
+                        'attempted_email' => $credentials['email'],
+                    ], 'warning');
                     Auth::logout();
 
                     if ($request->ajax()) {
@@ -75,6 +84,11 @@ class LoginController extends Controller
 
                 $request->session()->regenerate();
 
+                SecurityAudit::log('login_success', [
+                    'target_user_id' => $user->id,
+                    'role' => $user->role?->slug,
+                ]);
+
                 if ($request->ajax()) {
                     return response()->json([
                         'success' => true,
@@ -88,6 +102,10 @@ class LoginController extends Controller
             }
 
             // Jika login gagal
+            SecurityAudit::log('login_failed', [
+                'attempted_email' => $credentials['email'],
+            ], 'warning');
+
             if ($request->ajax()) {
                 return response()->json([
                     'success' => false,
@@ -127,6 +145,14 @@ class LoginController extends Controller
 
     public function logout(): RedirectResponse
     {
+        $userId = Auth::id();
+        $email = Auth::user()?->email;
+
+        SecurityAudit::log('logout', [
+            'target_user_id' => $userId,
+            'target_email' => $email,
+        ]);
+
         Auth::logout();
         request()->session()->invalidate();
         request()->session()->regenerateToken();

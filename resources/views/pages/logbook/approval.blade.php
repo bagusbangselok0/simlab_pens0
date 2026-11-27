@@ -35,7 +35,7 @@
                 <strong>TTD Digital Belum Siap:</strong> Status TTD Anda saat ini <strong>{{ $user->signature_status_label }}</strong>.
                 Anda wajib memiliki TTD terverifikasi Admin untuk menyetujui logbook atau mengaktifkan Auto-Approve.
             </div>
-            <a href="{{ route('profile.index') }}" class="btn btn-sm btn-warning text-dark fw-semibold">
+            <a href="{{ route('profile.index') }}#ttd" class="btn btn-sm btn-warning text-dark fw-semibold">
                 <i class="bi bi-person-badge me-1"></i> Kelola TTD di Profil
             </a>
         </div>

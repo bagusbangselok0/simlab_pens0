@@ -4,7 +4,11 @@
 @endsection
 
 @section('content')
-    {{-- Halaman Profil dengan tab berbeda (profil, ubah password, upload ttd (khusus jabatan plp dan kalab)) --}}
+    {{-- Halaman Profil dengan tab berbeda (profil, ubah password, upload ttd (mahasiswa, plp, dan dosen/kalab)) --}}
+    @php
+        $canUploadTtd = in_array($user->role?->slug, ['mahasiswa', 'plp', 'dosen'], true)
+            || ($user->jabatan && in_array($user->jabatan->slug, ['plp', 'kalab'], true));
+    @endphp
     <section class="section">
         <div class="card">
             <div class="card-header">
@@ -21,7 +25,7 @@
                             type="button" role="tab" aria-controls="password" aria-selected="false">Ubah
                             Password</button>
                     </li>
-                    @if (($user->jabatan && in_array($user->jabatan->slug, ['plp', 'kalab'])) || $user->role->slug === 'mahasiswa')
+                    @if ($canUploadTtd)
                         <li class="nav-item" role="presentation">
                             <button class="nav-link" id="ttd-tab" data-bs-toggle="tab" data-bs-target="#ttd"
                                 type="button" role="tab" aria-controls="ttd" aria-selected="false">Upload TTD</button>
@@ -35,7 +39,7 @@
                     <div class="tab-pane fade" id="password" role="tabpanel" aria-labelledby="password-tab">
                         @include('pages.profile.partials.password')
                     </div>
-                    @if (($user->jabatan && in_array($user->jabatan->slug, ['plp', 'kalab'])) || $user->role->slug === 'mahasiswa')
+                    @if ($canUploadTtd)
                         <div class="tab-pane fade" id="ttd" role="tabpanel" aria-labelledby="ttd-tab">
                             @include('pages.profile.partials.ttd')
                         </div>
@@ -53,6 +57,13 @@
     <script src="{{ asset('mazer/extensions/perfect-scrollbar/perfect-scrollbar.min.js') }}"></script>
     <script>
         $(document).ready(function() {
+            if (window.location.hash === '#ttd' || new URLSearchParams(window.location.search).get('tab') === 'ttd') {
+                const ttdTabEl = document.getElementById('ttd-tab');
+                if (ttdTabEl && typeof bootstrap !== 'undefined') {
+                    bootstrap.Tab.getOrCreateInstance(ttdTabEl).show();
+                }
+            }
+
             let id = $(this).data('id');
 
             $('#photoModalBtn').on('click', function() {
@@ -188,6 +199,11 @@
                             Swal.fire('Sukses', response.message, 'success');
                             if (response.signature_url) {
                                 $('#signaturePreview').attr('src', response.signature_url);
+                            }
+                            if (response.signature_status_label) {
+                                $('#signatureStatusBadge')
+                                    .attr('class', 'badge bg-warning text-dark px-3 py-2 fs-7')
+                                    .html('<i class="bi bi-shield-check me-1"></i> ' + $('<div>').text(response.signature_status_label).html());
                             }
                         } else {
                             Swal.fire('Error', response.message, 'error');
