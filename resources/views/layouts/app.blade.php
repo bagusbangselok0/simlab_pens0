@@ -134,6 +134,8 @@
             border-color: {{ $globalAccentColor }} !important;
             color: #ffffff !important;
         }
+    </style>
+    <style id="simlab-layout-style">
         .app-header-title {
             line-height: 1.25;
         }
@@ -152,6 +154,127 @@
         }
         .scroll-cue-chevron {
             display: none;
+        }
+        /* Compact Modern Auto-Breadcrumb */
+        .simlab-breadcrumb-nav {
+            min-width: 0;
+        }
+        .simlab-breadcrumb {
+            display: inline-flex;
+            align-items: center;
+            flex-wrap: nowrap;
+            max-width: 100%;
+            list-style: none;
+            padding: 0.28rem 0.65rem;
+            margin: 0;
+            gap: 0.35rem;
+            font-size: 0.79rem;
+            line-height: 1.3;
+            background-color: rgba(255, 255, 255, 0.72);
+            border: 1px solid rgba(148, 163, 184, 0.24);
+            border-radius: 999px;
+            overflow-x: auto;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+        .simlab-breadcrumb::-webkit-scrollbar {
+            display: none;
+        }
+        .scroll-cue-chevron .bi,
+        .simlab-breadcrumb .bi {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 1em;
+            height: 1em;
+            line-height: 1;
+        }
+        .scroll-cue-chevron .bi::before,
+        .simlab-breadcrumb .bi::before {
+            display: block;
+            line-height: 1;
+            vertical-align: 0 !important;
+        }
+        .simlab-bc-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            min-width: 0;
+            flex-shrink: 0;
+        }
+        .simlab-bc-item.is-current {
+            flex-shrink: 1;
+        }
+        .simlab-bc-sep {
+            font-size: 0.65rem;
+            color: #94a3b8;
+            flex-shrink: 0;
+        }
+        .simlab-bc-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.32rem;
+            color: #64748b;
+            text-decoration: none;
+            padding: 0.14rem 0.38rem;
+            border-radius: 999px;
+            font-weight: 500;
+            line-height: 1.2;
+            transition: color 0.15s ease, background-color 0.15s ease;
+            white-space: nowrap;
+        }
+        .simlab-bc-link:hover {
+            color: var(--bs-primary, #435ebe);
+            background-color: rgba(var(--bs-primary-rgb), 0.1);
+        }
+        .simlab-bc-home i {
+            font-size: 0.84rem;
+            color: var(--bs-primary, #435ebe);
+        }
+        .simlab-bc-group {
+            display: inline-flex;
+            align-items: center;
+            color: #64748b;
+            font-weight: 500;
+            line-height: 1.2;
+            padding: 0.14rem 0.2rem;
+            white-space: nowrap;
+        }
+        .simlab-bc-current {
+            display: inline-block;
+            vertical-align: middle;
+            color: #1e293b;
+            font-weight: 600;
+            line-height: 1.2;
+            padding: 0.14rem 0.25rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 340px;
+        }
+        html[data-bs-theme="dark"] .simlab-breadcrumb {
+            background-color: rgba(30, 30, 45, 0.85);
+            border-color: rgba(255, 255, 255, 0.09);
+        }
+        html[data-bs-theme="dark"] .simlab-bc-sep {
+            color: #64748b;
+        }
+        html[data-bs-theme="dark"] .simlab-bc-link {
+            color: #94a3b8;
+        }
+        html[data-bs-theme="dark"] .simlab-bc-link:hover {
+            color: #f1f5f9;
+            background-color: rgba(255, 255, 255, 0.08);
+        }
+        html[data-bs-theme="dark"] .simlab-bc-home i {
+            color: #93c5fd;
+        }
+        html[data-bs-theme="dark"] .simlab-bc-group {
+            color: #94a3b8;
+        }
+        html[data-bs-theme="dark"] .simlab-bc-current {
+            color: #f1f5f9;
         }
         @media (max-width: 767.98px) {
             .app-header-title {
@@ -192,6 +315,17 @@
         @media (max-width: 575.98px) {
             .app-header-title {
                 font-size: 1.05rem;
+            }
+            .simlab-breadcrumb {
+                font-size: 0.74rem;
+                padding: 0.22rem 0.55rem;
+                gap: 0.28rem;
+            }
+            .simlab-bc-item {
+                gap: 0.28rem;
+            }
+            .simlab-bc-current {
+                max-width: 190px;
             }
             #notificationRecommendationPrompt {
                 left: 12px !important;
@@ -331,6 +465,7 @@
                         </form>
                     </div>
                 </div>
+                @include('layouts.breadcrumb')
             </header>
             <div class="page-content">
                 @yield('content')
