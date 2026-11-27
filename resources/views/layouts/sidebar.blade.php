@@ -1,4 +1,4 @@
-<div id="sidebar" class="{{ ($globalSidebarDefault ?? 'expanded') === 'collapsed' ? 'inactive' : 'active' }}">
+<div id="sidebar" class="{{ ($globalSidebarDefault ?? 'expanded') === 'collapsed' ? 'inactive' : '' }}" data-desktop-default="{{ ($globalSidebarDefault ?? 'expanded') === 'collapsed' ? 'collapsed' : 'expanded' }}">
     <div class="sidebar-wrapper active">
         <div class="sidebar-header position-relative">
             <div class="d-flex justify-content-between align-items-center">

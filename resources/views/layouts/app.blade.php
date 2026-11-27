@@ -168,7 +168,7 @@
             <header class="mb-3">
                 <div class="d-flex justify-content-between align-items-center">
                     <div class="d-flex align-items-center">
-                        <a href="#" class="burger-btn d-block d-xl-none">
+                        <a href="#" class="burger-btn d-block {{ ($globalSidebarDefault ?? 'expanded') === 'collapsed' ? '' : 'd-xl-none' }}">
                             <i class="bi bi-justify fs-3"></i>
                         </a>
                         <h3 class="mb-0 ms-3">{{ $title }}</h3>
@@ -275,6 +275,29 @@
     </div>
 
     @include('layouts.scripts')
+    <script>
+        (function() {
+            const sidebar = document.getElementById('sidebar');
+            if (!sidebar) return;
+
+            function enforceInitialSidebarState() {
+                if (window.innerWidth < 1200) {
+                    sidebar.classList.remove('active', 'sidebar-desktop');
+                    return;
+                }
+                if (sidebar.dataset.desktopDefault === 'collapsed') {
+                    sidebar.classList.remove('active');
+                    sidebar.classList.add('inactive');
+                }
+            }
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', enforceInitialSidebarState);
+            } else {
+                enforceInitialSidebarState();
+            }
+        })();
+    </script>
     @yield('scripts')
     @stack('scripts')
 
